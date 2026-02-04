@@ -151,18 +151,32 @@ export default function SmartFarmDashboard() {
     setLastSync('Just now');
   };
 
-  // Chart data
-  const miniChartData = {
+  // Chart data (generate random values only on client to avoid hydration mismatches)
+  const [miniChartData, setMiniChartData] = useState(() => ({
     labels: Array(10).fill(''),
     datasets: [{
-      data: Array(10).fill(0).map(() => Math.random() * 20 + 40),
+      data: Array(10).fill(50),
       borderColor: '#10b981',
       borderWidth: 2,
       tension: 0.4,
       pointRadius: 0,
       fill: false,
     }]
-  };
+  }));
+
+  useEffect(() => {
+    setMiniChartData({
+      labels: Array(10).fill(''),
+      datasets: [{
+        data: Array(10).fill(0).map(() => Math.random() * 20 + 40),
+        borderColor: '#10b981',
+        borderWidth: 2,
+        tension: 0.4,
+        pointRadius: 0,
+        fill: false,
+      }]
+    });
+  }, []);
 
   const chartOptions: ChartOptions<'line'> = {
     responsive: true,
