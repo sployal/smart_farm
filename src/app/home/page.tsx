@@ -244,18 +244,20 @@ const SensorCard = ({
 const MiniChart = ({ color, data }: { color: string; data: number[] }) => {
   const chartData = data.map((val, i) => ({ val, i }));
   return (
-    <ResponsiveContainer width="100%" height="100%">
-      <AreaChart data={chartData}>
-        <Area
-          type="monotone"
-          dataKey="val"
-          stroke={color}
-          fill={color}
-          fillOpacity={0.1}
-          strokeWidth={2}
-        />
-      </AreaChart>
-    </ResponsiveContainer>
+    <div className="w-full h-full min-w-0 min-h-0">
+      <ResponsiveContainer width="100%" height="100%">
+        <AreaChart data={chartData}>
+          <Area
+            type="monotone"
+            dataKey="val"
+            stroke={color}
+            fill={color}
+            fillOpacity={0.1}
+            strokeWidth={2}
+          />
+        </AreaChart>
+      </ResponsiveContainer>
+    </div>
   );
 };
 
@@ -665,7 +667,8 @@ export default function SmartFarmDashboard() {
                 </div>
               </div>
 
-              <div className="h-[300px] w-full">
+              <div className="h-[300px] w-full min-w-0 min-h-0">
+                <div className="w-full h-full min-w-0 min-h-0">
                 <ResponsiveContainer width="100%" height="100%">
                   <AreaChart data={chartData}>
                     <defs>
@@ -733,6 +736,7 @@ export default function SmartFarmDashboard() {
                     />
                   </AreaChart>
                 </ResponsiveContainer>
+                </div>
               </div>
             </div>
 
