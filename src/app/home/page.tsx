@@ -1,34 +1,65 @@
 'use client';
 
-import React, { useState, useEffect, useRef } from 'react';
-import { Line } from 'react-chartjs-2';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import {
-  Chart as ChartJS,
-  CategoryScale,
-  LinearScale,
-  PointElement,
-  LineElement,
-  Title,
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  CartesianGrid,
   Tooltip,
-  Legend,
-  Filler,
-  ChartOptions,
-} from 'chart.js';
+  ResponsiveContainer,
+  AreaChart,
+  Area,
+  BarChart,
+  Bar
+} from 'recharts';
+import {
+  Leaf,
+  Menu,
+  BarChart3,
+  Cpu,
+  Brain,
+  Sprout,
+  History,
+  Settings,
+  Search,
+  RefreshCw,
+  Bell,
+  ChevronDown,
+  AlertTriangle,
+  X,
+  Droplets,
+  Thermometer,
+  Waves,
+  FlaskConical,
+  ArrowUp,
+  ArrowDown,
+  Minus,
+  Send,
+  Download,
+  Bot,
+  Lightbulb,
+  TrendingUp,
+  CheckCircle,
+  AlertCircle,
+  Info,
+  User,
+  Wifi,
+  WifiOff
+} from 'lucide-react';
+import clsx, { type ClassValue } from 'clsx';
+import { twMerge } from 'tailwind-merge';
+import { format, subHours } from 'date-fns';
 
-// Register ChartJS components
-ChartJS.register(
-  CategoryScale,
-  LinearScale,
-  PointElement,
-  LineElement,
-  Title,
-  Tooltip,
-  Legend,
-  Filler
-);
+// Utility for tailwind class merging
+function cn(...inputs: ClassValue[]) {
+  return twMerge(clsx(inputs));
+}
 
-// Type definitions
-interface SensorData {
+// --- Types ---
+
+type SensorData = {
   moisture: number;
   temperature: number;
   humidity: number;
@@ -36,66 +67,227 @@ interface SensorData {
   nitrogen: number;
   phosphorus: number;
   potassium: number;
-}
+};
 
-interface AIInsight {
+type Insight = {
+  id: string;
   priority: 'high' | 'medium' | 'low';
   title: string;
   description: string;
-  recommendation: string;
-  time?: string;
-}
+  recommendation?: string;
+  time: string;
+};
+
+type LogEntry = {
+  id: string;
+  time: string;
+  event: string;
+  sensor: string;
+  value: string;
+  status: 'success' | 'warning' | 'info';
+};
+
+type Message = {
+  id: string;
+  role: 'user' | 'ai';
+  content: string;
+};
+
+// --- Mock Data Generators ---
+
+const generateRandomData = (count: number, min: number, max: number) => {
+  return Array.from({ length: count }, () => Math.floor(Math.random() * (max - min + 1)) + min);
+};
+
+const generateTimeLabels = (hours: number) => {
+  return Array.from({ length: hours }, (_, i) => {
+    const date = subHours(new Date(), hours - 1 - i);
+    return format(date, 'HH:mm');
+  });
+};
+
+const generateChartData = (points: number) => {
+  const labels = generateTimeLabels(points);
+  return labels.map((time, i) => ({
+    time,
+    moisture: 40 + Math.random() * 30,
+    temperature: 20 + Math.random() * 10,
+    humidity: 50 + Math.random() * 35,
+  }));
+};
+
+// --- Components ---
+
+const SidebarItem = ({
+  icon: Icon,
+  label,
+  active,
+  onClick,
+  collapsed
+}: {
+  icon: React.ElementType;
+  label: string;
+  active?: boolean;
+  onClick?: () => void;
+  collapsed: boolean;
+}) => (
+  <li className="mx-2 my-1">
+    <a
+      href="#"
+      onClick={(e) => {
+        e.preventDefault();
+        onClick?.();
+      }}
+      className={cn(
+        "flex items-center gap-3.5 px-4 py-3 rounded-xl transition-all duration-200 font-medium",
+        active
+          ? "bg-emerald-500 text-white shadow-lg shadow-emerald-500/20"
+          : "text-slate-400 hover:bg-slate-800 hover:text-slate-100"
+      )}
+    >
+      <Icon className="w-5 h-5 flex-shrink-0" />
+      {!collapsed && <span className="truncate">{label}</span>}
+    </a>
+  </li>
+);
+
+const SensorCard = ({
+  title,
+  value,
+  unit,
+  icon: Icon,
+  trend,
+  trendValue,
+  status,
+  statusText,
+  colorClass,
+  children
+}: {
+  title: string;
+  value: string | number;
+  unit: string;
+  icon: React.ElementType | string;
+  trend: 'up' | 'down' | 'stable';
+  trendValue: string;
+  status: 'optimal' | 'good' | 'warning';
+  statusText: string;
+  colorClass: string;
+  children?: React.ReactNode;
+}) => {
+  const trendColors = {
+    up: 'text-emerald-400',
+    down: 'text-red-400',
+    stable: 'text-slate-500'
+  };
+
+  const statusColors = {
+    optimal: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20',
+    good: 'bg-cyan-500/10 text-cyan-400 border-cyan-500/20',
+    warning: 'bg-amber-500/10 text-amber-400 border-amber-500/20'
+  };
+
+  const borderColors = {
+    moisture: 'border-t-blue-500',
+    temperature: 'border-t-amber-500',
+    humidity: 'border-t-cyan-500',
+    ph: 'border-t-violet-500',
+    nitrogen: 'border-t-red-500',
+    phosphorus: 'border-t-amber-500',
+    potassium: 'border-t-emerald-500',
+  };
+
+  return (
+    <div className={cn(
+      "relative bg-slate-800 border border-slate-700 rounded-2xl p-6 overflow-hidden transition-all duration-300 hover:-translate-y-1 hover:shadow-xl hover:shadow-black/40 group border-t-4",
+      borderColors[title.toLowerCase().includes('moisture') ? 'moisture' :
+                   title.toLowerCase().includes('temp') ? 'temperature' :
+                   title.toLowerCase().includes('humid') ? 'humidity' :
+                   title.toLowerCase().includes('ph') ? 'ph' :
+                   title.toLowerCase().includes('nitrogen') ? 'nitrogen' :
+                   title.toLowerCase().includes('phosphorus') ? 'phosphorus' :
+                   title.toLowerCase().includes('potassium') ? 'potassium' : 'moisture']
+    )}>
+      <div className="flex justify-between items-start mb-4">
+        <div className="w-12 h-12 rounded-xl bg-slate-700 flex items-center justify-center text-xl">
+          {typeof Icon === 'string' ? (
+            <span className={cn("font-bold text-lg", colorClass)}>{Icon}</span>
+          ) : (
+            <Icon className={cn("w-6 h-6", colorClass)} />
+          )}
+        </div>
+        <div className={cn("flex items-center gap-1 text-sm font-semibold px-3 py-1.5 rounded-full bg-slate-900", trendColors[trend])}>
+          {trend === 'up' ? <ArrowUp className="w-3 h-3" /> : trend === 'down' ? <ArrowDown className="w-3 h-3" /> : <Minus className="w-3 h-3" />}
+          <span>{trendValue}</span>
+        </div>
+      </div>
+
+      <div className="mb-2">
+        <span className="text-4xl font-bold text-slate-100">{value}</span>
+        <span className="text-lg text-slate-400 ml-1 font-medium">{unit}</span>
+      </div>
+
+      <div className="text-slate-400 text-sm mb-3 font-medium">{title}</div>
+
+      <div className={cn("inline-flex items-center gap-1.5 text-sm font-medium px-3 py-1 rounded-full border", statusColors[status])}>
+        {statusText}
+      </div>
+
+      {children && (
+        <div className="mt-4 h-16 opacity-60 group-hover:opacity-100 transition-opacity">
+          {children}
+        </div>
+      )}
+    </div>
+  );
+};
+
+const MiniChart = ({ color, data }: { color: string; data: number[] }) => {
+  const chartData = data.map((val, i) => ({ val, i }));
+  return (
+    <ResponsiveContainer width="100%" height="100%">
+      <AreaChart data={chartData}>
+        <Area
+          type="monotone"
+          dataKey="val"
+          stroke={color}
+          fill={color}
+          fillOpacity={0.1}
+          strokeWidth={2}
+        />
+      </AreaChart>
+    </ResponsiveContainer>
+  );
+};
+
+// --- Main Page Component ---
 
 export default function SmartFarmDashboard() {
-  // State management
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
-  const [isConnected, setIsConnected] = useState(false);
-  const [selectedFarm, setSelectedFarm] = useState('farm1');
-  const [showAiModal, setShowAiModal] = useState(false);
-  const [chatMessages, setChatMessages] = useState<Array<{ type: 'ai' | 'user'; content: string }>>([
-    {
-      type: 'ai',
-      content: "Hello! I'm Gemini, your AI farming assistant. I can help you analyze crop data, predict yields, suggest irrigation schedules, and diagnose plant health issues. What would you like to know about your farm today?"
-    }
-  ]);
-  const [chatInput, setChatInput] = useState('');
-  const [aiQuery, setAiQuery] = useState('');
-
+  const [collapsed, setCollapsed] = useState(false);
+  const [activeTab, setActiveTab] = useState('dashboard');
   const [sensorData, setSensorData] = useState<SensorData>({
     moisture: 58,
-    temperature: 24.5,
-    humidity: 72,
-    ph: 6.8,
+    temperature: 22.8,
+    humidity: 65,
+    ph: 6.5,
     nitrogen: 45,
     phosphorus: 32,
     potassium: 180
   });
-
-  const [aiInsights, setAiInsights] = useState<AIInsight[]>([
+  const [isConnected, setIsConnected] = useState(false);
+  const [lastSync, setLastSync] = useState('Never');
+  const [timeRange, setTimeRange] = useState<'24h' | '7d' | '30d'>('24h');
+  const [chartData, setChartData] = useState(generateChartData(24));
+  const [showAlert, setShowAlert] = useState(true);
+  const [chatOpen, setChatOpen] = useState(false);
+  const [messages, setMessages] = useState<Message[]>([
     {
-      priority: 'high',
-      title: 'Nitrogen Deficiency Alert',
-      description: 'Current nitrogen levels (45 mg/kg) are below optimal for fruiting stage tomatoes.',
-      recommendation: 'Apply 20-10-10 NPK fertilizer within 24 hours.',
-      time: '2 hours ago'
-    },
-    {
-      priority: 'medium',
-      title: 'Irrigation Optimization',
-      description: 'Based on soil moisture trends and weather forecast, reduce watering frequency by 10% to prevent root rot.',
-      recommendation: '',
-      time: '1 hour ago'
-    },
-    {
-      priority: 'low',
-      title: 'Growth Prediction',
-      description: 'Current conditions suggest harvest readiness in approximately 18-21 days, 3 days earlier than projected.',
-      recommendation: '',
-      time: '3 hours ago'
+      id: '1',
+      role: 'ai',
+      content: "Hello! I'm Gemini, your AI farming assistant. I can help you analyze crop data, predict yields, suggest irrigation schedules, and diagnose plant health issues. What would you like to know about your farm today?"
     }
   ]);
-
-  const [lastSync, setLastSync] = useState('Never');
+  const [inputMessage, setInputMessage] = useState('');
+  const chatEndRef = useRef<HTMLDivElement>(null);
 
   // Simulate real-time data updates
   useEffect(() => {
@@ -112,484 +304,563 @@ export default function SmartFarmDashboard() {
       setLastSync('Just now');
     }, 5000);
 
+    // Simulate connection status
+    setTimeout(() => setIsConnected(true), 2000);
+
     return () => clearInterval(interval);
   }, []);
 
-  // Handle AI chat
-  const handleSendMessage = (message: string) => {
-    if (!message.trim()) return;
+  // Update chart when time range changes
+  useEffect(() => {
+    const points = timeRange === '24h' ? 24 : timeRange === '7d' ? 7 : 30;
+    setChartData(generateChartData(points));
+  }, [timeRange]);
 
-    setChatMessages(prev => [...prev, { type: 'user', content: message }]);
-    
+  // Scroll chat to bottom
+  useEffect(() => {
+    chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [messages]);
+
+  const handleSendMessage = useCallback(() => {
+    if (!inputMessage.trim()) return;
+
+    const userMsg: Message = {
+      id: Date.now().toString(),
+      role: 'user',
+      content: inputMessage
+    };
+
+    setMessages(prev => [...prev, userMsg]);
+    setInputMessage('');
+
     // Simulate AI response
     setTimeout(() => {
-      const aiResponse = `Based on your current sensor readings (Temperature: ${sensorData.temperature}°C, Moisture: ${sensorData.moisture}%), I recommend maintaining current irrigation levels. The conditions are optimal for your Roma VF tomatoes.`;
-      setChatMessages(prev => [...prev, { type: 'ai', content: aiResponse }]);
+      const aiMsg: Message = {
+        id: (Date.now() + 1).toString(),
+        role: 'ai',
+        content: `Based on your current farm data (Temp: ${sensorData.temperature}°C, Moisture: ${sensorData.moisture}%), I recommend maintaining current irrigation levels. Your tomatoes are showing healthy growth patterns.`
+      };
+      setMessages(prev => [...prev, aiMsg]);
     }, 1000);
-    
-    setChatInput('');
-  };
+  }, [inputMessage, sensorData]);
 
-  const handleAiQuerySubmit = () => {
-    if (aiQuery.trim()) {
-      setShowAiModal(true);
-      handleSendMessage(aiQuery);
-      setAiQuery('');
-    }
-  };
-
-  const refreshData = () => {
-    setSensorData(prev => ({
-      moisture: Math.floor(Math.random() * 30) + 40,
-      temperature: parseFloat((Math.random() * 10 + 20).toFixed(1)),
-      humidity: Math.floor(Math.random() * 20) + 60,
-      ph: parseFloat((Math.random() * 2 + 5.5).toFixed(1)),
-      nitrogen: Math.floor(Math.random() * 20) + 40,
-      phosphorus: Math.floor(Math.random() * 15) + 25,
-      potassium: Math.floor(Math.random() * 30) + 150
-    }));
-    setLastSync('Just now');
-  };
-
-  // Chart data (generate random values only on client to avoid hydration mismatches)
-  const [miniChartData, setMiniChartData] = useState(() => ({
-    labels: Array(10).fill(''),
-    datasets: [{
-      data: Array(10).fill(50),
-      borderColor: '#10b981',
-      borderWidth: 2,
-      tension: 0.4,
-      pointRadius: 0,
-      fill: false,
-    }]
-  }));
-
-  useEffect(() => {
-    setMiniChartData({
-      labels: Array(10).fill(''),
-      datasets: [{
-        data: Array(10).fill(0).map(() => Math.random() * 20 + 40),
-        borderColor: '#10b981',
-        borderWidth: 2,
-        tension: 0.4,
-        pointRadius: 0,
-        fill: false,
-      }]
-    });
-  }, []);
-
-  const chartOptions: ChartOptions<'line'> = {
-    responsive: true,
-    maintainAspectRatio: false,
-    plugins: {
-      legend: { display: false },
-      tooltip: { enabled: false }
+  const insights: Insight[] = [
+    {
+      id: '1',
+      priority: 'high',
+      title: 'Nitrogen Deficiency Alert',
+      description: 'N levels at 45 mg/kg are below optimal for tomato growth.',
+      recommendation: 'Recommend applying NPK fertilizer (20-10-10) within 48 hours.',
+      time: '2 mins ago'
     },
-    scales: {
-      x: { display: false },
-      y: { display: false }
+    {
+      id: '2',
+      priority: 'medium',
+      title: 'Irrigation Optimization',
+      description: 'Based on soil moisture trends and weather forecast.',
+      recommendation: 'Reduce watering frequency by 10% to prevent root rot.',
+      time: '1 hour ago'
+    },
+    {
+      id: '3',
+      priority: 'low',
+      title: 'Growth Prediction',
+      description: 'Current conditions suggest harvest readiness in approximately 18-21 days.',
+      recommendation: '3 days earlier than projected.',
+      time: '3 hours ago'
     }
-  };
+  ];
+
+  const logs: LogEntry[] = [
+    { id: '1', time: '10:42 AM', event: 'Data Sync', sensor: 'ESP32-Node1', value: 'Batch: 24 readings', status: 'success' },
+    { id: '2', time: '10:38 AM', event: 'Threshold Alert', sensor: 'Soil Moisture', value: '23% → 19%', status: 'warning' },
+    { id: '3', time: '10:35 AM', event: 'AI Analysis', sensor: 'Gemini API', value: '3 insights generated', status: 'success' },
+    { id: '4', time: '10:30 AM', event: 'Offline Mode', sensor: 'Connectivity', value: 'WiFi disconnected', status: 'info' },
+  ];
+
+  const miniChartData = generateRandomData(10, 40, 80);
 
   return (
     <div className="flex min-h-screen bg-slate-950 text-slate-100 font-sans">
       {/* Sidebar */}
-      <aside className={`fixed h-screen bg-slate-800 border-r border-slate-700 transition-all duration-300 z-50 ${sidebarCollapsed ? 'w-20' : 'w-64'}`}>
-        <div className="flex items-center justify-between p-6 border-b border-slate-700">
-          <div className="flex items-center gap-3">
-            <i className="fas fa-leaf text-2xl text-emerald-500"></i>
-            {!sidebarCollapsed && <span className="text-xl font-bold text-emerald-500">SmartFarm</span>}
+      <aside
+        className={cn(
+          "fixed h-screen bg-slate-900 border-r border-slate-800 flex flex-col transition-all duration-300 z-50",
+          collapsed ? "w-20" : "w-64"
+        )}
+      >
+        <div className="p-6 flex items-center justify-between border-b border-slate-800">
+          <div className="flex items-center gap-3 text-emerald-500">
+            <Leaf className="w-8 h-8" />
+            {!collapsed && <span className="text-xl font-bold tracking-tight">SmartFarm</span>}
           </div>
           <button
-            onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
-            className="p-2 rounded-lg hover:bg-slate-700 text-slate-400 hover:text-slate-100 transition-all"
+            onClick={() => setCollapsed(!collapsed)}
+            className="p-2 rounded-lg hover:bg-slate-800 text-slate-400 transition-colors"
           >
-            <i className="fas fa-bars text-xl"></i>
+            <Menu className="w-5 h-5" />
           </button>
         </div>
 
         <nav className="flex-1 py-4 overflow-y-auto">
-          <ul className="space-y-1 px-4">
-            {[
-              { icon: 'fa-chart-line', label: 'Dashboard', active: true },
-              { icon: 'fa-microchip', label: 'Sensor Data', active: false },
-              { icon: 'fa-brain', label: 'AI Insights', active: false },
-              { icon: 'fa-seedling', label: 'Seed Performance', active: false },
-              { icon: 'fa-history', label: 'History', active: false },
-              { icon: 'fa-cog', label: 'Settings', active: false },
-            ].map((item, index) => (
-              <li key={index}>
-                <a
-                  href="#"
-                  className={`flex items-center gap-3.5 px-4 py-3.5 rounded-xl transition-all font-medium ${
-                    item.active
-                      ? 'bg-emerald-500 text-white'
-                      : 'text-slate-400 hover:bg-slate-700 hover:text-slate-100'
-                  }`}
-                >
-                  <i className={`fas ${item.icon} text-xl w-6 text-center`}></i>
-                  {!sidebarCollapsed && <span>{item.label}</span>}
-                </a>
-              </li>
-            ))}
+          <ul className="space-y-1">
+            <SidebarItem
+              icon={BarChart3}
+              label="Dashboard"
+              active={activeTab === 'dashboard'}
+              onClick={() => setActiveTab('dashboard')}
+              collapsed={collapsed}
+            />
+            <SidebarItem
+              icon={Cpu}
+              label="Sensor Data"
+              active={activeTab === 'sensors'}
+              onClick={() => setActiveTab('sensors')}
+              collapsed={collapsed}
+            />
+            <SidebarItem
+              icon={Brain}
+              label="AI Insights"
+              active={activeTab === 'ai-insights'}
+              onClick={() => setActiveTab('ai-insights')}
+              collapsed={collapsed}
+            />
+            <SidebarItem
+              icon={Sprout}
+              label="Seed Performance"
+              active={activeTab === 'seed-analysis'}
+              onClick={() => setActiveTab('seed-analysis')}
+              collapsed={collapsed}
+            />
+            <SidebarItem
+              icon={History}
+              label="History"
+              active={activeTab === 'history'}
+              onClick={() => setActiveTab('history')}
+              collapsed={collapsed}
+            />
+            <SidebarItem
+              icon={Settings}
+              label="Settings"
+              active={activeTab === 'settings'}
+              onClick={() => setActiveTab('settings')}
+              collapsed={collapsed}
+            />
           </ul>
         </nav>
 
-        {!sidebarCollapsed && (
-          <div className="p-6 border-t border-slate-700 text-sm">
-            <div className="flex items-center gap-2 mb-3">
-              <span className={`w-2 h-2 rounded-full ${isConnected ? 'bg-emerald-500 animate-pulse' : 'bg-red-500 animate-pulse'}`}></span>
-              <span className="text-slate-300">{isConnected ? 'ESP32 Online' : 'ESP32 Offline'}</span>
-            </div>
-            <div className="flex items-center gap-2 text-slate-500">
-              <i className="fas fa-sync-alt text-sm"></i>
-              <span>Last sync: {lastSync}</span>
-            </div>
+        <div className={cn("p-4 border-t border-slate-800 space-y-3", collapsed && "hidden")}>
+          <div className="flex items-center gap-2 text-sm">
+            <span className={cn("w-2 h-2 rounded-full animate-pulse", isConnected ? "bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.6)]" : "bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.6)]")} />
+            <span className="text-slate-400">{isConnected ? 'ESP32 Online' : 'ESP32 Offline'}</span>
           </div>
-        )}
+          <div className="flex items-center gap-2 text-xs text-slate-500">
+            <RefreshCw className="w-3 h-3" />
+            <span>Last sync: {lastSync}</span>
+          </div>
+        </div>
       </aside>
 
       {/* Main Content */}
-      <main className={`flex-1 transition-all duration-300 ${sidebarCollapsed ? 'ml-20' : 'ml-64'}`}>
-        {/* Top Header */}
-        <header className="sticky top-0 z-40 h-[70px] bg-slate-800 border-b border-slate-700 flex items-center justify-between px-8">
-          <div className="flex items-center gap-3 bg-slate-950 border border-slate-700 rounded-xl px-4 py-2.5 w-96">
-            <i className="fas fa-search text-slate-500"></i>
+      <main className={cn("flex-1 transition-all duration-300 min-h-screen", collapsed ? "ml-20" : "ml-64")}>
+        {/* Header */}
+        <header className="sticky top-0 z-40 h-16 bg-slate-900/80 backdrop-blur-md border-b border-slate-800 flex items-center justify-between px-8">
+          <div className="flex items-center gap-3 bg-slate-950 border border-slate-800 rounded-xl px-4 py-2 w-96">
+            <Search className="w-4 h-4 text-slate-500" />
             <input
               type="text"
               placeholder="Search crops, sensors, or data..."
-              className="bg-transparent border-none outline-none w-full text-slate-100 text-[15px] placeholder:text-slate-500"
+              className="bg-transparent border-none outline-none text-sm text-slate-200 w-full placeholder:text-slate-600"
             />
           </div>
 
           <div className="flex items-center gap-4">
             <button
-              onClick={refreshData}
-              className="relative bg-transparent border-none text-slate-400 text-xl cursor-pointer p-2.5 rounded-xl hover:bg-slate-700 hover:text-slate-100 transition-all w-[42px] h-[42px] flex items-center justify-center"
-              title="Refresh Data"
+              onClick={() => window.location.reload()}
+              className="relative p-2.5 rounded-xl hover:bg-slate-800 text-slate-400 transition-all active:scale-95 group"
             >
-              <i className="fas fa-sync-alt"></i>
+              <RefreshCw className="w-5 h-5 group-hover:animate-spin" />
             </button>
-            <button className="relative bg-transparent border-none text-slate-400 text-xl cursor-pointer p-2.5 rounded-xl hover:bg-slate-700 hover:text-slate-100 transition-all w-[42px] h-[42px] flex items-center justify-center">
-              <i className="fas fa-bell"></i>
-              <span className="absolute top-1 right-1 bg-red-500 text-white text-[10px] font-semibold w-[18px] h-[18px] rounded-full flex items-center justify-center">3</span>
+
+            <button className="relative p-2.5 rounded-xl hover:bg-slate-800 text-slate-400 transition-all">
+              <Bell className="w-5 h-5" />
+              <span className="absolute top-1.5 right-1.5 w-4 h-4 bg-red-500 text-[10px] font-bold text-white rounded-full flex items-center justify-center border-2 border-slate-900">
+                3
+              </span>
             </button>
-            <div className="flex items-center gap-3 px-4 py-2 bg-slate-700 rounded-xl cursor-pointer hover:bg-slate-600 transition-all">
-              <img
-                src="https://ui-avatars.com/api/?name=David+Muigai&background=10b981&color=fff"
-                alt="User"
-                className="w-8 h-8 rounded-full"
-              />
-              <span className="font-medium text-[15px]">David Muigai</span>
-              <i className="fas fa-chevron-down text-xs text-slate-500"></i>
+
+            <div className="flex items-center gap-3 pl-4 border-l border-slate-800">
+              <div className="w-8 h-8 rounded-full bg-emerald-600 flex items-center justify-center text-sm font-bold">
+                DM
+              </div>
+              <span className="text-sm font-medium hidden md:block">David Muigai</span>
+              <ChevronDown className="w-4 h-4 text-slate-500" />
             </div>
           </div>
         </header>
 
-        {/* Content Wrapper */}
-        <div className="p-8 overflow-y-auto">
+        {/* Dashboard Content */}
+        <div className="p-8 max-w-[1600px] mx-auto space-y-6">
           {/* Page Header */}
-          <div className="flex justify-between items-center mb-6">
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
             <div>
-              <h1 className="text-3xl font-bold mb-1">Farm Overview</h1>
-              <p className="text-slate-400 text-[15px]">Real-time monitoring of your crop conditions</p>
+              <h1 className="text-2xl font-bold text-slate-100">Farm Overview</h1>
+              <p className="text-slate-400 mt-1">Real-time monitoring of your crop conditions</p>
             </div>
-            <select
-              value={selectedFarm}
-              onChange={(e) => setSelectedFarm(e.target.value)}
-              className="bg-slate-800 border border-slate-700 text-slate-100 px-4 py-2.5 pr-10 rounded-xl text-[15px] cursor-pointer appearance-none"
-              style={{
-                backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%2394a3b8'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E")`,
-                backgroundRepeat: 'no-repeat',
-                backgroundPosition: 'right 0.75rem center',
-                backgroundSize: '1.25rem'
-              }}
-            >
-              <option value="farm1">Plot A - Tomatoes</option>
-              <option value="farm2">Plot B - Maize</option>
-              <option value="farm3">Plot C - Beans</option>
+            <select className="bg-slate-900 border border-slate-700 text-slate-200 px-4 py-2.5 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/50 cursor-pointer">
+              <option>Plot A - Tomatoes</option>
+              <option>Plot B - Maize</option>
+              <option>Plot C - Beans</option>
             </select>
           </div>
 
           {/* Alert Banner */}
-          <div className="flex items-center gap-4 p-4 px-6 rounded-2xl mb-6 bg-amber-500/10 border border-amber-500/30 text-amber-500 animate-[slideIn_0.3s_ease]">
-            <i className="fas fa-exclamation-triangle text-xl flex-shrink-0"></i>
-            <div className="flex-1 flex flex-col">
-              <strong className="font-semibold mb-1">Low Soil Moisture Detected</strong>
-              <span className="text-[15px]">Plot A moisture levels dropped to 23%. Consider irrigation within 6 hours.</span>
-            </div>
-            <button className="text-amber-500 hover:text-amber-400">
-              <i className="fas fa-times"></i>
-            </button>
-          </div>
-
-          {/* Sensor Cards Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5 mb-8">
-            {/* Soil Moisture */}
-            <div className="bg-slate-800 border-l-4 border-blue-500 rounded-2xl p-6 hover:scale-[1.02] hover:shadow-2xl transition-all">
-              <div className="flex items-start justify-between mb-4">
-                <div className="w-12 h-12 bg-blue-500/20 rounded-xl flex items-center justify-center">
-                  <i className="fas fa-tint text-2xl text-blue-500"></i>
-                </div>
-                <div className="flex items-center gap-1 text-emerald-500 text-sm font-semibold">
-                  <i className="fas fa-arrow-up"></i>
-                  <span>+5%</span>
-                </div>
+          {showAlert && (
+            <div className="flex items-center gap-4 p-4 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-400 animate-in slide-in-from-top-2">
+              <AlertTriangle className="w-5 h-5 flex-shrink-0" />
+              <div className="flex-1">
+                <strong className="block text-amber-300 font-semibold">Low Soil Moisture Detected</strong>
+                <span className="text-sm text-amber-400/90">Plot A moisture levels dropped to 23%. Consider irrigation within 6 hours.</span>
               </div>
-              <div className="mb-2">
-                <span className="text-5xl font-bold">{sensorData.moisture}</span>
-                <span className="text-2xl text-slate-400 ml-1">%</span>
-              </div>
-              <div className="text-slate-400 text-sm mb-2">Soil Moisture</div>
-              <div className="text-emerald-500 text-xs font-medium mb-4">Optimal Range</div>
-              <div className="h-16">
-                <Line data={miniChartData} options={chartOptions} />
-              </div>
-            </div>
-
-            {/* Temperature */}
-            <div className="bg-slate-800 border-l-4 border-amber-500 rounded-2xl p-6 hover:scale-[1.02] hover:shadow-2xl transition-all">
-              <div className="flex items-start justify-between mb-4">
-                <div className="w-12 h-12 bg-amber-500/20 rounded-xl flex items-center justify-center">
-                  <i className="fas fa-thermometer-half text-2xl text-amber-500"></i>
-                </div>
-                <div className="flex items-center gap-1 text-emerald-500 text-sm font-semibold">
-                  <i className="fas fa-arrow-up"></i>
-                  <span>+2%</span>
-                </div>
-              </div>
-              <div className="mb-2">
-                <span className="text-5xl font-bold">{sensorData.temperature}</span>
-                <span className="text-2xl text-slate-400 ml-1">°C</span>
-              </div>
-              <div className="text-slate-400 text-sm mb-2">Temperature</div>
-              <div className="text-emerald-500 text-xs font-medium mb-4">Optimal Range</div>
-              <div className="h-16">
-                <Line data={miniChartData} options={chartOptions} />
-              </div>
-            </div>
-
-            {/* Humidity */}
-            <div className="bg-slate-800 border-l-4 border-cyan-500 rounded-2xl p-6 hover:scale-[1.02] hover:shadow-2xl transition-all">
-              <div className="flex items-start justify-between mb-4">
-                <div className="w-12 h-12 bg-cyan-500/20 rounded-xl flex items-center justify-center">
-                  <i className="fas fa-cloud text-2xl text-cyan-500"></i>
-                </div>
-                <div className="flex items-center gap-1 text-red-500 text-sm font-semibold">
-                  <i className="fas fa-arrow-down"></i>
-                  <span>-3%</span>
-                </div>
-              </div>
-              <div className="mb-2">
-                <span className="text-5xl font-bold">{sensorData.humidity}</span>
-                <span className="text-2xl text-slate-400 ml-1">%</span>
-              </div>
-              <div className="text-slate-400 text-sm mb-2">Humidity</div>
-              <div className="text-emerald-500 text-xs font-medium mb-4">Optimal Range</div>
-              <div className="h-16">
-                <Line data={miniChartData} options={chartOptions} />
-              </div>
-            </div>
-
-            {/* Soil pH */}
-            <div className="bg-slate-800 border-l-4 border-purple-500 rounded-2xl p-6 hover:scale-[1.02] hover:shadow-2xl transition-all">
-              <div className="flex items-start justify-between mb-4">
-                <div className="w-12 h-12 bg-purple-500/20 rounded-xl flex items-center justify-center">
-                  <i className="fas fa-vial text-2xl text-purple-500"></i>
-                </div>
-                <div className="flex items-center gap-1 text-emerald-500 text-sm font-semibold">
-                  <i className="fas fa-arrow-up"></i>
-                  <span>+0.2</span>
-                </div>
-              </div>
-              <div className="mb-2">
-                <span className="text-5xl font-bold">{sensorData.ph}</span>
-                <span className="text-2xl text-slate-400 ml-1">pH</span>
-              </div>
-              <div className="text-slate-400 text-sm mb-2">Soil pH</div>
-              <div className="text-emerald-500 text-xs font-medium mb-4">Optimal Range</div>
-              <div className="h-16">
-                <Line data={miniChartData} options={chartOptions} />
-              </div>
-            </div>
-          </div>
-
-          {/* NPK Levels */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-5 mb-8">
-            {/* Nitrogen */}
-            <div className="bg-slate-800 border border-slate-700 rounded-2xl p-6">
-              <div className="flex items-center justify-between mb-4">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 bg-red-500/20 rounded-lg flex items-center justify-center">
-                    <i className="fas fa-atom text-xl text-red-500"></i>
-                  </div>
-                  <div>
-                    <div className="text-slate-400 text-sm">Nitrogen (N)</div>
-                    <div className="text-2xl font-bold">{sensorData.nitrogen} <span className="text-sm text-slate-400">mg/kg</span></div>
-                  </div>
-                </div>
-              </div>
-              <div className="w-full bg-slate-700 rounded-full h-2">
-                <div className="bg-red-500 h-2 rounded-full" style={{ width: `${(sensorData.nitrogen / 60) * 100}%` }}></div>
-              </div>
-            </div>
-
-            {/* Phosphorus */}
-            <div className="bg-slate-800 border border-slate-700 rounded-2xl p-6">
-              <div className="flex items-center justify-between mb-4">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 bg-amber-500/20 rounded-lg flex items-center justify-center">
-                    <i className="fas fa-atom text-xl text-amber-500"></i>
-                  </div>
-                  <div>
-                    <div className="text-slate-400 text-sm">Phosphorus (P)</div>
-                    <div className="text-2xl font-bold">{sensorData.phosphorus} <span className="text-sm text-slate-400">mg/kg</span></div>
-                  </div>
-                </div>
-              </div>
-              <div className="w-full bg-slate-700 rounded-full h-2">
-                <div className="bg-amber-500 h-2 rounded-full" style={{ width: `${(sensorData.phosphorus / 40) * 100}%` }}></div>
-              </div>
-            </div>
-
-            {/* Potassium */}
-            <div className="bg-slate-800 border border-slate-700 rounded-2xl p-6">
-              <div className="flex items-center justify-between mb-4">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 bg-emerald-500/20 rounded-lg flex items-center justify-center">
-                    <i className="fas fa-atom text-xl text-emerald-500"></i>
-                  </div>
-                  <div>
-                    <div className="text-slate-400 text-sm">Potassium (K)</div>
-                    <div className="text-2xl font-bold">{sensorData.potassium} <span className="text-sm text-slate-400">mg/kg</span></div>
-                  </div>
-                </div>
-              </div>
-              <div className="w-full bg-slate-700 rounded-full h-2">
-                <div className="bg-emerald-500 h-2 rounded-full" style={{ width: `${(sensorData.potassium / 200) * 100}%` }}></div>
-              </div>
-            </div>
-          </div>
-
-          {/* AI Insights */}
-          <div className="bg-slate-800 border border-slate-700 rounded-2xl p-6 mb-8">
-            <div className="flex items-center justify-between mb-6">
-              <h3 className="text-lg font-semibold flex items-center gap-3">
-                <i className="fas fa-brain text-emerald-500"></i>
-                AI-Powered Insights
-              </h3>
-              <span className="text-xs text-slate-400">Powered by Gemini</span>
-            </div>
-            <div className="space-y-4 mb-6">
-              {aiInsights.map((insight, index) => (
-                <div
-                  key={index}
-                  className={`flex gap-4 p-4 rounded-xl border-l-4 ${
-                    insight.priority === 'high'
-                      ? 'bg-red-500/10 border-red-500'
-                      : insight.priority === 'medium'
-                      ? 'bg-amber-500/10 border-amber-500'
-                      : 'bg-cyan-500/10 border-cyan-500'
-                  }`}
-                >
-                  <div className={`w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0 ${
-                    insight.priority === 'high'
-                      ? 'bg-red-500/20 text-red-500'
-                      : insight.priority === 'medium'
-                      ? 'bg-amber-500/20 text-amber-500'
-                      : 'bg-cyan-500/20 text-cyan-500'
-                  }`}>
-                    <i className={`fas ${insight.priority === 'high' ? 'fa-exclamation-circle' : insight.priority === 'medium' ? 'fa-lightbulb' : 'fa-chart-line'}`}></i>
-                  </div>
-                  <div className="flex-1">
-                    <strong className="font-semibold block mb-1">{insight.title}</strong>
-                    <p className="text-sm text-slate-300 mb-2">
-                      {insight.description} {insight.recommendation}
-                    </p>
-                    <span className="text-xs text-slate-500">{insight.time}</span>
-                  </div>
-                </div>
-              ))}
-            </div>
-            <div className="flex gap-3">
-              <input
-                type="text"
-                value={aiQuery}
-                onChange={(e) => setAiQuery(e.target.value)}
-                onKeyPress={(e) => e.key === 'Enter' && handleAiQuerySubmit()}
-                placeholder="Ask Gemini about your crops..."
-                className="flex-1 bg-slate-700 border border-slate-600 text-slate-100 px-4 py-3 rounded-xl outline-none text-[15px] placeholder:text-slate-500"
-              />
-              <button
-                onClick={handleAiQuerySubmit}
-                className="w-12 h-12 bg-emerald-500 rounded-xl flex items-center justify-center text-white hover:bg-emerald-600 transition-all"
-              >
-                <i className="fas fa-paper-plane"></i>
+              <button onClick={() => setShowAlert(false)} className="p-1 hover:bg-amber-500/20 rounded-lg transition-colors">
+                <X className="w-5 h-5" />
               </button>
             </div>
+          )}
+
+          {/* Sensor Grid */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 xl:grid-cols-7 gap-4">
+            <div className="lg:col-span-1 xl:col-span-1 md:col-span-1">
+              <SensorCard
+                title="Soil Moisture"
+                value={sensorData.moisture}
+                unit="%"
+                icon={Droplets}
+                trend="up"
+                trendValue="+5%"
+                status="optimal"
+                statusText="Optimal Range"
+                colorClass="text-blue-500"
+              >
+                <MiniChart color="#3b82f6" data={miniChartData} />
+              </SensorCard>
+            </div>
+
+            <div className="lg:col-span-1 xl:col-span-1 md:col-span-1">
+              <SensorCard
+                title="Temperature"
+                value={sensorData.temperature}
+                unit="°C"
+                icon={Thermometer}
+                trend="down"
+                trendValue="-2°C"
+                status="optimal"
+                statusText="Optimal Range"
+                colorClass="text-amber-500"
+              >
+                <MiniChart color="#f59e0b" data={miniChartData} />
+              </SensorCard>
+            </div>
+
+            <div className="lg:col-span-1 xl:col-span-1 md:col-span-1">
+              <SensorCard
+                title="Humidity"
+                value={sensorData.humidity}
+                unit="%"
+                icon={Waves}
+                trend="stable"
+                trendValue="0%"
+                status="good"
+                statusText="Good"
+                colorClass="text-cyan-500"
+              >
+                <MiniChart color="#06b6d4" data={miniChartData} />
+              </SensorCard>
+            </div>
+
+            <div className="lg:col-span-1 xl:col-span-1 md:col-span-1">
+              <SensorCard
+                title="Soil pH"
+                value={sensorData.ph}
+                unit="pH"
+                icon={FlaskConical}
+                trend="up"
+                trendValue="+0.2"
+                status="optimal"
+                statusText="Slightly Acidic"
+                colorClass="text-violet-500"
+              >
+                <MiniChart color="#8b5cf6" data={miniChartData} />
+              </SensorCard>
+            </div>
+
+            <div className="lg:col-span-1 xl:col-span-1 md:col-span-1">
+              <SensorCard
+                title="Nitrogen (N)"
+                value={sensorData.nitrogen}
+                unit="mg/kg"
+                icon="N"
+                trend="down"
+                trendValue="-5"
+                status="warning"
+                statusText="Low"
+                colorClass="text-red-500"
+              />
+            </div>
+
+            <div className="lg:col-span-1 xl:col-span-1 md:col-span-1">
+              <SensorCard
+                title="Phosphorus (P)"
+                value={sensorData.phosphorus}
+                unit="mg/kg"
+                icon="P"
+                trend="stable"
+                trendValue="0"
+                status="good"
+                statusText="Adequate"
+                colorClass="text-amber-500"
+              />
+            </div>
+
+            <div className="lg:col-span-1 xl:col-span-1 md:col-span-1">
+              <SensorCard
+                title="Potassium (K)"
+                value={sensorData.potassium}
+                unit="mg/kg"
+                icon="K"
+                trend="up"
+                trendValue="+8"
+                status="optimal"
+                statusText="High"
+                colorClass="text-emerald-500"
+              />
+            </div>
           </div>
 
-          {/* Seed Performance */}
-          <div className="mb-8">
-            <h3 className="text-lg font-semibold mb-5">Seed Variety Performance Comparison</h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-              {/* Roma VF Tomato */}
-              <div className="bg-slate-800 border-2 border-emerald-500 rounded-2xl overflow-hidden hover:-translate-y-1 hover:shadow-2xl transition-all cursor-pointer">
+          {/* Charts Section */}
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            {/* Main Chart */}
+            <div className="lg:col-span-2 bg-slate-800 border border-slate-700 rounded-2xl p-6">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+                <h3 className="text-lg font-semibold text-slate-100">Environmental Trends</h3>
+                <div className="flex items-center gap-2">
+                  {(['24h', '7d', '30d'] as const).map((range) => (
+                    <button
+                      key={range}
+                      onClick={() => setTimeRange(range)}
+                      className={cn(
+                        "px-3 py-1.5 rounded-lg text-sm font-medium transition-all",
+                        timeRange === range
+                          ? "bg-emerald-500 text-white"
+                          : "bg-slate-700 text-slate-400 hover:bg-slate-600"
+                      )}
+                    >
+                      {range.toUpperCase()}
+                    </button>
+                  ))}
+                  <button className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-slate-700 text-slate-300 hover:bg-slate-600 text-sm font-medium ml-2 transition-colors">
+                    <Download className="w-4 h-4" />
+                    Export
+                  </button>
+                </div>
+              </div>
+
+              <div className="h-[300px] w-full">
+                <ResponsiveContainer width="100%" height="100%">
+                  <AreaChart data={chartData}>
+                    <defs>
+                      <linearGradient id="colorMoisture" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.3} />
+                        <stop offset="95%" stopColor="#3b82f6" stopOpacity={0} />
+                      </linearGradient>
+                      <linearGradient id="colorTemp" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor="#f59e0b" stopOpacity={0.3} />
+                        <stop offset="95%" stopColor="#f59e0b" stopOpacity={0} />
+                      </linearGradient>
+                      <linearGradient id="colorHumidity" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor="#06b6d4" stopOpacity={0.3} />
+                        <stop offset="95%" stopColor="#06b6d4" stopOpacity={0} />
+                      </linearGradient>
+                    </defs>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#334155" vertical={false} />
+                    <XAxis
+                      dataKey="time"
+                      stroke="#64748b"
+                      tick={{ fill: '#64748b', fontSize: 12 }}
+                      tickLine={false}
+                      axisLine={false}
+                    />
+                    <YAxis
+                      stroke="#64748b"
+                      tick={{ fill: '#64748b', fontSize: 12 }}
+                      tickLine={false}
+                      axisLine={false}
+                    />
+                    <Tooltip
+                      contentStyle={{
+                        backgroundColor: '#1e293b',
+                        border: '1px solid #334155',
+                        borderRadius: '8px',
+                        color: '#f1f5f9'
+                      }}
+                    />
+                    <Area
+                      type="monotone"
+                      dataKey="moisture"
+                      name="Soil Moisture"
+                      stroke="#3b82f6"
+                      fillOpacity={1}
+                      fill="url(#colorMoisture)"
+                      strokeWidth={2}
+                    />
+                    <Area
+                      type="monotone"
+                      dataKey="temperature"
+                      name="Temperature"
+                      stroke="#f59e0b"
+                      fillOpacity={1}
+                      fill="url(#colorTemp)"
+                      strokeWidth={2}
+                    />
+                    <Area
+                      type="monotone"
+                      dataKey="humidity"
+                      name="Humidity"
+                      stroke="#06b6d4"
+                      fillOpacity={1}
+                      fill="url(#colorHumidity)"
+                      strokeWidth={2}
+                    />
+                  </AreaChart>
+                </ResponsiveContainer>
+              </div>
+            </div>
+
+            {/* AI Insights Panel */}
+            <div className="bg-slate-800 border border-slate-700 rounded-2xl flex flex-col overflow-hidden">
+              <div className="p-4 bg-gradient-to-r from-emerald-600 to-emerald-700 flex items-center gap-3">
+                <Bot className="w-6 h-6 text-white" />
+                <h3 className="text-lg font-semibold text-white flex-1">Gemini AI Insights</h3>
+                <span className="px-2 py-0.5 bg-white/20 rounded-full text-xs font-semibold text-white animate-pulse">
+                  Live
+                </span>
+              </div>
+
+              <div className="flex-1 p-4 space-y-3 overflow-y-auto max-h-[320px]">
+                {insights.map((insight) => (
+                  <div
+                    key={insight.id}
+                    className={cn(
+                      "flex gap-3 p-3 rounded-xl border-l-4 transition-all hover:translate-x-1 cursor-pointer",
+                      insight.priority === 'high' && "bg-red-500/5 border-red-500",
+                      insight.priority === 'medium' && "bg-amber-500/5 border-amber-500",
+                      insight.priority === 'low' && "bg-cyan-500/5 border-cyan-500"
+                    )}
+                  >
+                    <div className={cn(
+                      "w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0",
+                      insight.priority === 'high' && "bg-red-500/10 text-red-400",
+                      insight.priority === 'medium' && "bg-amber-500/10 text-amber-400",
+                      insight.priority === 'low' && "bg-cyan-500/10 text-cyan-400"
+                    )}>
+                      {insight.priority === 'high' ? <AlertCircle className="w-5 h-5" /> :
+                       insight.priority === 'medium' ? <Lightbulb className="w-5 h-5" /> :
+                       <TrendingUp className="w-5 h-5" />}
+                    </div>
+                    <div>
+                      <strong className="block text-sm font-semibold text-slate-200 mb-1">{insight.title}</strong>
+                      <p className="text-xs text-slate-400 leading-relaxed mb-1">
+                        {insight.description} {insight.recommendation}
+                      </p>
+                      <span className="text-[10px] text-slate-500">{insight.time}</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              <div className="p-4 border-t border-slate-700 bg-slate-900/50 flex gap-2">
+                <input
+                  type="text"
+                  placeholder="Ask Gemini about your crops..."
+                  className="flex-1 bg-slate-950 border border-slate-700 rounded-xl px-4 py-2.5 text-sm text-slate-200 placeholder:text-slate-600 focus:outline-none focus:border-emerald-500/50"
+                  onClick={() => setChatOpen(true)}
+                  readOnly
+                />
+                <button
+                  onClick={() => setChatOpen(true)}
+                  className="w-10 h-10 bg-emerald-600 hover:bg-emerald-500 rounded-xl flex items-center justify-center text-white transition-all hover:scale-105 active:scale-95"
+                >
+                  <Send className="w-4 h-4" />
+                </button>
+              </div>
+            </div>
+          </div>
+
+          {/* Seed Performance Section */}
+          <div className="space-y-4">
+            <h3 className="text-lg font-semibold text-slate-100">Seed Variety Performance Comparison</h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {/* Active Seed Card */}
+              <div className="bg-slate-800 border-2 border-emerald-500 rounded-2xl overflow-hidden group cursor-pointer transition-all hover:-translate-y-1 hover:shadow-xl">
                 <div className="relative h-40 overflow-hidden">
                   <img
                     src="https://images.unsplash.com/photo-1592841200221-a6898f307baa?w=400&h=300&fit=crop"
                     alt="Tomatoes"
-                    className="w-full h-full object-cover hover:scale-105 transition-transform duration-300"
+                    className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
                   />
-                  <div className="absolute top-4 right-4 bg-emerald-500 text-white px-3.5 py-1.5 rounded-full text-xs font-semibold">
+                  <div className="absolute top-4 right-4 px-3 py-1 bg-emerald-500 text-white text-xs font-bold rounded-full">
                     Active
                   </div>
                 </div>
-                <div className="p-6">
-                  <h4 className="text-lg font-semibold mb-4">Roma VF Tomato</h4>
+                <div className="p-5">
+                  <h4 className="text-lg font-bold text-slate-100 mb-4">Roma VF Tomato</h4>
                   <div className="grid grid-cols-3 gap-4 mb-4">
                     <div className="text-center">
-                      <div className="text-xl font-bold text-emerald-500 mb-1">94%</div>
-                      <div className="text-xs text-slate-400 uppercase tracking-wider">Germination</div>
+                      <span className="block text-xl font-bold text-emerald-400">94%</span>
+                      <span className="text-[10px] text-slate-500 uppercase tracking-wider">Germination</span>
                     </div>
                     <div className="text-center">
-                      <div className="text-xl font-bold text-emerald-500 mb-1">12 days</div>
-                      <div className="text-xs text-slate-400 uppercase tracking-wider">To Maturity</div>
+                      <span className="block text-xl font-bold text-emerald-400">12 days</span>
+                      <span className="text-[10px] text-slate-500 uppercase tracking-wider">To Maturity</span>
                     </div>
                     <div className="text-center">
-                      <div className="text-xl font-bold text-emerald-500 mb-1">A+</div>
-                      <div className="text-xs text-slate-400 uppercase tracking-wider">Health Score</div>
+                      <span className="block text-xl font-bold text-emerald-400">A+</span>
+                      <span className="text-[10px] text-slate-500 uppercase tracking-wider">Health Score</span>
                     </div>
                   </div>
-                  <div className="h-20">
-                    <Line data={miniChartData} options={chartOptions} />
+                  <div className="h-16">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <BarChart data={[{ v: 12 }, { v: 19 }, { v: 25 }, { v: 32 }]}>
+                        <Bar dataKey="v" fill="#10b981" radius={[4, 4, 0, 0]} />
+                      </BarChart>
+                    </ResponsiveContainer>
                   </div>
                 </div>
               </div>
 
-              {/* H614D Maize */}
-              <div className="bg-slate-800 border border-slate-700 rounded-2xl overflow-hidden hover:-translate-y-1 hover:shadow-2xl transition-all cursor-pointer">
+              {/* Inactive Seed Card */}
+              <div className="bg-slate-800 border border-slate-700 rounded-2xl overflow-hidden group cursor-pointer transition-all hover:-translate-y-1 hover:shadow-xl opacity-75 hover:opacity-100">
                 <div className="relative h-40 overflow-hidden">
                   <img
                     src="https://images.unsplash.com/photo-1551754655-cd27e38d2076?w=400&h=300&fit=crop"
                     alt="Maize"
-                    className="w-full h-full object-cover hover:scale-105 transition-transform duration-300"
+                    className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110 grayscale group-hover:grayscale-0"
                   />
                 </div>
-                <div className="p-6">
-                  <h4 className="text-lg font-semibold mb-4">H614D Maize</h4>
+                <div className="p-5">
+                  <h4 className="text-lg font-bold text-slate-100 mb-4">H614D Maize</h4>
                   <div className="grid grid-cols-3 gap-4">
                     <div className="text-center">
-                      <div className="text-xl font-bold text-emerald-500 mb-1">88%</div>
-                      <div className="text-xs text-slate-400 uppercase tracking-wider">Germination</div>
+                      <span className="block text-xl font-bold text-amber-400">88%</span>
+                      <span className="text-[10px] text-slate-500 uppercase tracking-wider">Germination</span>
                     </div>
                     <div className="text-center">
-                      <div className="text-xl font-bold text-emerald-500 mb-1">85 days</div>
-                      <div className="text-xs text-slate-400 uppercase tracking-wider">To Maturity</div>
+                      <span className="block text-xl font-bold text-amber-400">85 days</span>
+                      <span className="text-[10px] text-slate-500 uppercase tracking-wider">To Maturity</span>
                     </div>
                     <div className="text-center">
-                      <div className="text-xl font-bold text-emerald-500 mb-1">B+</div>
-                      <div className="text-xs text-slate-400 uppercase tracking-wider">Health Score</div>
+                      <span className="block text-xl font-bold text-amber-400">B+</span>
+                      <span className="text-[10px] text-slate-500 uppercase tracking-wider">Health Score</span>
                     </div>
                   </div>
                 </div>
@@ -598,64 +869,41 @@ export default function SmartFarmDashboard() {
           </div>
 
           {/* System Logs */}
-          <div className="bg-slate-800 border border-slate-700 rounded-2xl p-6">
-            <h3 className="text-lg font-semibold mb-4">System Activity</h3>
+          <div className="bg-slate-800 border border-slate-700 rounded-2xl p-6 overflow-hidden">
+            <h3 className="text-lg font-semibold text-slate-100 mb-4">System Activity</h3>
             <div className="overflow-x-auto">
-              <table className="w-full text-[15px]">
+              <table className="w-full text-sm">
                 <thead>
-                  <tr className="border-b border-slate-700">
-                    <th className="text-left py-3.5 px-4 text-slate-400 font-medium">Time</th>
-                    <th className="text-left py-3.5 px-4 text-slate-400 font-medium">Event</th>
-                    <th className="text-left py-3.5 px-4 text-slate-400 font-medium">Sensor</th>
-                    <th className="text-left py-3.5 px-4 text-slate-400 font-medium">Value</th>
-                    <th className="text-left py-3.5 px-4 text-slate-400 font-medium">Status</th>
+                  <tr className="border-b border-slate-700 text-slate-400">
+                    <th className="text-left py-3 px-4 font-medium">Time</th>
+                    <th className="text-left py-3 px-4 font-medium">Event</th>
+                    <th className="text-left py-3 px-4 font-medium">Sensor</th>
+                    <th className="text-left py-3 px-4 font-medium">Value</th>
+                    <th className="text-left py-3 px-4 font-medium">Status</th>
                   </tr>
                 </thead>
-                <tbody>
-                  <tr className="border-b border-slate-700 hover:bg-slate-700/50">
-                    <td className="py-4 px-4">10:42 AM</td>
-                    <td className="py-4 px-4">Data Sync</td>
-                    <td className="py-4 px-4">ESP32-Node1</td>
-                    <td className="py-4 px-4">Batch: 24 readings</td>
-                    <td className="py-4 px-4">
-                      <span className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-sm font-medium bg-emerald-500/10 text-emerald-500">
-                        Success
-                      </span>
-                    </td>
-                  </tr>
-                  <tr className="border-b border-slate-700 hover:bg-slate-700/50">
-                    <td className="py-4 px-4">10:38 AM</td>
-                    <td className="py-4 px-4">Threshold Alert</td>
-                    <td className="py-4 px-4">Soil Moisture</td>
-                    <td className="py-4 px-4">23% → 19%</td>
-                    <td className="py-4 px-4">
-                      <span className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-sm font-medium bg-amber-500/10 text-amber-500">
-                        Warning
-                      </span>
-                    </td>
-                  </tr>
-                  <tr className="border-b border-slate-700 hover:bg-slate-700/50">
-                    <td className="py-4 px-4">10:35 AM</td>
-                    <td className="py-4 px-4">AI Analysis</td>
-                    <td className="py-4 px-4">Gemini API</td>
-                    <td className="py-4 px-4">3 insights generated</td>
-                    <td className="py-4 px-4">
-                      <span className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-sm font-medium bg-emerald-500/10 text-emerald-500">
-                        Complete
-                      </span>
-                    </td>
-                  </tr>
-                  <tr className="hover:bg-slate-700/50">
-                    <td className="py-4 px-4">10:30 AM</td>
-                    <td className="py-4 px-4">Offline Mode</td>
-                    <td className="py-4 px-4">Connectivity</td>
-                    <td className="py-4 px-4">WiFi disconnected</td>
-                    <td className="py-4 px-4">
-                      <span className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-sm font-medium bg-cyan-500/10 text-cyan-500">
-                        Stored Local
-                      </span>
-                    </td>
-                  </tr>
+                <tbody className="divide-y divide-slate-700/50">
+                  {logs.map((log) => (
+                    <tr key={log.id} className="hover:bg-slate-700/30 transition-colors">
+                      <td className="py-3 px-4 text-slate-300">{log.time}</td>
+                      <td className="py-3 px-4 text-slate-200 font-medium">{log.event}</td>
+                      <td className="py-3 px-4 text-slate-400">{log.sensor}</td>
+                      <td className="py-3 px-4 text-slate-300">{log.value}</td>
+                      <td className="py-3 px-4">
+                        <span className={cn(
+                          "inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium",
+                          log.status === 'success' && "bg-emerald-500/10 text-emerald-400",
+                          log.status === 'warning' && "bg-amber-500/10 text-amber-400",
+                          log.status === 'info' && "bg-cyan-500/10 text-cyan-400"
+                        )}>
+                          {log.status === 'success' && <CheckCircle className="w-3 h-3" />}
+                          {log.status === 'warning' && <AlertTriangle className="w-3 h-3" />}
+                          {log.status === 'info' && <Info className="w-3 h-3" />}
+                          {log.status === 'success' ? 'Success' : log.status === 'warning' ? 'Warning' : 'Stored Local'}
+                        </span>
+                      </td>
+                    </tr>
+                  ))}
                 </tbody>
               </table>
             </div>
@@ -664,86 +912,71 @@ export default function SmartFarmDashboard() {
       </main>
 
       {/* AI Chat Modal */}
-      {showAiModal && (
-        <div className="fixed inset-0 bg-black/80 z-[1000] flex items-center justify-center p-8">
-          <div className="bg-slate-800 rounded-2xl max-w-2xl w-full max-h-[80vh] overflow-hidden animate-[modalSlide_0.3s_ease] flex flex-col">
-            <div className="flex justify-between items-center p-5 px-6 border-b border-slate-700">
-              <h3 className="flex items-center gap-3 text-lg font-semibold">
-                <i className="fas fa-robot text-emerald-500"></i>
+      {chatOpen && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="bg-slate-800 border border-slate-700 rounded-2xl w-full max-w-lg max-h-[600px] flex flex-col shadow-2xl animate-in zoom-in-95 duration-200">
+            <div className="flex items-center justify-between p-4 border-b border-slate-700">
+              <h3 className="flex items-center gap-2 text-lg font-semibold text-slate-100">
+                <Bot className="w-5 h-5 text-emerald-500" />
                 Gemini AI Assistant
               </h3>
               <button
-                onClick={() => setShowAiModal(false)}
-                className="text-slate-400 text-2xl hover:text-slate-100 transition-colors"
+                onClick={() => setChatOpen(false)}
+                className="p-1 hover:bg-slate-700 rounded-lg text-slate-400 hover:text-slate-200 transition-colors"
               >
-                ×
+                <X className="w-5 h-5" />
               </button>
             </div>
 
-            <div className="flex-1 overflow-y-auto p-6 flex flex-col gap-4">
-              {chatMessages.map((msg, index) => (
+            <div className="flex-1 overflow-y-auto p-4 space-y-4 max-h-[400px]">
+              {messages.map((msg) => (
                 <div
-                  key={index}
-                  className={`flex gap-4 max-w-[85%] ${msg.type === 'user' ? 'self-end flex-row-reverse' : 'self-start'}`}
+                  key={msg.id}
+                  className={cn(
+                    "flex gap-3 max-w-[85%]",
+                    msg.role === 'user' ? "ml-auto flex-row-reverse" : ""
+                  )}
                 >
-                  <div className={`w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 ${
-                    msg.type === 'ai' ? 'bg-emerald-500 text-white' : 'bg-slate-700'
-                  }`}>
-                    <i className={`fas ${msg.type === 'ai' ? 'fa-robot' : 'fa-user'}`}></i>
+                  <div className={cn(
+                    "w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0",
+                    msg.role === 'ai' ? "bg-emerald-600 text-white" : "bg-slate-700 text-slate-300"
+                  )}>
+                    {msg.role === 'ai' ? <Bot className="w-5 h-5" /> : <User className="w-5 h-5" />}
                   </div>
-                  <div className={`px-4 py-4 rounded-2xl ${
-                    msg.type === 'ai'
-                      ? 'bg-slate-700 rounded-bl-sm'
-                      : 'bg-emerald-500 text-white rounded-br-sm'
-                  }`}>
-                    <p className="leading-relaxed text-[15px]">{msg.content}</p>
+                  <div className={cn(
+                    "p-3 rounded-2xl text-sm leading-relaxed",
+                    msg.role === 'ai'
+                      ? "bg-slate-700 text-slate-200 rounded-tl-sm"
+                      : "bg-emerald-600 text-white rounded-tr-sm"
+                  )}>
+                    {msg.content}
                   </div>
                 </div>
               ))}
+              <div ref={chatEndRef} />
             </div>
 
-            <div className="flex gap-3 p-4 px-6 border-t border-slate-700 bg-slate-700">
-              <input
-                type="text"
-                value={chatInput}
-                onChange={(e) => setChatInput(e.target.value)}
-                onKeyPress={(e) => e.key === 'Enter' && handleSendMessage(chatInput)}
-                placeholder="Type your question..."
-                className="flex-1 bg-slate-950 border border-slate-700 text-slate-100 px-5 py-3.5 rounded-xl outline-none text-[15px] placeholder:text-slate-500"
-              />
-              <button
-                onClick={() => handleSendMessage(chatInput)}
-                className="w-12 h-12 rounded-xl bg-emerald-500 text-white hover:bg-emerald-600 transition-all flex items-center justify-center"
-              >
-                <i className="fas fa-paper-plane"></i>
-              </button>
+            <div className="p-4 border-t border-slate-700 bg-slate-900/50">
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  value={inputMessage}
+                  onChange={(e) => setInputMessage(e.target.value)}
+                  onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
+                  placeholder="Type your question..."
+                  className="flex-1 bg-slate-950 border border-slate-700 rounded-xl px-4 py-3 text-sm text-slate-200 placeholder:text-slate-600 focus:outline-none focus:border-emerald-500/50"
+                />
+                <button
+                  onClick={handleSendMessage}
+                  className="w-11 h-11 bg-emerald-600 hover:bg-emerald-500 rounded-xl flex items-center justify-center text-white transition-all hover:scale-105 active:scale-95"
+                >
+                  <Send className="w-4 h-4" />
+                </button>
+              </div>
             </div>
           </div>
         </div>
       )}
-
-      <style jsx>{`
-        @keyframes slideIn {
-          from {
-            opacity: 0;
-            transform: translateY(-10px);
-          }
-          to {
-            opacity: 1;
-            transform: translateY(0);
-          }
-        }
-        @keyframes modalSlide {
-          from {
-            opacity: 0;
-            transform: scale(0.9);
-          }
-          to {
-            opacity: 1;
-            transform: scale(1);
-          }
-        }
-      `}</style>
     </div>
   );
 }
