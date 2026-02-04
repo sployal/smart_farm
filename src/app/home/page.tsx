@@ -245,7 +245,7 @@ const MiniChart = ({ color, data }: { color: string; data: number[] }) => {
   const chartData = data.map((val, i) => ({ val, i }));
   return (
     <div className="w-full h-full min-w-0 min-h-0">
-      <ResponsiveContainer width="100%" height="100%">
+    <ResponsiveContainer width="100%" height={64}>
         <AreaChart data={chartData}>
           <Area
             type="monotone"
@@ -669,7 +669,7 @@ export default function SmartFarmDashboard() {
 
               <div className="h-[300px] w-full min-w-0 min-h-0">
                 <div className="w-full h-full min-w-0 min-h-0">
-                <ResponsiveContainer width="100%" height="100%">
+                <ResponsiveContainer width="100%" height={300}>
                   <AreaChart data={chartData}>
                     <defs>
                       <linearGradient id="colorMoisture" x1="0" y1="0" x2="0" y2="1">
@@ -833,7 +833,7 @@ export default function SmartFarmDashboard() {
                     </div>
                   </div>
                   <div className="h-16">
-                    <ResponsiveContainer width="100%" height="100%">
+                    <ResponsiveContainer width="100%" height={64}>
                       <BarChart data={[{ v: 12 }, { v: 19 }, { v: 25 }, { v: 32 }]}>
                         <Bar dataKey="v" fill="#10b981" radius={[4, 4, 0, 0]} />
                       </BarChart>
