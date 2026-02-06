@@ -51,6 +51,7 @@ import {
 import clsx, { type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
 import { format, subHours } from 'date-fns';
+import { startRealtimeUpdates, fetchSensorData } from '@/lib/firebase';
 
 // Utility for tailwind class merging
 function cn(...inputs: ClassValue[]) {
@@ -291,32 +292,46 @@ export default function SmartFarmDashboard() {
   const [inputMessage, setInputMessage] = useState('');
   const chatEndRef = useRef<HTMLDivElement>(null);
 
-  // Simulate real-time data updates
+  // Load real-time data from Firebase
   useEffect(() => {
-    const interval = setInterval(() => {
+    // Fetch initial data
+    fetchSensorData().then(data => {
       setSensorData(prev => ({
-        moisture: Math.floor(Math.random() * 30) + 40,
-        temperature: parseFloat((Math.random() * 10 + 20).toFixed(1)),
-        humidity: Math.floor(Math.random() * 20) + 60,
-        ph: parseFloat((Math.random() * 2 + 5.5).toFixed(1)),
-        nitrogen: Math.floor(Math.random() * 20) + 40,
-        phosphorus: Math.floor(Math.random() * 15) + 25,
-        potassium: Math.floor(Math.random() * 30) + 150
+        ...prev,
+        temperature: parseFloat(data.temperature?.toString() || '0'),
+        humidity: parseFloat(data.humidity?.toString() || '0'),
+        moisture: parseFloat(data.moisture?.toString() || '0')
+      }));
+      setIsConnected(true);
+      setLastSync('Just now');
+    });
+
+    // Set up real-time listener for Firebase updates
+    const unsubscribe = startRealtimeUpdates((data) => {
+      setSensorData(prev => ({
+        ...prev,
+        temperature: parseFloat(data.temperature?.toString() || prev.temperature.toString()),
+        humidity: parseFloat(data.humidity?.toString() || prev.humidity.toString()),
+        moisture: parseFloat(data.moisture?.toString() || prev.moisture.toString())
       }));
       setLastSync('Just now');
-    }, 5000);
+    });
 
-    // Simulate connection status
-    setTimeout(() => setIsConnected(true), 2000);
-
-    return () => clearInterval(interval);
+    return () => unsubscribe();
   }, []);
 
   // Update chart when time range changes
   useEffect(() => {
     const points = timeRange === '24h' ? 24 : timeRange === '7d' ? 7 : 30;
-    setChartData(generateChartData(points));
-  }, [timeRange]);
+    const labels = generateTimeLabels(points);
+    const data = labels.map((time, i) => ({
+      time,
+      moisture: sensorData.moisture + (Math.random() - 0.5) * 5,
+      temperature: sensorData.temperature + (Math.random() - 0.5) * 2,
+      humidity: sensorData.humidity + (Math.random() - 0.5) * 3,
+    }));
+    setChartData(data);
+  }, [timeRange, sensorData]);
 
   // Scroll chat to bottom
   useEffect(() => {
