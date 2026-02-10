@@ -482,9 +482,9 @@ export default function SmartFarmDashboard() {
       {/* Main Content */}
       <main className={cn("flex-1 transition-all duration-300 min-h-screen", collapsed ? "ml-20" : "ml-64")}>
         {/* Header */}
-        <header className="sticky top-0 z-40 h-16 bg-slate-900/80 backdrop-blur-md border-b border-slate-800 flex items-center justify-between px-8">
-          <div className="flex items-center gap-3 bg-slate-950 border border-slate-800 rounded-xl px-4 py-2 w-96">
-            <Search className="w-4 h-4 text-slate-500" />
+        <header className="sticky top-0 z-40 h-16 bg-slate-900/80 backdrop-blur-md border-b border-slate-800 flex items-center justify-between px-4 md:px-6 lg:px-8 gap-4 overflow-x-auto">
+          <div className="flex items-center gap-3 bg-slate-950 border border-slate-800 rounded-xl px-4 py-2 w-full md:w-80 lg:w-96 flex-shrink-0">
+            <Search className="w-4 h-4 text-slate-500 flex-shrink-0" />
             <input
               type="text"
               placeholder="Search crops, sensors, or data..."
@@ -492,7 +492,7 @@ export default function SmartFarmDashboard() {
             />
           </div>
 
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-4 flex-shrink-0">
             <button
               onClick={() => window.location.reload()}
               className="relative p-2.5 rounded-xl hover:bg-slate-800 text-slate-400 transition-all active:scale-95 group"
@@ -518,7 +518,7 @@ export default function SmartFarmDashboard() {
         </header>
 
         {/* Dashboard Content */}
-        <div className="p-8 max-w-[1600px] mx-auto space-y-6">
+        <div className="p-4 md:p-6 lg:p-8 max-w-[1600px] mx-auto space-y-6">
           {/* Page Header */}
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
             <div>
@@ -547,8 +547,8 @@ export default function SmartFarmDashboard() {
           )}
 
           {/* Sensor Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 xl:grid-cols-7 gap-4">
-            <div className="lg:col-span-1 xl:col-span-1 md:col-span-1">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            <div>
               <SensorCard
                 title="Soil Moisture"
                 value={sensorData.moisture}
@@ -564,7 +564,7 @@ export default function SmartFarmDashboard() {
               </SensorCard>
             </div>
 
-            <div className="lg:col-span-1 xl:col-span-1 md:col-span-1">
+            <div>
               <SensorCard
                 title="Temperature"
                 value={sensorData.temperature}
@@ -580,7 +580,7 @@ export default function SmartFarmDashboard() {
               </SensorCard>
             </div>
 
-            <div className="lg:col-span-1 xl:col-span-1 md:col-span-1">
+            <div>
               <SensorCard
                 title="Humidity"
                 value={sensorData.humidity}
@@ -598,7 +598,7 @@ export default function SmartFarmDashboard() {
           </div>
 
           {/* pH and Nutrients Table */}
-          <div className="bg-slate-800 border border-slate-700 rounded-2xl p-6 overflow-hidden">
+          <div className="bg-slate-800 border border-slate-700 rounded-2xl p-4 md:p-6 overflow-hidden">
             <h3 className="text-lg font-semibold text-slate-100 mb-4">Soil Quality Metrics</h3>
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
@@ -666,7 +666,7 @@ export default function SmartFarmDashboard() {
           {/* Charts Section */}
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             {/* Main Chart */}
-            <div className="lg:col-span-2 bg-slate-800 border border-slate-700 rounded-2xl p-6">
+            <div className="lg:col-span-2 bg-slate-800 border border-slate-700 rounded-2xl p-4 md:p-6">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
                 <h3 className="text-lg font-semibold text-slate-100">Environmental Trends</h3>
                 <div className="flex items-center gap-2">
@@ -887,7 +887,7 @@ export default function SmartFarmDashboard() {
                     Active
                   </div>
                 </div>
-                <div className="p-5">
+                <div className="p-4 md:p-5">
                   <h4 className="text-lg font-bold text-slate-100 mb-4">Roma VF Tomato</h4>
                   <div className="grid grid-cols-3 gap-4 mb-4">
                     <div className="text-center">
@@ -922,7 +922,7 @@ export default function SmartFarmDashboard() {
                     className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110 grayscale group-hover:grayscale-0"
                   />
                 </div>
-                <div className="p-5">
+                <div className="p-4 md:p-5">
                   <h4 className="text-lg font-bold text-slate-100 mb-4">H614D Maize</h4>
                   <div className="grid grid-cols-3 gap-4">
                     <div className="text-center">
@@ -944,7 +944,7 @@ export default function SmartFarmDashboard() {
           </div>
 
           {/* System Logs */}
-          <div className="bg-slate-800 border border-slate-700 rounded-2xl p-6 overflow-hidden">
+          <div className="bg-slate-800 border border-slate-700 rounded-2xl p-4 md:p-6 overflow-hidden">
             <h3 className="text-lg font-semibold text-slate-100 mb-4">System Activity</h3>
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
