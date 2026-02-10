@@ -281,7 +281,7 @@ export default function SmartFarmDashboard() {
   const [lastSync, setLastSync] = useState('Never');
   const [timeRange, setTimeRange] = useState<'24h' | '7d' | '30d'>('24h');
   const [chartData, setChartData] = useState(generateChartData(24));
-  const [selectedMetric, setSelectedMetric] = useState<'moisture' | 'temperature' | 'humidity'>('moisture');
+  const [selectedMetric, setSelectedMetric] = useState<'moisture' | 'temperature' | 'humidity'>('temperature');
   const [showAlert, setShowAlert] = useState(true);
   const [chatOpen, setChatOpen] = useState(false);
   const [messages, setMessages] = useState<Message[]>([
@@ -646,22 +646,6 @@ export default function SmartFarmDashboard() {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             <div>
               <SensorCard
-                title="Soil Moisture"
-                value={sensorData.moisture}
-                unit="%"
-                icon={Droplets}
-                trend="up"
-                trendValue="+5%"
-                status="optimal"
-                statusText="Optimal Range"
-                colorClass="text-blue-500"
-              >
-                <MiniChart color="#3b82f6" data={miniChartData} />
-              </SensorCard>
-            </div>
-
-            <div>
-              <SensorCard
                 title="Temperature"
                 value={sensorData.temperature}
                 unit="°C"
@@ -689,6 +673,22 @@ export default function SmartFarmDashboard() {
                 colorClass="text-cyan-500"
               >
                 <MiniChart color="#06b6d4" data={miniChartData} />
+              </SensorCard>
+            </div>
+
+            <div>
+              <SensorCard
+                title="Soil Moisture"
+                value={sensorData.moisture}
+                unit="%"
+                icon={Droplets}
+                trend="up"
+                trendValue="+5%"
+                status="optimal"
+                statusText="Optimal Range"
+                colorClass="text-blue-500"
+              >
+                <MiniChart color="#3b82f6" data={miniChartData} />
               </SensorCard>
             </div>
           </div>
@@ -869,18 +869,6 @@ export default function SmartFarmDashboard() {
               <div className="flex flex-wrap items-center gap-2 mt-4 pt-4 border-t border-slate-700">
                 <span className="text-xs sm:text-sm font-medium text-slate-400">View:</span>
                 <button
-                  onClick={() => setSelectedMetric('moisture')}
-                  className={cn(
-                    "flex items-center gap-1.5 px-2 sm:px-3 py-1 sm:py-1.5 rounded-lg text-xs sm:text-sm font-medium transition-all",
-                    selectedMetric === 'moisture'
-                      ? "bg-blue-600 text-white"
-                      : "bg-slate-700 text-slate-400 hover:bg-slate-600"
-                  )}
-                >
-                  <Droplets className="w-3.5 sm:w-4 h-3.5 sm:h-4" />
-                  <span>Moisture</span>
-                </button>
-                <button
                   onClick={() => setSelectedMetric('temperature')}
                   className={cn(
                     "flex items-center gap-1.5 px-2 sm:px-3 py-1 sm:py-1.5 rounded-lg text-xs sm:text-sm font-medium transition-all",
@@ -903,6 +891,18 @@ export default function SmartFarmDashboard() {
                 >
                   <Waves className="w-3.5 sm:w-4 h-3.5 sm:h-4" />
                   <span>Humidity</span>
+                </button>
+                <button
+                  onClick={() => setSelectedMetric('moisture')}
+                  className={cn(
+                    "flex items-center gap-1.5 px-2 sm:px-3 py-1 sm:py-1.5 rounded-lg text-xs sm:text-sm font-medium transition-all",
+                    selectedMetric === 'moisture'
+                      ? "bg-blue-600 text-white"
+                      : "bg-slate-700 text-slate-400 hover:bg-slate-600"
+                  )}
+                >
+                  <Droplets className="w-3.5 sm:w-4 h-3.5 sm:h-4" />
+                  <span>Moisture</span>
                 </button>
               </div>
             </div>
