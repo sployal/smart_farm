@@ -594,63 +594,71 @@ export default function SmartFarmDashboard() {
                 <MiniChart color="#06b6d4" data={miniChartData} />
               </SensorCard>
             </div>
+          </div>
 
-            <div className="lg:col-span-1 xl:col-span-1 md:col-span-1">
-              <SensorCard
-                title="Soil pH"
-                value={sensorData.ph}
-                unit="pH"
-                icon={FlaskConical}
-                trend="up"
-                trendValue="+0.2"
-                status="optimal"
-                statusText="Slightly Acidic"
-                colorClass="text-violet-500"
-              >
-                <MiniChart color="#8b5cf6" data={miniChartData} />
-              </SensorCard>
-            </div>
-
-            <div className="lg:col-span-1 xl:col-span-1 md:col-span-1">
-              <SensorCard
-                title="Nitrogen (N)"
-                value={sensorData.nitrogen}
-                unit="mg/kg"
-                icon="N"
-                trend="down"
-                trendValue="-5"
-                status="warning"
-                statusText="Low"
-                colorClass="text-red-500"
-              />
-            </div>
-
-            <div className="lg:col-span-1 xl:col-span-1 md:col-span-1">
-              <SensorCard
-                title="Phosphorus (P)"
-                value={sensorData.phosphorus}
-                unit="mg/kg"
-                icon="P"
-                trend="stable"
-                trendValue="0"
-                status="good"
-                statusText="Adequate"
-                colorClass="text-amber-500"
-              />
-            </div>
-
-            <div className="lg:col-span-1 xl:col-span-1 md:col-span-1">
-              <SensorCard
-                title="Potassium (K)"
-                value={sensorData.potassium}
-                unit="mg/kg"
-                icon="K"
-                trend="up"
-                trendValue="+8"
-                status="optimal"
-                statusText="High"
-                colorClass="text-emerald-500"
-              />
+          {/* pH and Nutrients Table */}
+          <div className="bg-slate-800 border border-slate-700 rounded-2xl p-6 overflow-hidden">
+            <h3 className="text-lg font-semibold text-slate-100 mb-4">Soil Quality Metrics</h3>
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b border-slate-700 text-slate-400">
+                    <th className="text-left py-3 px-4 font-medium">Parameter</th>
+                    <th className="text-left py-3 px-4 font-medium">Current Value</th>
+                    <th className="text-left py-3 px-4 font-medium">Unit</th>
+                    <th className="text-left py-3 px-4 font-medium">Status</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-700/50">
+                  <tr className="hover:bg-slate-700/30 transition-colors">
+                    <td className="py-3 px-4 text-slate-200 font-medium flex items-center gap-2">
+                      <FlaskConical className="w-4 h-4 text-violet-500" />
+                      Soil pH
+                    </td>
+                    <td className="py-3 px-4 text-slate-300 font-semibold text-lg">{sensorData.ph.toFixed(1)}</td>
+                    <td className="py-3 px-4 text-slate-400">pH</td>
+                    <td className="py-3 px-4">
+                      <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-violet-500/10 text-violet-400">
+                        <Info className="w-3 h-3" />
+                        Slightly Acidic
+                      </span>
+                    </td>
+                  </tr>
+                  <tr className="hover:bg-slate-700/30 transition-colors">
+                    <td className="py-3 px-4 text-slate-200 font-medium">Nitrogen (N)</td>
+                    <td className="py-3 px-4 text-slate-300 font-semibold text-lg">{sensorData.nitrogen}</td>
+                    <td className="py-3 px-4 text-slate-400">mg/kg</td>
+                    <td className="py-3 px-4">
+                      <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-red-500/10 text-red-400">
+                        <AlertTriangle className="w-3 h-3" />
+                        Low
+                      </span>
+                    </td>
+                  </tr>
+                  <tr className="hover:bg-slate-700/30 transition-colors">
+                    <td className="py-3 px-4 text-slate-200 font-medium">Phosphorus (P)</td>
+                    <td className="py-3 px-4 text-slate-300 font-semibold text-lg">{sensorData.phosphorus}</td>
+                    <td className="py-3 px-4 text-slate-400">mg/kg</td>
+                    <td className="py-3 px-4">
+                      <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-emerald-500/10 text-emerald-400">
+                        <CheckCircle className="w-3 h-3" />
+                        Adequate
+                      </span>
+                    </td>
+                  </tr>
+                  <tr className="hover:bg-slate-700/30 transition-colors">
+                    <td className="py-3 px-4 text-slate-200 font-medium">Potassium (K)</td>
+                    <td className="py-3 px-4 text-slate-300 font-semibold text-lg">{sensorData.potassium}</td>
+                    <td className="py-3 px-4 text-slate-400">mg/kg</td>
+                    <td className="py-3 px-4">
+                      <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-emerald-500/10 text-emerald-400">
+                        <CheckCircle className="w-3 h-3" />
+                        High
+                      </span>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
             </div>
           </div>
 
