@@ -266,6 +266,7 @@ const MiniChart = ({ color, data }: { color: string; data: number[] }) => {
 
 export default function SmartFarmDashboard() {
   const [collapsed, setCollapsed] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [activeTab, setActiveTab] = useState('dashboard');
   const [sensorData, setSensorData] = useState<SensorData>({
     moisture: 58,
@@ -400,10 +401,19 @@ export default function SmartFarmDashboard() {
 
   return (
     <div className="flex min-h-screen bg-slate-950 text-slate-100 font-sans">
-      {/* Sidebar */}
+      {/* Mobile Overlay */}
+      {mobileMenuOpen && (
+        <div
+          className="fixed inset-0 bg-black/50 lg:hidden z-40"
+          onClick={() => setMobileMenuOpen(false)}
+        />
+      )}
+
+      {/* Desktop Sidebar */}
       <aside
         className={cn(
           "fixed h-screen bg-slate-900 border-r border-slate-800 flex flex-col transition-all duration-300 z-50",
+          "hidden lg:flex",
           collapsed ? "w-20" : "w-64"
         )}
       >
@@ -451,13 +461,6 @@ export default function SmartFarmDashboard() {
               collapsed={collapsed}
             />
             <SidebarItem
-              icon={History}
-              label="History"
-              active={activeTab === 'history'}
-              onClick={() => setActiveTab('history')}
-              collapsed={collapsed}
-            />
-            <SidebarItem
               icon={Settings}
               label="Settings"
               active={activeTab === 'settings'}
@@ -479,10 +482,103 @@ export default function SmartFarmDashboard() {
         </div>
       </aside>
 
+      {/* Mobile Sidebar */}
+      <aside
+        className={cn(
+          "fixed h-screen w-64 bg-slate-900 border-r border-slate-800 flex flex-col transition-all duration-300 z-40 lg:hidden",
+          mobileMenuOpen ? "translate-x-0" : "-translate-x-full"
+        )}
+      >
+        <div className="p-6 flex items-center justify-between border-b border-slate-800">
+          <div className="flex items-center gap-3 text-emerald-500">
+            <Leaf className="w-8 h-8" />
+            <span className="text-xl font-bold tracking-tight">SmartFarm</span>
+          </div>
+          <button
+            onClick={() => setMobileMenuOpen(false)}
+            className="p-2 rounded-lg hover:bg-slate-800 text-slate-400 transition-colors"
+          >
+            <X className="w-5 h-5" />
+          </button>
+        </div>
+
+        <nav className="flex-1 py-4 overflow-y-auto">
+          <ul className="space-y-1">
+            <SidebarItem
+              icon={BarChart3}
+              label="Dashboard"
+              active={activeTab === 'dashboard'}
+              onClick={() => {
+                setActiveTab('dashboard');
+                setMobileMenuOpen(false);
+              }}
+              collapsed={false}
+            />
+            <SidebarItem
+              icon={Cpu}
+              label="Sensor Data"
+              active={activeTab === 'sensors'}
+              onClick={() => {
+                setActiveTab('sensors');
+                setMobileMenuOpen(false);
+              }}
+              collapsed={false}
+            />
+            <SidebarItem
+              icon={Brain}
+              label="AI Insights"
+              active={activeTab === 'ai-insights'}
+              onClick={() => {
+                setActiveTab('ai-insights');
+                setMobileMenuOpen(false);
+              }}
+              collapsed={false}
+            />
+            <SidebarItem
+              icon={Sprout}
+              label="Seed Performance"
+              active={activeTab === 'seed-analysis'}
+              onClick={() => {
+                setActiveTab('seed-analysis');
+                setMobileMenuOpen(false);
+              }}
+              collapsed={false}
+            />
+            <SidebarItem
+              icon={Settings}
+              label="Settings"
+              active={activeTab === 'settings'}
+              onClick={() => {
+                setActiveTab('settings');
+                setMobileMenuOpen(false);
+              }}
+              collapsed={false}
+            />
+          </ul>
+        </nav>
+
+        <div className="p-4 border-t border-slate-800 space-y-3">
+          <div className="flex items-center gap-2 text-sm">
+            <span className={cn("w-2 h-2 rounded-full animate-pulse", isConnected ? "bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.6)]" : "bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.6)]")} />
+            <span className="text-slate-400">{isConnected ? 'ESP32 Online' : 'ESP32 Offline'}</span>
+          </div>
+          <div className="flex items-center gap-2 text-xs text-slate-500">
+            <RefreshCw className="w-3 h-3" />
+            <span>Last sync: {lastSync}</span>
+          </div>
+        </div>
+      </aside>
+
       {/* Main Content */}
-      <main className={cn("flex-1 transition-all duration-300 min-h-screen", collapsed ? "ml-20" : "ml-64")}>
+      <main className={cn("flex-1 transition-all duration-300 min-h-screen", collapsed ? "lg:ml-20" : "lg:ml-64")}>
         {/* Header */}
-        <header className="sticky top-0 z-40 h-16 bg-slate-900/80 backdrop-blur-md border-b border-slate-800 flex items-center justify-between px-4 md:px-6 lg:px-8 gap-4 overflow-x-auto">
+        <header className="sticky top-0 z-40 h-16 bg-slate-900/80 backdrop-blur-md border-b border-slate-800 flex items-center justify-between px-4 md:px-6 lg:px-8 gap-2 sm:gap-4 overflow-x-auto">
+          <button
+            onClick={() => setMobileMenuOpen(true)}
+            className="lg:hidden p-2 rounded-lg hover:bg-slate-800 text-slate-400 transition-colors flex-shrink-0"
+          >
+            <Menu className="w-5 h-5" />
+          </button>
           <div className="flex items-center gap-3 bg-slate-950 border border-slate-800 rounded-xl px-4 py-2 w-full md:w-80 lg:w-96 flex-shrink-0">
             <Search className="w-4 h-4 text-slate-500 flex-shrink-0" />
             <input
