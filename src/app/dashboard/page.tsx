@@ -621,7 +621,7 @@ export default function SmartFarmDashboard() {
               <h1 className="text-xl sm:text-2xl font-bold text-slate-100">Farm Overview</h1>
               <p className="text-xs sm:text-sm text-slate-400 mt-1">Real-time monitoring of your crop conditions</p>
             </div>
-            <select className="bg-slate-900 border border-slate-700 text-slate-200 px-3 sm:px-4 py-2 sm:py-2.5 rounded-xl text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/50 cursor-pointer w-full sm:w-auto">
+            <select className="bg-slate-900 border border-slate-700 text-slate-200 px-3 sm:px-4 py-2 sm:py-2.5 rounded-xl text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/50 cursor-pointer w-fit sm:w-auto">
               <option>Plot A - Tomatoes</option>
               <option>Plot B - Maize</option>
               <option>Plot C - Beans</option>
