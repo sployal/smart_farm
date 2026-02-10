@@ -280,6 +280,7 @@ export default function SmartFarmDashboard() {
   const [lastSync, setLastSync] = useState('Never');
   const [timeRange, setTimeRange] = useState<'24h' | '7d' | '30d'>('24h');
   const [chartData, setChartData] = useState(generateChartData(24));
+  const [selectedMetric, setSelectedMetric] = useState<'moisture' | 'temperature' | 'humidity'>('moisture');
   const [showAlert, setShowAlert] = useState(true);
   const [chatOpen, setChatOpen] = useState(false);
   const [messages, setMessages] = useState<Message[]>([
@@ -730,36 +731,83 @@ export default function SmartFarmDashboard() {
                         color: '#f1f5f9'
                       }}
                     />
-                    <Area
-                      type="monotone"
-                      dataKey="moisture"
-                      name="Soil Moisture"
-                      stroke="#3b82f6"
-                      fillOpacity={1}
-                      fill="url(#colorMoisture)"
-                      strokeWidth={2}
-                    />
-                    <Area
-                      type="monotone"
-                      dataKey="temperature"
-                      name="Temperature"
-                      stroke="#f59e0b"
-                      fillOpacity={1}
-                      fill="url(#colorTemp)"
-                      strokeWidth={2}
-                    />
-                    <Area
-                      type="monotone"
-                      dataKey="humidity"
-                      name="Humidity"
-                      stroke="#06b6d4"
-                      fillOpacity={1}
-                      fill="url(#colorHumidity)"
-                      strokeWidth={2}
-                    />
+                    {selectedMetric === 'moisture' && (
+                      <Area
+                        type="monotone"
+                        dataKey="moisture"
+                        name="Soil Moisture (%)"
+                        stroke="#3b82f6"
+                        fillOpacity={1}
+                        fill="url(#colorMoisture)"
+                        strokeWidth={2}
+                      />
+                    )}
+                    {selectedMetric === 'temperature' && (
+                      <Area
+                        type="monotone"
+                        dataKey="temperature"
+                        name="Temperature (°C)"
+                        stroke="#f59e0b"
+                        fillOpacity={1}
+                        fill="url(#colorTemp)"
+                        strokeWidth={2}
+                      />
+                    )}
+                    {selectedMetric === 'humidity' && (
+                      <Area
+                        type="monotone"
+                        dataKey="humidity"
+                        name="Humidity (%)"
+                        stroke="#06b6d4"
+                        fillOpacity={1}
+                        fill="url(#colorHumidity)"
+                        strokeWidth={2}
+                      />
+                    )}
                   </AreaChart>
                 </ResponsiveContainer>
                 </div>
+              </div>
+
+              {/* Metric Selector Buttons */}
+              <div className="flex items-center gap-2 mt-4 pt-4 border-t border-slate-700">
+                <span className="text-sm font-medium text-slate-400">View:</span>
+                <button
+                  onClick={() => setSelectedMetric('moisture')}
+                  className={cn(
+                    "flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium transition-all",
+                    selectedMetric === 'moisture'
+                      ? "bg-blue-600 text-white"
+                      : "bg-slate-700 text-slate-400 hover:bg-slate-600"
+                  )}
+                >
+                  <Droplets className="w-4 h-4" />
+                  Moisture
+                </button>
+                <button
+                  onClick={() => setSelectedMetric('temperature')}
+                  className={cn(
+                    "flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium transition-all",
+                    selectedMetric === 'temperature'
+                      ? "bg-amber-600 text-white"
+                      : "bg-slate-700 text-slate-400 hover:bg-slate-600"
+                  )}
+                >
+                  <Thermometer className="w-4 h-4" />
+                  Temperature
+                </button>
+                <button
+                  onClick={() => setSelectedMetric('humidity')}
+                  className={cn(
+                    "flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium transition-all",
+                    selectedMetric === 'humidity'
+                      ? "bg-cyan-600 text-white"
+                      : "bg-slate-700 text-slate-400 hover:bg-slate-600"
+                  )}
+                >
+                  <Waves className="w-4 h-4" />
+                  Humidity
+                </button>
               </div>
             </div>
 
