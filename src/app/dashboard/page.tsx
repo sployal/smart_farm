@@ -199,7 +199,7 @@ const SensorCard = ({
 
   return (
     <div className={cn(
-      "relative bg-slate-800 border border-slate-700 rounded-2xl p-6 overflow-hidden transition-all duration-300 hover:-translate-y-1 hover:shadow-xl hover:shadow-black/40 group border-t-4",
+      "relative bg-slate-800 border border-slate-700 rounded-2xl p-4 sm:p-5 md:p-6 overflow-hidden transition-all duration-300 hover:-translate-y-1 hover:shadow-xl hover:shadow-black/40 group border-t-4",
       borderColors[title.toLowerCase().includes('moisture') ? 'moisture' :
                    title.toLowerCase().includes('temp') ? 'temperature' :
                    title.toLowerCase().includes('humid') ? 'humidity' :
@@ -208,28 +208,28 @@ const SensorCard = ({
                    title.toLowerCase().includes('phosphorus') ? 'phosphorus' :
                    title.toLowerCase().includes('potassium') ? 'potassium' : 'moisture']
     )}>
-      <div className="flex justify-between items-start mb-4">
-        <div className="w-12 h-12 rounded-xl bg-slate-700 flex items-center justify-center text-xl">
+      <div className="flex justify-between items-start mb-3 sm:mb-4">
+        <div className="w-10 sm:w-12 h-10 sm:h-12 rounded-xl bg-slate-700 flex items-center justify-center text-lg sm:text-xl">
           {typeof Icon === 'string' ? (
-            <span className={cn("font-bold text-lg", colorClass)}>{Icon}</span>
+            <span className={cn("font-bold", colorClass)}>{Icon}</span>
           ) : (
-            <Icon className={cn("w-6 h-6", colorClass)} />
+            <Icon className={cn("w-5 sm:w-6 h-5 sm:h-6", colorClass)} />
           )}
         </div>
-        <div className={cn("flex items-center gap-1 text-sm font-semibold px-3 py-1.5 rounded-full bg-slate-900", trendColors[trend])}>
+        <div className={cn("flex items-center gap-1 text-xs sm:text-sm font-semibold px-2 sm:px-3 py-1 sm:py-1.5 rounded-full bg-slate-900", trendColors[trend])}>
           {trend === 'up' ? <ArrowUp className="w-3 h-3" /> : trend === 'down' ? <ArrowDown className="w-3 h-3" /> : <Minus className="w-3 h-3" />}
           <span>{trendValue}</span>
         </div>
       </div>
 
       <div className="mb-2">
-        <span className="text-4xl font-bold text-slate-100">{value}</span>
-        <span className="text-lg text-slate-400 ml-1 font-medium">{unit}</span>
+        <span className="text-2xl sm:text-3xl md:text-4xl font-bold text-slate-100">{value}</span>
+        <span className="text-sm sm:text-base md:text-lg text-slate-400 ml-1 font-medium">{unit}</span>
       </div>
 
-      <div className="text-slate-400 text-sm mb-3 font-medium">{title}</div>
+      <div className="text-slate-400 text-xs sm:text-sm mb-2 sm:mb-3 font-medium">{title}</div>
 
-      <div className={cn("inline-flex items-center gap-1.5 text-sm font-medium px-3 py-1 rounded-full border", statusColors[status])}>
+      <div className={cn("inline-flex items-center gap-1 text-xs sm:text-sm font-medium px-2 sm:px-3 py-0.5 sm:py-1 rounded-full border", statusColors[status])}>
         {statusText}
       </div>
 
@@ -400,7 +400,7 @@ export default function SmartFarmDashboard() {
   const miniChartData = generateRandomData(10, 40, 80);
 
   return (
-    <div className="flex min-h-screen bg-slate-950 text-slate-100 font-sans">
+    <div className="flex min-h-screen bg-slate-950 text-slate-100 font-sans overflow-x-hidden">
       {/* Mobile Overlay */}
       {mobileMenuOpen && (
         <div
@@ -572,56 +572,56 @@ export default function SmartFarmDashboard() {
       {/* Main Content */}
       <main className={cn("flex-1 transition-all duration-300 min-h-screen", collapsed ? "lg:ml-20" : "lg:ml-64")}>
         {/* Header */}
-        <header className="sticky top-0 z-40 h-16 bg-slate-900/80 backdrop-blur-md border-b border-slate-800 flex items-center justify-between px-4 md:px-6 lg:px-8 gap-2 sm:gap-4 overflow-x-auto">
+        <header className="sticky top-0 z-40 h-16 bg-slate-900/80 backdrop-blur-md border-b border-slate-800 flex items-center justify-between px-3 sm:px-4 md:px-6 lg:px-8 gap-2 sm:gap-3 md:gap-4 flex-wrap sm:flex-nowrap">
           <button
             onClick={() => setMobileMenuOpen(true)}
             className="lg:hidden p-2 rounded-lg hover:bg-slate-800 text-slate-400 transition-colors flex-shrink-0"
           >
             <Menu className="w-5 h-5" />
           </button>
-          <div className="flex items-center gap-3 bg-slate-950 border border-slate-800 rounded-xl px-4 py-2 w-full md:w-80 lg:w-96 flex-shrink-0">
+          <div className="hidden sm:flex items-center gap-3 bg-slate-950 border border-slate-800 rounded-xl px-3 sm:px-4 py-2 w-full sm:w-64 md:w-80 lg:w-96 flex-shrink-0">
             <Search className="w-4 h-4 text-slate-500 flex-shrink-0" />
             <input
               type="text"
-              placeholder="Search crops, sensors, or data..."
+              placeholder="Search crops..."
               className="bg-transparent border-none outline-none text-sm text-slate-200 w-full placeholder:text-slate-600"
             />
           </div>
 
-          <div className="flex items-center gap-4 flex-shrink-0">
+          <div className="flex items-center gap-2 sm:gap-3 md:gap-4 flex-shrink-0 ml-auto">
             <button
               onClick={() => window.location.reload()}
-              className="relative p-2.5 rounded-xl hover:bg-slate-800 text-slate-400 transition-all active:scale-95 group"
+              className="relative p-2 sm:p-2.5 rounded-xl hover:bg-slate-800 text-slate-400 transition-all active:scale-95 group flex-shrink-0"
             >
-              <RefreshCw className="w-5 h-5 group-hover:animate-spin" />
+              <RefreshCw className="w-4 sm:w-5 h-4 sm:h-5 group-hover:animate-spin" />
             </button>
 
-            <button className="relative p-2.5 rounded-xl hover:bg-slate-800 text-slate-400 transition-all">
-              <Bell className="w-5 h-5" />
-              <span className="absolute top-1.5 right-1.5 w-4 h-4 bg-red-500 text-[10px] font-bold text-white rounded-full flex items-center justify-center border-2 border-slate-900">
+            <button className="relative p-2 sm:p-2.5 rounded-xl hover:bg-slate-800 text-slate-400 transition-all flex-shrink-0">
+              <Bell className="w-4 sm:w-5 h-4 sm:h-5" />
+              <span className="absolute top-0 right-0 w-4 h-4 bg-red-500 text-[10px] font-bold text-white rounded-full flex items-center justify-center border-2 border-slate-900">
                 3
               </span>
             </button>
 
-            <div className="flex items-center gap-3 pl-4 border-l border-slate-800">
+            <div className="hidden md:flex items-center gap-3 pl-3 md:pl-4 border-l border-slate-800 flex-shrink-0">
               <div className="w-8 h-8 rounded-full bg-emerald-600 flex items-center justify-center text-sm font-bold">
                 DM
               </div>
-              <span className="text-sm font-medium hidden md:block">David Muigai</span>
+              <span className="text-sm font-medium hidden lg:block">David Muigai</span>
               <ChevronDown className="w-4 h-4 text-slate-500" />
             </div>
           </div>
         </header>
 
         {/* Dashboard Content */}
-        <div className="p-4 md:p-6 lg:p-8 max-w-[1600px] mx-auto space-y-6">
+        <div className="p-3 sm:p-4 md:p-6 lg:p-8 max-w-[1600px] mx-auto space-y-4 sm:space-y-6 w-full overflow-hidden">
           {/* Page Header */}
-          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div className="flex flex-col gap-3 sm:gap-4 md:flex-row md:items-center md:justify-between">
             <div>
-              <h1 className="text-2xl font-bold text-slate-100">Farm Overview</h1>
-              <p className="text-slate-400 mt-1">Real-time monitoring of your crop conditions</p>
+              <h1 className="text-xl sm:text-2xl font-bold text-slate-100">Farm Overview</h1>
+              <p className="text-xs sm:text-sm text-slate-400 mt-1">Real-time monitoring of your crop conditions</p>
             </div>
-            <select className="bg-slate-900 border border-slate-700 text-slate-200 px-4 py-2.5 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/50 cursor-pointer">
+            <select className="bg-slate-900 border border-slate-700 text-slate-200 px-3 sm:px-4 py-2 sm:py-2.5 rounded-xl text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/50 cursor-pointer w-full sm:w-auto">
               <option>Plot A - Tomatoes</option>
               <option>Plot B - Maize</option>
               <option>Plot C - Beans</option>
@@ -694,62 +694,62 @@ export default function SmartFarmDashboard() {
           </div>
 
           {/* pH and Nutrients Table */}
-          <div className="bg-slate-800 border border-slate-700 rounded-2xl p-4 md:p-6 overflow-hidden">
+          <div className="bg-slate-800 border border-slate-700 rounded-2xl p-3 sm:p-4 md:p-6 overflow-hidden">
             <h3 className="text-lg font-semibold text-slate-100 mb-4">Soil Quality Metrics</h3>
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm">
+            <div className="overflow-x-auto -mx-3 sm:-mx-4 md:-mx-6 px-3 sm:px-4 md:px-6">
+              <table className="w-full text-xs sm:text-sm">
                 <thead>
                   <tr className="border-b border-slate-700 text-slate-400">
-                    <th className="text-left py-3 px-4 font-medium">Parameter</th>
-                    <th className="text-left py-3 px-4 font-medium">Current Value</th>
-                    <th className="text-left py-3 px-4 font-medium">Unit</th>
-                    <th className="text-left py-3 px-4 font-medium">Status</th>
+                    <th className="text-left py-3 px-2 sm:px-4 font-medium">Parameter</th>
+                    <th className="text-left py-3 px-2 sm:px-4 font-medium">Value</th>
+                    <th className="text-left py-3 px-2 sm:px-4 font-medium">Unit</th>
+                    <th className="text-left py-3 px-2 sm:px-4 font-medium">Status</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-700/50">
                   <tr className="hover:bg-slate-700/30 transition-colors">
-                    <td className="py-3 px-4 text-slate-200 font-medium flex items-center gap-2">
-                      <FlaskConical className="w-4 h-4 text-violet-500" />
-                      Soil pH
+                    <td className="py-3 px-2 sm:px-4 text-slate-200 font-medium flex items-center gap-2">
+                      <FlaskConical className="w-4 h-4 text-violet-500 flex-shrink-0" />
+                      <span>pH</span>
                     </td>
-                    <td className="py-3 px-4 text-slate-300 font-semibold text-lg">{sensorData.ph.toFixed(1)}</td>
-                    <td className="py-3 px-4 text-slate-400">pH</td>
-                    <td className="py-3 px-4">
-                      <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-violet-500/10 text-violet-400">
-                        <Info className="w-3 h-3" />
-                        Slightly Acidic
+                    <td className="py-3 px-2 sm:px-4 text-slate-300 font-semibold">{sensorData.ph.toFixed(1)}</td>
+                    <td className="py-3 px-2 sm:px-4 text-slate-400">pH</td>
+                    <td className="py-3 px-2 sm:px-4">
+                      <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium bg-violet-500/10 text-violet-400 whitespace-nowrap">
+                        <Info className="w-3 h-3 flex-shrink-0" />
+                        Acidic
                       </span>
                     </td>
                   </tr>
                   <tr className="hover:bg-slate-700/30 transition-colors">
-                    <td className="py-3 px-4 text-slate-200 font-medium">Nitrogen (N)</td>
-                    <td className="py-3 px-4 text-slate-300 font-semibold text-lg">{sensorData.nitrogen}</td>
-                    <td className="py-3 px-4 text-slate-400">mg/kg</td>
-                    <td className="py-3 px-4">
-                      <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-red-500/10 text-red-400">
-                        <AlertTriangle className="w-3 h-3" />
+                    <td className="py-3 px-2 sm:px-4 text-slate-200 font-medium">N</td>
+                    <td className="py-3 px-2 sm:px-4 text-slate-300 font-semibold">{sensorData.nitrogen}</td>
+                    <td className="py-3 px-2 sm:px-4 text-slate-400">mg/kg</td>
+                    <td className="py-3 px-2 sm:px-4">
+                      <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium bg-red-500/10 text-red-400 whitespace-nowrap">
+                        <AlertTriangle className="w-3 h-3 flex-shrink-0" />
                         Low
                       </span>
                     </td>
                   </tr>
                   <tr className="hover:bg-slate-700/30 transition-colors">
-                    <td className="py-3 px-4 text-slate-200 font-medium">Phosphorus (P)</td>
-                    <td className="py-3 px-4 text-slate-300 font-semibold text-lg">{sensorData.phosphorus}</td>
-                    <td className="py-3 px-4 text-slate-400">mg/kg</td>
-                    <td className="py-3 px-4">
-                      <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-emerald-500/10 text-emerald-400">
-                        <CheckCircle className="w-3 h-3" />
-                        Adequate
+                    <td className="py-3 px-2 sm:px-4 text-slate-200 font-medium">P</td>
+                    <td className="py-3 px-2 sm:px-4 text-slate-300 font-semibold">{sensorData.phosphorus}</td>
+                    <td className="py-3 px-2 sm:px-4 text-slate-400">mg/kg</td>
+                    <td className="py-3 px-2 sm:px-4">
+                      <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium bg-emerald-500/10 text-emerald-400 whitespace-nowrap">
+                        <CheckCircle className="w-3 h-3 flex-shrink-0" />
+                        Good
                       </span>
                     </td>
                   </tr>
                   <tr className="hover:bg-slate-700/30 transition-colors">
-                    <td className="py-3 px-4 text-slate-200 font-medium">Potassium (K)</td>
-                    <td className="py-3 px-4 text-slate-300 font-semibold text-lg">{sensorData.potassium}</td>
-                    <td className="py-3 px-4 text-slate-400">mg/kg</td>
-                    <td className="py-3 px-4">
-                      <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-emerald-500/10 text-emerald-400">
-                        <CheckCircle className="w-3 h-3" />
+                    <td className="py-3 px-2 sm:px-4 text-slate-200 font-medium">K</td>
+                    <td className="py-3 px-2 sm:px-4 text-slate-300 font-semibold">{sensorData.potassium}</td>
+                    <td className="py-3 px-2 sm:px-4 text-slate-400">mg/kg</td>
+                    <td className="py-3 px-2 sm:px-4">
+                      <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium bg-emerald-500/10 text-emerald-400 whitespace-nowrap">
+                        <CheckCircle className="w-3 h-3 flex-shrink-0" />
                         High
                       </span>
                     </td>
@@ -760,18 +760,18 @@ export default function SmartFarmDashboard() {
           </div>
 
           {/* Charts Section */}
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 md:gap-6">
             {/* Main Chart */}
-            <div className="lg:col-span-2 bg-slate-800 border border-slate-700 rounded-2xl p-4 md:p-6">
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
-                <h3 className="text-lg font-semibold text-slate-100">Environmental Trends</h3>
-                <div className="flex items-center gap-2">
+            <div className="lg:col-span-2 bg-slate-800 border border-slate-700 rounded-2xl p-3 sm:p-4 md:p-6">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4 mb-6">
+                <h3 className="text-base sm:text-lg font-semibold text-slate-100">Environmental Trends</h3>
+                <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap">
                   {(['24h', '7d', '30d'] as const).map((range) => (
                     <button
                       key={range}
                       onClick={() => setTimeRange(range)}
                       className={cn(
-                        "px-3 py-1.5 rounded-lg text-sm font-medium transition-all",
+                        "px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-lg text-xs sm:text-sm font-medium transition-all",
                         timeRange === range
                           ? "bg-emerald-500 text-white"
                           : "bg-slate-700 text-slate-400 hover:bg-slate-600"
@@ -780,9 +780,9 @@ export default function SmartFarmDashboard() {
                       {range.toUpperCase()}
                     </button>
                   ))}
-                  <button className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-slate-700 text-slate-300 hover:bg-slate-600 text-sm font-medium ml-2 transition-colors">
-                    <Download className="w-4 h-4" />
-                    Export
+                  <button className="hidden sm:flex items-center gap-2 px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-lg bg-slate-700 text-slate-300 hover:bg-slate-600 text-xs sm:text-sm font-medium transition-colors">
+                    <Download className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                    <span className="hidden md:inline">Export</span>
                   </button>
                 </div>
               </div>
@@ -866,43 +866,43 @@ export default function SmartFarmDashboard() {
               </div>
 
               {/* Metric Selector Buttons */}
-              <div className="flex items-center gap-2 mt-4 pt-4 border-t border-slate-700">
-                <span className="text-sm font-medium text-slate-400">View:</span>
+              <div className="flex flex-wrap items-center gap-2 mt-4 pt-4 border-t border-slate-700">
+                <span className="text-xs sm:text-sm font-medium text-slate-400">View:</span>
                 <button
                   onClick={() => setSelectedMetric('moisture')}
                   className={cn(
-                    "flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium transition-all",
+                    "flex items-center gap-1.5 px-2 sm:px-3 py-1 sm:py-1.5 rounded-lg text-xs sm:text-sm font-medium transition-all",
                     selectedMetric === 'moisture'
                       ? "bg-blue-600 text-white"
                       : "bg-slate-700 text-slate-400 hover:bg-slate-600"
                   )}
                 >
-                  <Droplets className="w-4 h-4" />
-                  Moisture
+                  <Droplets className="w-3.5 sm:w-4 h-3.5 sm:h-4" />
+                  <span>Moisture</span>
                 </button>
                 <button
                   onClick={() => setSelectedMetric('temperature')}
                   className={cn(
-                    "flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium transition-all",
+                    "flex items-center gap-1.5 px-2 sm:px-3 py-1 sm:py-1.5 rounded-lg text-xs sm:text-sm font-medium transition-all",
                     selectedMetric === 'temperature'
                       ? "bg-amber-600 text-white"
                       : "bg-slate-700 text-slate-400 hover:bg-slate-600"
                   )}
                 >
-                  <Thermometer className="w-4 h-4" />
-                  Temperature
+                  <Thermometer className="w-3.5 sm:w-4 h-3.5 sm:h-4" />
+                  <span>Temp</span>
                 </button>
                 <button
                   onClick={() => setSelectedMetric('humidity')}
                   className={cn(
-                    "flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium transition-all",
+                    "flex items-center gap-1.5 px-2 sm:px-3 py-1 sm:py-1.5 rounded-lg text-xs sm:text-sm font-medium transition-all",
                     selectedMetric === 'humidity'
                       ? "bg-cyan-600 text-white"
                       : "bg-slate-700 text-slate-400 hover:bg-slate-600"
                   )}
                 >
-                  <Waves className="w-4 h-4" />
-                  Humidity
+                  <Waves className="w-3.5 sm:w-4 h-3.5 sm:h-4" />
+                  <span>Humidity</span>
                 </button>
               </div>
             </div>
@@ -968,12 +968,12 @@ export default function SmartFarmDashboard() {
           </div>
 
           {/* Seed Performance Section */}
-          <div className="space-y-4">
+          <div className="space-y-3 sm:space-y-4">
             <h3 className="text-lg font-semibold text-slate-100">Seed Variety Performance Comparison</h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4">
               {/* Active Seed Card */}
               <div className="bg-slate-800 border-2 border-emerald-500 rounded-2xl overflow-hidden group cursor-pointer transition-all hover:-translate-y-1 hover:shadow-xl">
-                <div className="relative h-40 overflow-hidden">
+                <div className="relative h-32 sm:h-40 overflow-hidden">
                   <img
                     src="https://images.unsplash.com/photo-1592841200221-a6898f307baa?w=400&h=300&fit=crop"
                     alt="Tomatoes"
@@ -983,19 +983,19 @@ export default function SmartFarmDashboard() {
                     Active
                   </div>
                 </div>
-                <div className="p-4 md:p-5">
-                  <h4 className="text-lg font-bold text-slate-100 mb-4">Roma VF Tomato</h4>
-                  <div className="grid grid-cols-3 gap-4 mb-4">
+                <div className="p-3 sm:p-4 md:p-5">
+                  <h4 className="text-base sm:text-lg font-bold text-slate-100 mb-3 sm:mb-4">Roma VF Tomato</h4>
+                  <div className="grid grid-cols-3 gap-2 sm:gap-4 mb-4">
                     <div className="text-center">
-                      <span className="block text-xl font-bold text-emerald-400">94%</span>
+                      <span className="block text-lg sm:text-xl font-bold text-emerald-400">94%</span>
                       <span className="text-[10px] text-slate-500 uppercase tracking-wider">Germination</span>
                     </div>
                     <div className="text-center">
-                      <span className="block text-xl font-bold text-emerald-400">12 days</span>
+                      <span className="block text-lg sm:text-xl font-bold text-emerald-400">12 days</span>
                       <span className="text-[10px] text-slate-500 uppercase tracking-wider">To Maturity</span>
                     </div>
                     <div className="text-center">
-                      <span className="block text-xl font-bold text-emerald-400">A+</span>
+                      <span className="block text-lg sm:text-xl font-bold text-emerald-400">A+</span>
                       <span className="text-[10px] text-slate-500 uppercase tracking-wider">Health Score</span>
                     </div>
                   </div>
@@ -1011,26 +1011,26 @@ export default function SmartFarmDashboard() {
 
               {/* Inactive Seed Card */}
               <div className="bg-slate-800 border border-slate-700 rounded-2xl overflow-hidden group cursor-pointer transition-all hover:-translate-y-1 hover:shadow-xl opacity-75 hover:opacity-100">
-                <div className="relative h-40 overflow-hidden">
+                <div className="relative h-32 sm:h-40 overflow-hidden">
                   <img
                     src="https://images.unsplash.com/photo-1551754655-cd27e38d2076?w=400&h=300&fit=crop"
                     alt="Maize"
                     className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110 grayscale group-hover:grayscale-0"
                   />
                 </div>
-                <div className="p-4 md:p-5">
-                  <h4 className="text-lg font-bold text-slate-100 mb-4">H614D Maize</h4>
-                  <div className="grid grid-cols-3 gap-4">
+                <div className="p-3 sm:p-4 md:p-5">
+                  <h4 className="text-base sm:text-lg font-bold text-slate-100 mb-3 sm:mb-4">H614D Maize</h4>
+                  <div className="grid grid-cols-3 gap-2 sm:gap-4">
                     <div className="text-center">
-                      <span className="block text-xl font-bold text-amber-400">88%</span>
+                      <span className="block text-lg sm:text-xl font-bold text-amber-400">88%</span>
                       <span className="text-[10px] text-slate-500 uppercase tracking-wider">Germination</span>
                     </div>
                     <div className="text-center">
-                      <span className="block text-xl font-bold text-amber-400">85 days</span>
+                      <span className="block text-lg sm:text-xl font-bold text-amber-400">85 days</span>
                       <span className="text-[10px] text-slate-500 uppercase tracking-wider">To Maturity</span>
                     </div>
                     <div className="text-center">
-                      <span className="block text-xl font-bold text-amber-400">B+</span>
+                      <span className="block text-lg sm:text-xl font-bold text-amber-400">B+</span>
                       <span className="text-[10px] text-slate-500 uppercase tracking-wider">Health Score</span>
                     </div>
                   </div>
@@ -1040,37 +1040,37 @@ export default function SmartFarmDashboard() {
           </div>
 
           {/* System Logs */}
-          <div className="bg-slate-800 border border-slate-700 rounded-2xl p-4 md:p-6 overflow-hidden">
+          <div className="bg-slate-800 border border-slate-700 rounded-2xl p-3 sm:p-4 md:p-6 overflow-hidden">
             <h3 className="text-lg font-semibold text-slate-100 mb-4">System Activity</h3>
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm">
+            <div className="overflow-x-auto -mx-3 sm:-mx-4 md:-mx-6 px-3 sm:px-4 md:px-6">
+              <table className="w-full text-xs sm:text-sm">
                 <thead>
                   <tr className="border-b border-slate-700 text-slate-400">
-                    <th className="text-left py-3 px-4 font-medium">Time</th>
-                    <th className="text-left py-3 px-4 font-medium">Event</th>
-                    <th className="text-left py-3 px-4 font-medium">Sensor</th>
-                    <th className="text-left py-3 px-4 font-medium">Value</th>
-                    <th className="text-left py-3 px-4 font-medium">Status</th>
+                    <th className="text-left py-3 px-2 sm:px-4 font-medium">Time</th>
+                    <th className="text-left py-3 px-2 sm:px-4 font-medium">Event</th>
+                    <th className="text-left py-3 px-2 sm:px-4 font-medium">Sensor</th>
+                    <th className="text-left py-3 px-2 sm:px-4 font-medium">Value</th>
+                    <th className="text-left py-3 px-2 sm:px-4 font-medium">Status</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-700/50">
                   {logs.map((log) => (
                     <tr key={log.id} className="hover:bg-slate-700/30 transition-colors">
-                      <td className="py-3 px-4 text-slate-300">{log.time}</td>
-                      <td className="py-3 px-4 text-slate-200 font-medium">{log.event}</td>
-                      <td className="py-3 px-4 text-slate-400">{log.sensor}</td>
-                      <td className="py-3 px-4 text-slate-300">{log.value}</td>
-                      <td className="py-3 px-4">
+                      <td className="py-3 px-2 sm:px-4 text-slate-300">{log.time}</td>
+                      <td className="py-3 px-2 sm:px-4 text-slate-200 font-medium">{log.event}</td>
+                      <td className="py-3 px-2 sm:px-4 text-slate-400">{log.sensor}</td>
+                      <td className="py-3 px-2 sm:px-4 text-slate-300">{log.value}</td>
+                      <td className="py-3 px-2 sm:px-4">
                         <span className={cn(
-                          "inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium",
+                          "inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium whitespace-nowrap",
                           log.status === 'success' && "bg-emerald-500/10 text-emerald-400",
                           log.status === 'warning' && "bg-amber-500/10 text-amber-400",
                           log.status === 'info' && "bg-cyan-500/10 text-cyan-400"
                         )}>
-                          {log.status === 'success' && <CheckCircle className="w-3 h-3" />}
-                          {log.status === 'warning' && <AlertTriangle className="w-3 h-3" />}
-                          {log.status === 'info' && <Info className="w-3 h-3" />}
-                          {log.status === 'success' ? 'Success' : log.status === 'warning' ? 'Warning' : 'Stored Local'}
+                          {log.status === 'success' && <CheckCircle className="w-3 h-3 flex-shrink-0" />}
+                          {log.status === 'warning' && <AlertTriangle className="w-3 h-3 flex-shrink-0" />}
+                          {log.status === 'info' && <Info className="w-3 h-3 flex-shrink-0" />}
+                          <span className="hidden sm:inline">{log.status === 'success' ? 'Success' : log.status === 'warning' ? 'Warning' : 'Stored Local'}</span>
                         </span>
                       </td>
                     </tr>
