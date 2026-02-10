@@ -27,6 +27,8 @@ import {
   RefreshCw,
   Bell,
   ChevronDown,
+  ChevronLeft,
+  ChevronRight,
   AlertTriangle,
   X,
   Droplets,
@@ -417,16 +419,22 @@ export default function SmartFarmDashboard() {
           collapsed ? "w-20" : "w-64"
         )}
       >
-        <div className="p-6 flex items-center justify-between border-b border-slate-800">
+        <div className={cn(
+          "p-4 border-b border-slate-800 gap-4",
+          collapsed ? "flex flex-col items-center" : "flex flex-row items-center justify-between"
+        )}>
           <div className="flex items-center gap-3 text-emerald-500">
             <Leaf className="w-8 h-8" />
             {!collapsed && <span className="text-xl font-bold tracking-tight">SmartFarm</span>}
           </div>
           <button
             onClick={() => setCollapsed(!collapsed)}
-            className="p-2 rounded-lg hover:bg-slate-800 text-slate-400 transition-colors"
+            className={cn(
+              "p-2 rounded-lg hover:bg-slate-800 text-slate-400 transition-colors",
+              collapsed && "order-first"
+            )}
           >
-            <Menu className="w-5 h-5" />
+            {collapsed ? <ChevronRight className="w-5 h-5" /> : <ChevronLeft className="w-5 h-5" />}
           </button>
         </div>
 
