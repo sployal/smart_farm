@@ -16,7 +16,7 @@ import { auth } from '@/lib/firebase';
 import {
   Leaf, User as UserIcon, Mail, Lock, Camera, Edit2, Check, X,
   AlertCircle, CheckCircle, Loader2, Shield, LogOut, Eye, EyeOff,
-  Calendar, Hash, Globe, Phone,
+  Calendar, Globe, Phone,
 } from 'lucide-react';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -539,10 +539,6 @@ export default function ProfilePage() {
                 <p className="text-xs text-slate-500 mb-0.5" style={{ fontFamily: 'DM Sans, sans-serif' }}>Member since</p>
                 <p className="text-sm font-semibold text-emerald-400">{joinDate}</p>
               </div>
-              <div>
-                <p className="text-xs text-slate-500 mb-0.5" style={{ fontFamily: 'DM Sans, sans-serif' }}>User ID</p>
-                <p className="text-xs font-mono text-slate-500 truncate max-w-[100px]">{user.uid.slice(0, 10)}…</p>
-              </div>
             </div>
           </div>
         </Card>
@@ -626,13 +622,6 @@ export default function ProfilePage() {
               </div>
             </div>
           )}
-
-          {/* UID row (read-only) */}
-          <InfoRow
-            icon={<Hash style={{ width: 14, height: 14 }} className="text-emerald-400" />}
-            label="User ID"
-            value={user.uid}
-          />
 
           {/* Joined row (read-only) */}
           <div className="flex items-center gap-3 py-3.5">
