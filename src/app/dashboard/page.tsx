@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { useRouter } from 'next/navigation';
 import {
   LineChart,
   Line,
@@ -295,6 +296,7 @@ export default function SmartFarmDashboard() {
   ]);
   const [inputMessage, setInputMessage] = useState('');
   const chatEndRef = useRef<HTMLDivElement>(null);
+  const router = useRouter();
 
   // Load real-time data from Firebase
   useEffect(() => {
@@ -451,7 +453,10 @@ export default function SmartFarmDashboard() {
               icon={Cpu}
               label="Sensor Data"
               active={activeTab === 'sensors'}
-              onClick={() => setActiveTab('sensors')}
+              onClick={() => {
+                setActiveTab('sensors');
+                router.push('/sensor_data');
+              }}
               collapsed={collapsed}
             />
             <SidebarItem
@@ -463,7 +468,7 @@ export default function SmartFarmDashboard() {
             />
             <SidebarItem
               icon={Sprout}
-              label="Seed Performance"
+              label="plant Performance"
               active={activeTab === 'seed-analysis'}
               onClick={() => setActiveTab('seed-analysis')}
               collapsed={collapsed}
@@ -529,6 +534,7 @@ export default function SmartFarmDashboard() {
               onClick={() => {
                 setActiveTab('sensors');
                 setMobileMenuOpen(false);
+                router.push('/sensor_data');
               }}
               collapsed={false}
             />
@@ -975,7 +981,7 @@ export default function SmartFarmDashboard() {
             </div>
           </div>
 
-          {/* Seed Performance Section */}
+          {/* plant Performance Section */}
           <div className="space-y-3 sm:space-y-4">
             <h3 className="text-lg font-semibold text-slate-100">Seed Variety Performance Comparison</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4">
