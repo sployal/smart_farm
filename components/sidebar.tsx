@@ -66,7 +66,7 @@ export default function Sidebar() {
 
         <nav className="flex-1 py-4 overflow-y-auto">
           <ul className="space-y-1">
-            <SidebarItem href="/" icon={BarChart3} label="Dashboard" collapsed={collapsed} />
+            <SidebarItem href="/dashboard" icon={BarChart3} label="Dashboard" collapsed={collapsed} />
             <SidebarItem href="/sensor_data" icon={Cpu} label="Sensor Data" collapsed={collapsed} />
             <SidebarItem href="/ai_insights" icon={Brain} label="AI Insights" collapsed={collapsed} />
             <SidebarItem href="/plant_performance" icon={Sprout} label="Plant Performance" collapsed={collapsed} />
@@ -102,7 +102,7 @@ export default function Sidebar() {
         <nav className="flex-1 py-4 overflow-y-auto">
           <ul className="space-y-1">
             <li className="mx-2 my-1">
-              <Link href="/" onClick={() => setMobileOpen(false)} className="flex items-center gap-3.5 px-4 py-3 rounded-xl text-slate-400 hover:bg-slate-800 hover:text-slate-100">
+              <Link href="/dashboard" onClick={() => setMobileOpen(false)} className="flex items-center gap-3.5 px-4 py-3 rounded-xl text-slate-400 hover:bg-slate-800 hover:text-slate-100">
                 <BarChart3 className="w-5 h-5" />
                 <span>Dashboard</span>
               </Link>
