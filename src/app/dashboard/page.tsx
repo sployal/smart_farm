@@ -56,6 +56,10 @@ import { twMerge } from 'tailwind-merge';
 import { format, subHours } from 'date-fns';
 import { startRealtimeUpdates, fetchSensorData } from '@/lib/firebase';
 
+// Groq API Configuration
+const AI_API_KEY = process.env.NEXT_PUBLIC_GROQ_API_KEY ?? '';
+const AI_MODEL = 'llama-3.3-70b-versatile';
+
 // Utility for tailwind class merging
 function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -96,6 +100,43 @@ type Message = {
   role: 'user' | 'ai';
   content: string;
 };
+
+// --- Groq AI Functions ---
+
+async function callGroqAI(prompt: string, systemContext: string): Promise<string> {
+  if (!AI_API_KEY) {
+    return '⚠️ NEXT_PUBLIC_GROQ_API_KEY is not set. Check your .env.local and restart the dev server.';
+  }
+
+  const url = 'https://api.groq.com/openai/v1/chat/completions';
+
+  const body = {
+    model: AI_MODEL,
+    messages: [
+      ...(systemContext ? [{ role: 'system', content: systemContext }] : []),
+      { role: 'user', content: prompt }
+    ],
+    temperature: 0.7,
+    max_tokens: 1024
+  };
+
+  const res = await fetch(url, {
+    method: 'POST',
+    headers: { 
+      'Content-Type': 'application/json', 
+      'Authorization': `Bearer ${AI_API_KEY}` 
+    },
+    body: JSON.stringify(body)
+  });
+
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err?.error?.message || `AI API error ${res.status}`);
+  }
+
+  const data = await res.json();
+  return data?.choices?.[0]?.message?.content ?? 'No response received.';
+}
 
 // --- Mock Data Generators ---
 
@@ -272,9 +313,9 @@ export default function SmartFarmDashboard() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [activeTab, setActiveTab] = useState('dashboard');
   const [sensorData, setSensorData] = useState<SensorData>({
-    moisture: 58,
-    temperature: 22.8,
-    humidity: 65,
+    moisture: 0,
+    temperature: 0,
+    humidity: 0,
     ph: 6.5,
     nitrogen: 45,
     phosphorus: 32,
@@ -291,10 +332,11 @@ export default function SmartFarmDashboard() {
     {
       id: '1',
       role: 'ai',
-      content: "Hello! I'm Gemini, your AI farming assistant. I can help you analyze crop data, predict yields, suggest irrigation schedules, and diagnose plant health issues. What would you like to know about your farm today?"
+      content: "Hello! I'm your AI farming assistant. I can help you analyze crop data, predict yields, suggest irrigation schedules, and diagnose plant health issues. What would you like to know about your farm today?"
     }
   ]);
   const [inputMessage, setInputMessage] = useState('');
+  const [isAITyping, setIsAITyping] = useState(false);
   const chatEndRef = useRef<HTMLDivElement>(null);
   const router = useRouter();
 
@@ -310,6 +352,8 @@ export default function SmartFarmDashboard() {
       }));
       setIsConnected(true);
       setLastSync('Just now');
+    }).catch(err => {
+      console.error('Error fetching sensor data:', err);
     });
 
     // Set up real-time listener for Firebase updates
@@ -344,8 +388,8 @@ export default function SmartFarmDashboard() {
     chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
-  const handleSendMessage = useCallback(() => {
-    if (!inputMessage.trim()) return;
+  const handleSendMessage = useCallback(async () => {
+    if (!inputMessage.trim() || isAITyping) return;
 
     const userMsg: Message = {
       id: Date.now().toString(),
@@ -355,17 +399,42 @@ export default function SmartFarmDashboard() {
 
     setMessages(prev => [...prev, userMsg]);
     setInputMessage('');
+    setIsAITyping(true);
 
-    // Simulate AI response
-    setTimeout(() => {
+    try {
+      const systemContext = `
+You are an expert AI agronomist assistant for a smart farm in Kenya.
+Current real-time sensor readings:
+- Soil Moisture: ${sensorData.moisture}%
+- Temperature: ${sensorData.temperature}°C  
+- Humidity: ${sensorData.humidity}%
+- Soil pH: ${sensorData.ph}
+- Nitrogen (N): ${sensorData.nitrogen} mg/kg
+- Phosphorus (P): ${sensorData.phosphorus} mg/kg
+- Potassium (K): ${sensorData.potassium} mg/kg
+Current crop: Tomatoes (Roma VF variety), Plot A.
+Give concise, actionable advice. Be friendly and professional.
+      `.trim();
+
+      const aiResponse = await callGroqAI(inputMessage, systemContext);
+      
       const aiMsg: Message = {
         id: (Date.now() + 1).toString(),
         role: 'ai',
-        content: `Based on your current farm data (Temp: ${sensorData.temperature}°C, Moisture: ${sensorData.moisture}%), I recommend maintaining current irrigation levels. Your tomatoes are showing healthy growth patterns.`
+        content: aiResponse
       };
       setMessages(prev => [...prev, aiMsg]);
-    }, 1000);
-  }, [inputMessage, sensorData]);
+    } catch (error) {
+      const errorMsg: Message = {
+        id: (Date.now() + 1).toString(),
+        role: 'ai',
+        content: `❌ Error: ${(error as Error).message}`
+      };
+      setMessages(prev => [...prev, errorMsg]);
+    } finally {
+      setIsAITyping(false);
+    }
+  }, [inputMessage, sensorData, isAITyping]);
 
   const insights: Insight[] = [
     {
@@ -397,7 +466,7 @@ export default function SmartFarmDashboard() {
   const logs: LogEntry[] = [
     { id: '1', time: '10:42 AM', event: 'Data Sync', sensor: 'ESP32-Node1', value: 'Batch: 24 readings', status: 'success' },
     { id: '2', time: '10:38 AM', event: 'Threshold Alert', sensor: 'Soil Moisture', value: '23% → 19%', status: 'warning' },
-    { id: '3', time: '10:35 AM', event: 'AI Analysis', sensor: 'Gemini API', value: '3 insights generated', status: 'success' },
+    { id: '3', time: '10:35 AM', event: 'AI Analysis', sensor: 'AI System', value: '3 insights generated', status: 'success' },
     { id: '4', time: '10:30 AM', event: 'Offline Mode', sensor: 'Connectivity', value: 'WiFi disconnected', status: 'info' },
   ];
 
@@ -463,8 +532,6 @@ export default function SmartFarmDashboard() {
               <option>Plot C - Beans</option>
             </select>
           </div>
-
-
 
           {/* Sensor Grid */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -735,7 +802,7 @@ export default function SmartFarmDashboard() {
             <div className="bg-slate-800 border border-slate-700 rounded-2xl flex flex-col overflow-hidden">
               <div className="p-4 bg-gradient-to-r from-emerald-600 to-emerald-700 flex items-center gap-3">
                 <Bot className="w-6 h-6 text-white" />
-                <h3 className="text-lg font-semibold text-white flex-1">Gemini AI Insights</h3>
+                <h3 className="text-lg font-semibold text-white flex-1">AI Insights</h3>
                 <span className="px-2 py-0.5 bg-white/20 rounded-full text-xs font-semibold text-white animate-pulse">
                   Live
                 </span>
@@ -776,7 +843,7 @@ export default function SmartFarmDashboard() {
               <div className="p-4 border-t border-slate-700 bg-slate-900/50 flex gap-2">
                 <input
                   type="text"
-                  placeholder="Ask Gemini about your crops..."
+                  placeholder="Ask AI about your crops..."
                   className="flex-1 bg-slate-950 border border-slate-700 rounded-xl px-4 py-2.5 text-sm text-slate-200 placeholder:text-slate-600 focus:outline-none focus:border-emerald-500/50"
                   onClick={() => setChatOpen(true)}
                   readOnly
@@ -912,7 +979,7 @@ export default function SmartFarmDashboard() {
             <div className="flex items-center justify-between p-4 border-b border-slate-700">
               <h3 className="flex items-center gap-2 text-lg font-semibold text-slate-100">
                 <Bot className="w-5 h-5 text-emerald-500" />
-                Gemini AI Assistant
+                AI Assistant
               </h3>
               <button
                 onClick={() => setChatOpen(false)}
@@ -947,6 +1014,22 @@ export default function SmartFarmDashboard() {
                   </div>
                 </div>
               ))}
+
+              {isAITyping && (
+                <div className="flex gap-3 max-w-[85%]">
+                  <div className="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 bg-emerald-600 text-white">
+                    <Bot className="w-5 h-5" />
+                  </div>
+                  <div className="p-3 rounded-2xl text-sm leading-relaxed bg-slate-700 text-slate-200 rounded-tl-sm">
+                    <div className="flex gap-1">
+                      <span className="w-2 h-2 bg-slate-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></span>
+                      <span className="w-2 h-2 bg-slate-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></span>
+                      <span className="w-2 h-2 bg-slate-400 rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></span>
+                    </div>
+                  </div>
+                </div>
+              )}
+
               <div ref={chatEndRef} />
             </div>
 
@@ -958,11 +1041,13 @@ export default function SmartFarmDashboard() {
                   onChange={(e) => setInputMessage(e.target.value)}
                   onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
                   placeholder="Type your question..."
-                  className="flex-1 bg-slate-950 border border-slate-700 rounded-xl px-4 py-3 text-sm text-slate-200 placeholder:text-slate-600 focus:outline-none focus:border-emerald-500/50"
+                  disabled={isAITyping}
+                  className="flex-1 bg-slate-950 border border-slate-700 rounded-xl px-4 py-3 text-sm text-slate-200 placeholder:text-slate-600 focus:outline-none focus:border-emerald-500/50 disabled:opacity-50"
                 />
                 <button
                   onClick={handleSendMessage}
-                  className="w-11 h-11 bg-emerald-600 hover:bg-emerald-500 rounded-xl flex items-center justify-center text-white transition-all hover:scale-105 active:scale-95"
+                  disabled={isAITyping || !inputMessage.trim()}
+                  className="w-11 h-11 bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 disabled:cursor-not-allowed rounded-xl flex items-center justify-center text-white transition-all hover:scale-105 active:scale-95"
                 >
                   <Send className="w-4 h-4" />
                 </button>
