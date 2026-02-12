@@ -122,22 +122,29 @@ async function generateInsights(sensor: SensorData): Promise<Insight[]> {
 You are an expert agronomist AI. Given the following real-time sensor readings from a tomato farm in Kenya, return a JSON array of exactly 4 insights.
 
 SENSOR DATA:
-- Soil Moisture: ${sensor.moisture}%
 - Temperature: ${sensor.temperature}°C
 - Humidity: ${sensor.humidity}%
+- Soil Moisture: ${sensor.moisture}%
 - Soil pH: ${sensor.ph}
 - Nitrogen (N): ${sensor.nitrogen} mg/kg
 - Phosphorus (P): ${sensor.phosphorus} mg/kg
 - Potassium (K): ${sensor.potassium} mg/kg
+
+IMPORTANT RULES:
+1. The FIRST insight MUST be about Temperature.
+2. The SECOND insight MUST be about Humidity.
+3. The THIRD insight MUST be about Soil Moisture.
+4. The FOURTH insight should cover whichever of pH, Nutrition, Disease Risk, or Harvest is most urgent.
+5. Each insight must directly reference the actual sensor value in the detail field.
 
 Return ONLY valid JSON (no markdown fences) in this exact format:
 [
   {
     "id": "1",
     "priority": "critical|high|medium|low",
-    "category": "Irrigation|Nutrition|pH|Disease Risk|Harvest|Climate",
-    "title": "Short title",
-    "detail": "2-sentence description of the issue",
+    "category": "Temperature|Humidity|Irrigation|Nutrition|pH|Disease Risk|Harvest|Climate",
+    "title": "Short title referencing the actual value",
+    "detail": "2-sentence description referencing the exact sensor reading and what it means for the crops",
     "action": "Specific actionable recommendation",
     "impact": "Expected outcome if action is taken",
     "confidence": 88
@@ -194,10 +201,12 @@ const priorityConfig: Record<Priority, { color: string; bg: string; border: stri
 // ── Insight Card ───────────────────────────────
 
 function InsightCard({ insight, index }: { insight: Insight; index: number }) {
-  const [expanded, setExpanded] = useState(false);
+  const [expanded, setExpanded] = useState(true);
   const cfg = priorityConfig[insight.priority];
 
   const categoryIcon: Record<string, React.ReactNode> = {
+    Temperature:  <Thermometer className="w-4 h-4" />,
+    Humidity:     <Waves className="w-4 h-4" />,
     Irrigation:   <Droplets className="w-4 h-4" />,
     Nutrition:    <FlaskConical className="w-4 h-4" />,
     pH:           <FlaskConical className="w-4 h-4" />,
