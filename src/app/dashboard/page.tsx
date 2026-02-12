@@ -432,7 +432,7 @@ export default function SmartFarmDashboard() {
               <RefreshCw className="w-4 sm:w-5 h-4 sm:h-5 group-hover:animate-spin" />
             </button>
 
-            <button className="relative p-2 sm:p-2.5 rounded-xl hover:bg-slate-800 text-slate-400 transition-all flex-shrink-0">
+            <button onClick={() => router.push('/notifications')} className="relative p-2 sm:p-2.5 rounded-xl hover:bg-slate-800 text-slate-400 transition-all flex-shrink-0">
               <Bell className="w-4 sm:w-5 h-4 sm:h-5" />
               <span className="absolute top-0 right-0 w-4 h-4 bg-red-500 text-[10px] font-bold text-white rounded-full flex items-center justify-center border-2 border-slate-900">
                 3
@@ -464,19 +464,7 @@ export default function SmartFarmDashboard() {
             </select>
           </div>
 
-          {/* Alert Banner */}
-          {showAlert && (
-            <div className="flex items-center gap-4 p-4 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-400 animate-in slide-in-from-top-2">
-              <AlertTriangle className="w-5 h-5 flex-shrink-0" />
-              <div className="flex-1">
-                <strong className="block text-amber-300 font-semibold">Low Soil Moisture Detected</strong>
-                <span className="text-sm text-amber-400/90">Plot A moisture levels dropped to 23%. Consider irrigation within 6 hours.</span>
-              </div>
-              <button onClick={() => setShowAlert(false)} className="p-1 hover:bg-amber-500/20 rounded-lg transition-colors">
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-          )}
+
 
           {/* Sensor Grid */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
