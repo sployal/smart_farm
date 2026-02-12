@@ -404,13 +404,9 @@ export default function SmartFarmDashboard() {
   const miniChartData = generateRandomData(10, 40, 80);
 
   return (
-    <div className="flex min-h-screen bg-slate-950 text-slate-100 font-sans overflow-x-hidden">
-      
-
-      {/* Main Content */}
-      <main className={cn("flex-1 transition-all duration-300 min-h-screen", collapsed ? "lg:ml-20" : "lg:ml-64")}>
-        {/* Header */}
-        <header className="sticky top-0 z-40 h-16 bg-slate-900/80 backdrop-blur-md border-b border-slate-800 flex items-center justify-between px-3 sm:px-4 md:px-6 lg:px-8 gap-2 sm:gap-3 md:gap-4 flex-wrap sm:flex-nowrap">
+    <div className="bg-slate-950 text-slate-100 font-sans overflow-x-hidden">
+      {/* Header */}
+      <header className="sticky top-0 z-40 h-16 bg-slate-900/80 backdrop-blur-md border-b border-slate-800 flex items-center justify-between px-3 sm:px-4 md:px-6 lg:px-8 gap-2 sm:gap-3 md:gap-4 flex-wrap sm:flex-nowrap">
           <button
             onClick={() => setMobileMenuOpen(true)}
             className="lg:hidden p-2 rounded-lg hover:bg-slate-800 text-slate-400 transition-colors flex-shrink-0"
@@ -918,7 +914,6 @@ export default function SmartFarmDashboard() {
             </div>
           </div>
         </div>
-      </main>
 
       {/* AI Chat Modal */}
       {chatOpen && (

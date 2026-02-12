@@ -30,7 +30,7 @@ export default function RootLayout({
     <html lang="en">
       <body className={`${geistSans.variable} ${geistMono.variable} antialiased`} style={{ "--sidebar-width": "256px" } as React.CSSProperties}>
         <Sidebar />
-        <main className="transition-all duration-300 min-h-screen" style={{ marginLeft: "var(--sidebar-width, 256px)" } as React.CSSProperties} >
+        <main className="transition-all duration-300 min-h-screen ml-64 lg:ml-64" style={{}} >
           <style>{`
             @media (max-width: 1023px) {
               main {
