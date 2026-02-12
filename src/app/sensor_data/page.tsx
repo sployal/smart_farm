@@ -616,11 +616,16 @@ export default function SensorDataPage() {
   const [timeRange, setTimeRange] = useState<TimeRange>('24h');
   const [refreshKey, setRefreshKey] = useState(0);
   const [lastUpdated, setLastUpdated] = useState(new Date());
+  const [mounted, setMounted] = useState(false);
 
   const refresh = () => {
     setRefreshKey(k => k + 1);
     setLastUpdated(new Date());
   };
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100">
@@ -635,7 +640,7 @@ export default function SensorDataPage() {
         <div className="flex items-center gap-3">
           <span className="hidden sm:flex items-center gap-1.5 text-xs text-slate-500">
             <Clock className="w-3.5 h-3.5" />
-            {format(lastUpdated, 'HH:mm:ss')}
+            {mounted ? format(lastUpdated, 'HH:mm:ss') : '--:--:--'}
           </span>
           <button
             onClick={refresh}
