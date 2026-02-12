@@ -405,10 +405,12 @@ export default function SmartFarmDashboard() {
 
   return (
     <div className="bg-slate-950 text-slate-100 font-sans overflow-x-hidden">
-      {/* Header */}
-      <header className="sticky top-0 z-40 h-16 bg-slate-900/80 backdrop-blur-md border-b border-slate-800 flex items-center justify-between px-3 sm:px-4 md:px-6 lg:px-8 gap-2 sm:gap-3 md:gap-4 flex-wrap sm:flex-nowrap">
+        {/* Header */}
+        <header className="sticky top-0 z-40 h-16 bg-slate-900/80 backdrop-blur-md border-b border-slate-800 flex items-center justify-between px-3 sm:px-4 md:px-6 lg:px-8 gap-2 sm:gap-3 md:gap-4 flex-wrap sm:flex-nowrap">
           <button
-            onClick={() => setMobileMenuOpen(true)}
+            onClick={() => {
+              document.dispatchEvent(new CustomEvent('toggleMobileMenu'));
+            }}
             className="lg:hidden p-2 rounded-lg hover:bg-slate-800 text-slate-400 transition-colors flex-shrink-0"
           >
             <Menu className="w-5 h-5" />

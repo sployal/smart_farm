@@ -41,6 +41,14 @@ export default function Sidebar() {
     document.documentElement.style.setProperty("--sidebar-width", sidebarWidth);
   }, [collapsed]);
 
+  React.useEffect(() => {
+    const handleToggleMobileMenu = () => {
+      setMobileOpen(prev => !prev);
+    };
+    document.addEventListener('toggleMobileMenu', handleToggleMobileMenu);
+    return () => document.removeEventListener('toggleMobileMenu', handleToggleMobileMenu);
+  }, []);
+
   return (
     <>
       {/* Desktop Sidebar */}
@@ -92,31 +100,31 @@ export default function Sidebar() {
         <nav className="flex-1 py-4 overflow-y-auto">
           <ul className="space-y-1">
             <li className="mx-2 my-1">
-              <Link href="/" className="flex items-center gap-3.5 px-4 py-3 rounded-xl text-slate-400 hover:bg-slate-800 hover:text-slate-100">
+              <Link href="/" onClick={() => setMobileOpen(false)} className="flex items-center gap-3.5 px-4 py-3 rounded-xl text-slate-400 hover:bg-slate-800 hover:text-slate-100">
                 <BarChart3 className="w-5 h-5" />
                 <span>Dashboard</span>
               </Link>
             </li>
             <li className="mx-2 my-1">
-              <Link href="/sensor_data" className="flex items-center gap-3.5 px-4 py-3 rounded-xl text-slate-400 hover:bg-slate-800 hover:text-slate-100">
+              <Link href="/sensor_data" onClick={() => setMobileOpen(false)} className="flex items-center gap-3.5 px-4 py-3 rounded-xl text-slate-400 hover:bg-slate-800 hover:text-slate-100">
                 <Cpu className="w-5 h-5" />
                 <span>Sensor Data</span>
               </Link>
             </li>
             <li className="mx-2 my-1">
-              <Link href="/ai_insights" className="flex items-center gap-3.5 px-4 py-3 rounded-xl text-slate-400 hover:bg-slate-800 hover:text-slate-100">
+              <Link href="/ai_insights" onClick={() => setMobileOpen(false)} className="flex items-center gap-3.5 px-4 py-3 rounded-xl text-slate-400 hover:bg-slate-800 hover:text-slate-100">
                 <Brain className="w-5 h-5" />
                 <span>AI Insights</span>
               </Link>
             </li>
             <li className="mx-2 my-1">
-              <Link href="/plant_performance" className="flex items-center gap-3.5 px-4 py-3 rounded-xl text-slate-400 hover:bg-slate-800 hover:text-slate-100">
+              <Link href="/plant_performance" onClick={() => setMobileOpen(false)} className="flex items-center gap-3.5 px-4 py-3 rounded-xl text-slate-400 hover:bg-slate-800 hover:text-slate-100">
                 <Sprout className="w-5 h-5" />
                 <span>Plant Performance</span>
               </Link>
             </li>
             <li className="mx-2 my-1">
-              <Link href="/setings" className="flex items-center gap-3.5 px-4 py-3 rounded-xl text-slate-400 hover:bg-slate-800 hover:text-slate-100">
+              <Link href="/setings" onClick={() => setMobileOpen(false)} className="flex items-center gap-3.5 px-4 py-3 rounded-xl text-slate-400 hover:bg-slate-800 hover:text-slate-100">
                 <Settings className="w-5 h-5" />
                 <span>Settings</span>
               </Link>
