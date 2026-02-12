@@ -1,21 +1,18 @@
 'use client';
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState } from 'react';
 import {
-  AreaChart, Area, LineChart, Line, BarChart, Bar,
-  XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
-  ReferenceLine, ReferenceArea
+  AreaChart, Area, XAxis, YAxis, CartesianGrid,
+  Tooltip, ResponsiveContainer, ReferenceLine
 } from 'recharts';
 import {
-  Thermometer, Droplets, Waves, FlaskConical, Leaf,
-  TrendingUp, TrendingDown, Minus, AlertTriangle,
-  CheckCircle, Info, ChevronDown, Activity, Zap,
-  RefreshCw, Clock, Target, ArrowUpRight, ArrowDownRight,
-  BarChart3, Eye, Cpu
+  Thermometer, Droplets, Waves, FlaskConical,
+  CheckCircle, AlertTriangle, Zap, RefreshCw,
+  ArrowUpRight, ArrowDownRight, Minus, Target, Eye
 } from 'lucide-react';
+import { format, subHours } from 'date-fns';
 import clsx, { type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
-import { format, subHours, subDays } from 'date-fns';
 
 function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -26,12 +23,7 @@ function cn(...inputs: ClassValue[]) {
 type TimeRange = '6h' | '24h' | '7d' | '30d';
 type SensorKey = 'temperature' | 'humidity' | 'moisture' | 'ph';
 
-type DataPoint = {
-  time: string;
-  value: number;
-  min?: number;
-  max?: number;
-};
+type DataPoint = { time: string; value: number };
 
 type SensorConfig = {
   key: SensorKey;
@@ -39,10 +31,8 @@ type SensorConfig = {
   unit: string;
   icon: React.ElementType;
   color: string;
-  gradientId: string;
-  accentBg: string;
-  accentText: string;
-  accentBorder: string;
+  colorLight: string;
+  textClass: string;
   optimalMin: number;
   optimalMax: number;
   criticalMin: number;
@@ -51,456 +41,354 @@ type SensorConfig = {
   description: string;
 };
 
-// ─── Mock Data ─────────────────────────────────────────────────────────────────
+// ─── Sensor configs with vivid colors ────────────────────────────────────────
 
-function generateSensorHistory(
-  points: number,
-  base: number,
-  variance: number,
-  driftFn?: (i: number, total: number) => number
-): DataPoint[] {
-  const now = new Date();
-  return Array.from({ length: points }, (_, i) => {
-    const hoursBack = points - 1 - i;
-    const date = subHours(now, hoursBack);
-    const drift = driftFn ? driftFn(i, points) : 0;
-    const value = +(base + drift + (Math.random() - 0.5) * variance * 2).toFixed(2);
-    return {
-      time: format(date, points <= 24 ? 'HH:mm' : 'MMM dd'),
-      value,
-      min: +(value - variance * 0.6).toFixed(2),
-      max: +(value + variance * 0.6).toFixed(2),
-    };
-  });
-}
-
-// ─── Sensor Config ─────────────────────────────────────────────────────────────
-
-const SENSOR_CONFIGS: SensorConfig[] = [
+const SENSORS: SensorConfig[] = [
   {
     key: 'temperature',
     label: 'Temperature',
     unit: '°C',
     icon: Thermometer,
-    color: '#f59e0b',
-    gradientId: 'tempGrad',
-    accentBg: 'bg-amber-500/10',
-    accentText: 'text-amber-400',
-    accentBorder: 'border-amber-500/30',
+    color: '#f97316',
+    colorLight: '#fff7ed',
+    textClass: 'text-orange-500',
     optimalMin: 18,
     optimalMax: 28,
     criticalMin: 10,
     criticalMax: 38,
     currentValue: 24.3,
     description:
-      'Soil and ambient temperature directly impacts plant metabolic rates, nutrient uptake efficiency, and germination speed. Temperatures outside the 18–28°C range begin to inhibit enzymatic activity.',
+      'Air and soil temperature drives metabolic rates, enzymatic activity, and nutrient uptake. Consistent temperatures between 18–28°C support vigorous tomato growth and fruit development.',
   },
   {
     key: 'humidity',
-    label: 'Humidity',
+    label: 'Relative Humidity',
     unit: '%',
     icon: Waves,
-    color: '#06b6d4',
-    gradientId: 'humidGrad',
-    accentBg: 'bg-cyan-500/10',
-    accentText: 'text-cyan-400',
-    accentBorder: 'border-cyan-500/30',
+    color: '#0ea5e9',
+    colorLight: '#f0f9ff',
+    textClass: 'text-sky-500',
     optimalMin: 55,
     optimalMax: 80,
     criticalMin: 30,
     criticalMax: 95,
     currentValue: 68.5,
     description:
-      'Relative humidity governs transpiration rates and pathogen susceptibility. Sustained levels above 85% create fungal disease conditions. Below 40% triggers stomatal closure, reducing photosynthesis.',
+      'Relative humidity controls transpiration and pathogen pressure. Levels above 85% for extended periods create fungal disease conditions. Below 40% forces stomatal closure.',
   },
   {
     key: 'moisture',
     label: 'Soil Moisture',
     unit: '%',
     icon: Droplets,
-    color: '#3b82f6',
-    gradientId: 'moistGrad',
-    accentBg: 'bg-blue-500/10',
-    accentText: 'text-blue-400',
-    accentBorder: 'border-blue-500/30',
+    color: '#6366f1',
+    colorLight: '#eef2ff',
+    textClass: 'text-indigo-500',
     optimalMin: 40,
     optimalMax: 70,
     criticalMin: 20,
     criticalMax: 85,
     currentValue: 58.2,
     description:
-      'Volumetric water content in the root zone. Field capacity for loamy soil is 40–60%. Values below 25% indicate wilting point stress. Over-irrigation above 80% reduces oxygen availability for roots.',
+      'Volumetric water content in the root zone determines nutrient availability and oxygen access. Field capacity is 40–60% for loamy soil. Below 25% triggers wilting stress.',
   },
   {
     key: 'ph',
     label: 'Soil pH',
     unit: 'pH',
     icon: FlaskConical,
-    color: '#a855f7',
-    gradientId: 'phGrad',
-    accentBg: 'bg-violet-500/10',
-    accentText: 'text-violet-400',
-    accentBorder: 'border-violet-500/30',
+    color: '#10b981',
+    colorLight: '#ecfdf5',
+    textClass: 'text-emerald-500',
     optimalMin: 6.0,
     optimalMax: 7.0,
     criticalMin: 4.5,
     criticalMax: 8.5,
     currentValue: 6.4,
     description:
-      'Soil pH controls nutrient availability and microbial activity. Most nutrients are optimally available between pH 6.0–7.0. Below 5.5 causes aluminum and manganese toxicity; above 7.5 locks out iron, zinc, and manganese.',
+      'Soil pH governs nutrient solubility and microbial activity. Most macronutrients are available at pH 6–7. Below 5.5 causes aluminium toxicity; above 7.5 locks out iron and manganese.',
   },
 ];
 
-// ─── Analysis Engine ───────────────────────────────────────────────────────────
+// ─── Data generation ──────────────────────────────────────────────────────────
 
-type AnalysisResult = {
+function buildData(cfg: SensorConfig, range: TimeRange): DataPoint[] {
+  const pts = range === '6h' ? 24 : range === '24h' ? 48 : range === '7d' ? 84 : 120;
+  const now = new Date();
+  const drifts: Record<SensorKey, (i: number, t: number) => number> = {
+    temperature: (i, t) => Math.sin((i / t) * Math.PI * 2) * 3,
+    humidity: (i, t) => -Math.sin((i / t) * Math.PI) * 8,
+    moisture: (i, t) => -((i / t) * 12),
+    ph: (i, t) => Math.cos((i / t) * Math.PI) * 0.25,
+  };
+  const variance = cfg.key === 'ph' ? 0.25 : 4.5;
+  return Array.from({ length: pts }, (_, i) => {
+    const hoursBack = pts - 1 - i;
+    const date = subHours(now, hoursBack);
+    const drift = drifts[cfg.key](i, pts);
+    const value = +(cfg.currentValue + drift + (Math.random() - 0.5) * variance * 2).toFixed(2);
+    return { time: format(date, pts <= 48 ? 'HH:mm' : 'MMM d'), value };
+  });
+}
+
+// ─── Analysis ─────────────────────────────────────────────────────────────────
+
+type Analysis = {
   status: 'optimal' | 'warning' | 'critical';
-  label: string;
   trend: 'rising' | 'falling' | 'stable';
   trendPct: number;
-  avgValue: number;
-  minValue: number;
-  maxValue: number;
+  avg: number;
+  min: number;
+  max: number;
   insights: string[];
   recommendation: string;
 };
 
-function analyzeData(cfg: SensorConfig, data: DataPoint[]): AnalysisResult {
-  if (!data.length) {
-    return {
-      status: 'optimal', label: 'No data', trend: 'stable', trendPct: 0,
-      avgValue: 0, minValue: 0, maxValue: 0, insights: [], recommendation: ''
-    };
-  }
+function analyze(cfg: SensorConfig, data: DataPoint[]): Analysis {
+  const vals = data.map(d => d.value);
+  const avg = +(vals.reduce((a, b) => a + b, 0) / vals.length).toFixed(2);
+  const min = +Math.min(...vals).toFixed(2);
+  const max = +Math.max(...vals).toFixed(2);
 
-  const values = data.map(d => d.value);
-  const avgValue = +(values.reduce((a, b) => a + b, 0) / values.length).toFixed(2);
-  const minValue = +Math.min(...values).toFixed(2);
-  const maxValue = +Math.max(...values).toFixed(2);
-
-  const firstHalf = values.slice(0, Math.floor(values.length / 2));
-  const secondHalf = values.slice(Math.floor(values.length / 2));
-  const firstAvg = firstHalf.reduce((a, b) => a + b, 0) / firstHalf.length;
-  const secondAvg = secondHalf.reduce((a, b) => a + b, 0) / secondHalf.length;
-  const trendPct = +((secondAvg - firstAvg) / firstAvg * 100).toFixed(1);
+  const half = Math.floor(vals.length / 2);
+  const a1 = vals.slice(0, half).reduce((a, b) => a + b, 0) / half;
+  const a2 = vals.slice(half).reduce((a, b) => a + b, 0) / (vals.length - half);
+  const trendPct = +((a2 - a1) / a1 * 100).toFixed(1);
   const trend = trendPct > 1.5 ? 'rising' : trendPct < -1.5 ? 'falling' : 'stable';
 
   const cur = cfg.currentValue;
-  let status: AnalysisResult['status'] = 'optimal';
-  if (cur < cfg.criticalMin || cur > cfg.criticalMax) status = 'critical';
-  else if (cur < cfg.optimalMin || cur > cfg.optimalMax) status = 'warning';
+  const status: Analysis['status'] =
+    cur < cfg.criticalMin || cur > cfg.criticalMax ? 'critical' :
+    cur < cfg.optimalMin || cur > cfg.optimalMax ? 'warning' : 'optimal';
 
-  const rangeSpread = +((maxValue - minValue)).toFixed(2);
-  const stabilityPct = +(rangeSpread / avgValue * 100).toFixed(1);
+  const spread = max - min;
+  const variancePct = +(spread / avg * 100).toFixed(1);
 
-  const insights: string[] = [];
+  const insights = [
+    variancePct > 20
+      ? `High variance detected — readings swing ±${(spread / 2).toFixed(1)}${cfg.unit}, suggesting environmental instability or sensor noise.`
+      : `Readings are stable with low variance (±${(spread / 2).toFixed(1)}${cfg.unit}) — conditions are consistent.`,
+    trend === 'rising'
+      ? `Upward trend of +${Math.abs(trendPct)}% over the period. Watch for approach toward the ${cfg.optimalMax}${cfg.unit} upper threshold.`
+      : trend === 'falling'
+      ? `Downward trend of ${trendPct}% recorded. Continued decline may breach the lower optimal of ${cfg.optimalMin}${cfg.unit}.`
+      : `No significant directional drift — values are holding steady around ${avg}${cfg.unit}.`,
+    status === 'optimal'
+      ? `Current value ${cur}${cfg.unit} sits comfortably within the optimal band (${cfg.optimalMin}–${cfg.optimalMax}${cfg.unit}). No corrective action needed.`
+      : status === 'warning'
+      ? `Current value ${cur}${cfg.unit} is outside optimal range — conditions are suboptimal but manageable.`
+      : `Current value ${cur}${cfg.unit} has crossed a critical threshold. Immediate action required.`,
+  ];
 
-  if (stabilityPct > 20)
-    insights.push(`High variance detected — readings fluctuate ±${(rangeSpread / 2).toFixed(1)}${cfg.unit}, indicating sensor or environmental instability.`);
-  else
-    insights.push(`Readings are stable with low variance (±${(rangeSpread / 2).toFixed(1)}${cfg.unit}), suggesting consistent conditions.`);
-
-  if (trend === 'rising')
-    insights.push(`Upward trend of +${Math.abs(trendPct)}% observed over the period. Monitor for exceeding upper threshold of ${cfg.optimalMax}${cfg.unit}.`);
-  else if (trend === 'falling')
-    insights.push(`Downward trend of ${trendPct}% over the period. If decline continues, consider intervention before reaching ${cfg.optimalMin}${cfg.unit}.`);
-  else
-    insights.push(`Values have remained stable around ${avgValue}${cfg.unit} with no significant directional drift.`);
-
-  if (status === 'optimal')
-    insights.push(`Current value of ${cur}${cfg.unit} is within the optimal range (${cfg.optimalMin}–${cfg.optimalMax}${cfg.unit}). No immediate action required.`);
-  else if (status === 'warning')
-    insights.push(`Current value of ${cur}${cfg.unit} is outside the optimal range. Conditions are suboptimal but not yet critical.`);
-  else
-    insights.push(`⚠ Current value of ${cur}${cfg.unit} has crossed critical thresholds. Immediate intervention recommended.`);
-
-  const label = status === 'optimal' ? 'Optimal' : status === 'warning' ? 'Suboptimal' : 'Critical';
-
-  const recommendations: Record<SensorKey, Record<string, string>> = {
+  const recs: Record<SensorKey, Record<string, string>> = {
     temperature: {
-      optimal: 'Maintain current ventilation and shade levels. No action needed.',
+      optimal: 'Maintain current ventilation and shading. Conditions support strong metabolic activity.',
       warning: cur < cfg.optimalMin
-        ? 'Temperature is below optimal. Consider activating row covers or mulching to retain soil heat.'
-        : 'Temperature is above optimal. Increase ventilation, apply reflective mulch, or consider shade netting.',
+        ? 'Apply row covers or black plastic mulch to retain heat. Monitor overnight minimums.'
+        : 'Increase airflow, apply reflective mulch, and consider shade netting during peak afternoon hours.',
       critical: cur < cfg.criticalMin
-        ? 'Frost risk is high. Apply emergency frost protection immediately and activate heating systems.'
-        : 'Heat stress threshold exceeded. Activate emergency cooling, increase irrigation frequency.',
+        ? 'Frost risk is present. Deploy emergency frost blankets and activate any heating infrastructure immediately.'
+        : 'Heat stress exceeds critical threshold. Activate cooling misting, maximise shade coverage, and increase irrigation.',
     },
     humidity: {
-      optimal: 'Humidity levels support healthy transpiration. Maintain current airflow.',
+      optimal: 'Humidity supports healthy transpiration. Maintain current irrigation and ventilation schedule.',
       warning: cur > cfg.optimalMax
-        ? 'High humidity increases fungal disease risk. Improve air circulation and reduce irrigation frequency.'
-        : 'Low humidity may cause increased transpiration stress. Consider misting or shade cloth.',
+        ? 'Elevated humidity increases fungal risk. Improve inter-row airflow and reduce evening irrigation.'
+        : 'Low humidity is elevating transpiration stress. Consider overhead misting or shade cloth.',
       critical: cur > cfg.criticalMax
-        ? 'Critically high humidity — immediate fungicide application and ventilation required.'
-        : 'Critically low humidity. Activate emergency misting systems and shade structures.',
+        ? 'Critically high humidity — apply preventative fungicide, ventilate immediately, and suspend irrigation.'
+        : 'Critically low humidity. Activate emergency misting and review irrigation schedule.',
     },
     moisture: {
-      optimal: 'Soil moisture is at field capacity. Maintain current irrigation schedule.',
+      optimal: 'Soil moisture is at field capacity. Continue current irrigation cycle.',
       warning: cur < cfg.optimalMin
-        ? 'Soil moisture is declining. Schedule irrigation within the next 12 hours.'
-        : 'Over-irrigation risk. Skip next scheduled irrigation and monitor drainage.',
+        ? 'Moisture declining — schedule a 20-minute drip irrigation run within the next 8 hours.'
+        : 'Trending toward over-saturation. Skip one irrigation cycle and inspect drainage capacity.',
       critical: cur < cfg.criticalMin
-        ? 'Plants are approaching wilting point. Begin emergency irrigation immediately.'
-        : 'Waterlogged conditions. Stop irrigation, check drainage systems, and apply fungicide.',
+        ? 'Soil is approaching wilting point. Begin emergency irrigation immediately and check for drip blockages.'
+        : 'Waterlogged conditions detected. Stop all irrigation, open drainage channels, and apply protective fungicide.',
     },
     ph: {
-      optimal: 'pH is in the ideal range for nutrient absorption. Maintain current amendment schedule.',
+      optimal: 'pH is ideal for nutrient availability. Maintain current soil amendment schedule.',
       warning: cur < cfg.optimalMin
-        ? 'Slightly acidic soil. Apply lime (calcium carbonate) at 50 kg/ha to raise pH.'
-        : 'Slightly alkaline soil. Apply sulfur at 30 kg/ha or use acidifying fertilizers.',
+        ? 'Slightly acidic — apply agricultural lime at 50 kg/ha to nudge pH upward.'
+        : 'Slightly alkaline — incorporate elemental sulfur at 30 kg/ha or switch to acidifying NPK blends.',
       critical: cur < cfg.criticalMin
-        ? 'Critically low pH causes aluminum toxicity. Apply agricultural lime at 200 kg/ha urgently.'
-        : 'Critically high pH locks out micronutrients. Apply gypsum and acidifying amendments immediately.',
+        ? 'Critically acidic soil will cause aluminium toxicity. Apply lime at 200 kg/ha urgently and retest in 48 hours.'
+        : 'Critically alkaline — micronutrient lockout is imminent. Apply gypsum and acidifying amendments without delay.',
     },
   };
 
-  const recommendation = recommendations[cfg.key][status];
-
-  return { status, label, trend, trendPct, avgValue, minValue, maxValue, insights, recommendation };
+  return { status, trend, trendPct, avg, min, max, insights, recommendation: recs[cfg.key][status] };
 }
 
-// ─── Custom Tooltip ────────────────────────────────────────────────────────────
+// ─── Custom tooltip ───────────────────────────────────────────────────────────
 
-const CustomTooltip = ({
-  active, payload, label, unit, color
-}: {
-  active?: boolean; payload?: any[]; label?: string; unit: string; color: string;
-}) => {
+const ChartTooltip = ({ active, payload, label, color, unit }: any) => {
   if (!active || !payload?.length) return null;
   return (
-    <div className="bg-slate-900 border border-slate-700 rounded-xl px-4 py-3 shadow-2xl text-sm">
-      <p className="text-slate-400 mb-1 text-xs font-mono">{label}</p>
-      {payload.map((p, i) => (
-        <p key={i} className="font-semibold" style={{ color: p.color || color }}>
-          {p.name}: {typeof p.value === 'number' ? p.value.toFixed(2) : p.value}{unit}
-        </p>
-      ))}
+    <div className="bg-white shadow-2xl rounded-2xl px-4 py-3 border border-gray-100 text-sm pointer-events-none">
+      <p className="text-gray-400 text-xs font-mono mb-1">{label}</p>
+      <p className="font-bold text-base" style={{ color }}>
+        {payload[0].value?.toFixed(2)}{unit}
+      </p>
     </div>
   );
 };
 
-// ─── Stat Badge ────────────────────────────────────────────────────────────────
+// ─── Sensor section ───────────────────────────────────────────────────────────
 
-const StatBadge = ({
-  label, value, unit, sub, colorClass
-}: {
-  label: string; value: string | number; unit?: string; sub?: string; colorClass: string;
-}) => (
-  <div className="flex flex-col gap-0.5">
-    <span className="text-xs text-slate-500 uppercase tracking-widest font-medium">{label}</span>
-    <span className={cn("text-2xl font-bold font-mono tabular-nums", colorClass)}>
-      {value}<span className="text-sm font-normal text-slate-400 ml-0.5">{unit}</span>
-    </span>
-    {sub && <span className="text-xs text-slate-500">{sub}</span>}
-  </div>
-);
-
-// ─── Trend Indicator ──────────────────────────────────────────────────────────
-
-const TrendBadge = ({ trend, pct }: { trend: 'rising' | 'falling' | 'stable'; pct: number }) => {
-  const map = {
-    rising: { Icon: ArrowUpRight, color: 'text-rose-400 bg-rose-500/10 border-rose-500/20', label: `+${Math.abs(pct)}%` },
-    falling: { Icon: ArrowDownRight, color: 'text-emerald-400 bg-emerald-500/10 border-emerald-500/20', label: `${pct}%` },
-    stable: { Icon: Minus, color: 'text-slate-400 bg-slate-700/50 border-slate-600/30', label: `~${Math.abs(pct)}%` },
-  };
-  const { Icon, color, label } = map[trend];
-  return (
-    <span className={cn("inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold border", color)}>
-      <Icon className="w-3.5 h-3.5" />
-      {label}
-    </span>
-  );
-};
-
-// ─── Status Badge ─────────────────────────────────────────────────────────────
-
-const StatusBadge = ({ status }: { status: 'optimal' | 'warning' | 'critical' }) => {
-  const map = {
-    optimal: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20',
-    warning: 'bg-amber-500/10 text-amber-400 border-amber-500/20',
-    critical: 'bg-red-500/10 text-red-400 border-red-500/20',
-  };
-  const icons = {
-    optimal: <CheckCircle className="w-3.5 h-3.5" />,
-    warning: <AlertTriangle className="w-3.5 h-3.5" />,
-    critical: <Zap className="w-3.5 h-3.5" />,
-  };
-  const labels = { optimal: 'Optimal', warning: 'Suboptimal', critical: 'Critical' };
-  return (
-    <span className={cn("inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold border", map[status])}>
-      {icons[status]}
-      {labels[status]}
-    </span>
-  );
-};
-
-// ─── Individual Sensor Section ────────────────────────────────────────────────
-
-type SensorSectionProps = {
-  cfg: SensorConfig;
-  timeRange: TimeRange;
-};
-
-function SensorSection({ cfg, timeRange }: SensorSectionProps) {
-  const points = timeRange === '6h' ? 24 : timeRange === '24h' ? 48 : timeRange === '7d' ? 84 : 120;
-
-  const driftMap: Record<SensorKey, (i: number, t: number) => number> = {
-    temperature: (i, t) => Math.sin((i / t) * Math.PI * 2) * 3,
-    humidity: (i, t) => -Math.sin((i / t) * Math.PI) * 8,
-    moisture: (i, t) => -((i / t) * 15),
-    ph: (i, t) => Math.cos((i / t) * Math.PI) * 0.3,
-  };
-
-  const data = generateSensorHistory(points, cfg.currentValue, cfg.key === 'ph' ? 0.3 : 5, driftMap[cfg.key]);
-  const analysis = analyzeData(cfg, data);
+function SensorSection({ cfg, range }: { cfg: SensorConfig; range: TimeRange }) {
+  const data = buildData(cfg, range);
+  const analysis = analyze(cfg, data);
   const Icon = cfg.icon;
 
+  const statusMap = {
+    optimal: { label: 'Optimal', icon: <CheckCircle className="w-3.5 h-3.5" />, cls: 'text-emerald-600 bg-emerald-50' },
+    warning: { label: 'Suboptimal', icon: <AlertTriangle className="w-3.5 h-3.5" />, cls: 'text-amber-600 bg-amber-50' },
+    critical: { label: 'Critical', icon: <Zap className="w-3.5 h-3.5" />, cls: 'text-red-600 bg-red-50' },
+  };
+  const st = statusMap[analysis.status];
+
+  const trendEl =
+    analysis.trend === 'rising'
+      ? <><ArrowUpRight className="w-4 h-4" /> +{Math.abs(analysis.trendPct)}%</>
+      : analysis.trend === 'falling'
+      ? <><ArrowDownRight className="w-4 h-4" /> {analysis.trendPct}%</>
+      : <><Minus className="w-4 h-4" /> Stable</>;
+
   return (
-    <section className="bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden">
-      {/* Section Header */}
-      <div className={cn("p-4 md:p-6 border-b border-slate-800/80", cfg.accentBg)}>
-        <div className="flex flex-col sm:flex-row sm:items-start gap-4">
-          <div className="flex items-center gap-4 flex-1">
-            <div className={cn(
-              "w-12 h-12 rounded-2xl flex items-center justify-center flex-shrink-0 border",
-              cfg.accentBg, cfg.accentBorder
-            )}>
-              <Icon className={cn("w-6 h-6", cfg.accentText)} />
-            </div>
-            <div>
-              <h2 className="text-xl font-bold text-slate-100 tracking-tight">{cfg.label}</h2>
-              <p className="text-sm text-slate-400 mt-0.5 max-w-xl">{cfg.description}</p>
-            </div>
+    <div className="py-14">
+
+      {/* Sensor label */}
+      <div className="flex flex-col sm:flex-row sm:items-end gap-5 mb-8">
+        <div
+          className="w-12 h-12 rounded-2xl flex items-center justify-center flex-shrink-0"
+          style={{ backgroundColor: cfg.colorLight }}
+        >
+          <Icon className="w-6 h-6" style={{ color: cfg.color }} />
+        </div>
+
+        <div className="flex-1">
+          <div className="flex flex-wrap items-center gap-3 mb-1.5">
+            <h2 className="text-3xl font-black tracking-tight text-gray-900">{cfg.label}</h2>
+            <span className={cn('inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold', st.cls)}>
+              {st.icon}{st.label}
+            </span>
+            <span className="inline-flex items-center gap-1 text-[11px] font-bold text-gray-400 bg-gray-100 px-2.5 py-1 rounded-full">
+              {trendEl}
+            </span>
           </div>
-          <div className="flex flex-wrap items-center gap-3 sm:flex-shrink-0">
-            <StatusBadge status={analysis.status} />
-            <TrendBadge trend={analysis.trend} pct={analysis.trendPct} />
+          <p className="text-gray-500 text-sm max-w-2xl leading-relaxed">{cfg.description}</p>
+        </div>
+
+        {/* Live value — right side */}
+        <div className="text-right flex-shrink-0 sm:ml-4">
+          <div className="text-5xl font-black tabular-nums" style={{ color: cfg.color }}>
+            {cfg.currentValue}
+            <span className="text-xl font-medium text-gray-400 ml-1">{cfg.unit}</span>
           </div>
+          <p className="text-[11px] font-semibold text-gray-400 uppercase tracking-widest mt-1">Live</p>
         </div>
       </div>
 
-      {/* Stats Row */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-px bg-slate-800">
+      {/* Stats inline — no boxes */}
+      <div className="flex flex-wrap gap-x-10 gap-y-3 mb-10">
         {[
-          { label: 'Current', value: cfg.currentValue, unit: cfg.unit, sub: 'Live reading' },
-          { label: 'Average', value: analysis.avgValue, unit: cfg.unit, sub: 'Over period' },
-          { label: 'Min', value: analysis.minValue, unit: cfg.unit, sub: 'Lowest recorded' },
-          { label: 'Max', value: analysis.maxValue, unit: cfg.unit, sub: 'Peak recorded' },
+          { l: 'Avg', v: `${analysis.avg}${cfg.unit}` },
+          { l: 'Min', v: `${analysis.min}${cfg.unit}` },
+          { l: 'Max', v: `${analysis.max}${cfg.unit}` },
+          { l: 'Optimal', v: `${cfg.optimalMin}–${cfg.optimalMax}${cfg.unit}` },
         ].map((s, i) => (
-          <div key={i} className="bg-slate-900 p-4 md:p-5">
-            <StatBadge
-              label={s.label}
-              value={s.value}
-              unit={s.unit}
-              sub={s.sub}
-              colorClass={i === 0 ? cfg.accentText : 'text-slate-200'}
-            />
+          <div key={i}>
+            <p className="text-[11px] font-semibold text-gray-400 uppercase tracking-widest mb-0.5">{s.l}</p>
+            <p className="text-xl font-bold text-gray-700 tabular-nums">{s.v}</p>
           </div>
         ))}
       </div>
 
-      {/* Chart */}
-      <div className="p-4 md:p-6">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-5">
-          <div className="flex items-center gap-2 text-sm text-slate-400">
-            <Activity className="w-4 h-4" style={{ color: cfg.color }} />
-            <span>Historical trend — <span className="text-slate-300 font-medium">{timeRange.toUpperCase()} view</span></span>
-          </div>
-          <div className="flex items-center gap-2 text-xs text-slate-500">
-            <span className="flex items-center gap-1">
-              <span className="w-3 h-0.5 rounded" style={{ backgroundColor: cfg.color }} />
-              {cfg.label}
-            </span>
-            <span className="flex items-center gap-1">
-              <span className="w-3 h-0.5 rounded bg-emerald-500/50 border-dashed" style={{ borderTop: '1px dashed #10b981' }} />
-              Optimal range
-            </span>
-          </div>
-        </div>
+      {/* Chart — full width, borderless */}
+      <div className="w-full h-[280px] sm:h-[340px]">
+        <ResponsiveContainer width="100%" height="100%">
+          <AreaChart data={data} margin={{ top: 8, right: 4, left: -22, bottom: 0 }}>
+            <defs>
+              <linearGradient id={`g-${cfg.key}`} x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stopColor={cfg.color} stopOpacity={0.2} />
+                <stop offset="100%" stopColor={cfg.color} stopOpacity={0.01} />
+              </linearGradient>
+            </defs>
+            <CartesianGrid stroke="#f1f5f9" strokeDasharray="0" vertical={false} />
+            <ReferenceLine
+              y={cfg.optimalMax}
+              stroke={cfg.color}
+              strokeDasharray="5 4"
+              strokeOpacity={0.5}
+              label={{ value: `${cfg.optimalMax}${cfg.unit}`, fill: cfg.color, fontSize: 10, position: 'insideTopRight' }}
+            />
+            <ReferenceLine
+              y={cfg.optimalMin}
+              stroke={cfg.color}
+              strokeDasharray="5 4"
+              strokeOpacity={0.5}
+              label={{ value: `${cfg.optimalMin}${cfg.unit}`, fill: cfg.color, fontSize: 10, position: 'insideBottomRight' }}
+            />
+            <XAxis
+              dataKey="time"
+              stroke="transparent"
+              tick={{ fill: '#94a3b8', fontSize: 11, fontFamily: 'monospace' }}
+              tickLine={false}
+              axisLine={false}
+              interval={Math.floor(data.length / 7)}
+            />
+            <YAxis
+              stroke="transparent"
+              tick={{ fill: '#94a3b8', fontSize: 11, fontFamily: 'monospace' }}
+              tickLine={false}
+              axisLine={false}
+              tickFormatter={v => `${v}${cfg.unit}`}
+            />
+            <Tooltip content={(props: any) => (
+              <ChartTooltip {...props} color={cfg.color} unit={cfg.unit} />
+            )} />
+            <Area
+              type="monotone"
+              dataKey="value"
+              stroke={cfg.color}
+              strokeWidth={3}
+              fill={`url(#g-${cfg.key})`}
+              dot={false}
+              activeDot={{ r: 6, fill: cfg.color, stroke: '#fff', strokeWidth: 3 }}
+            />
+          </AreaChart>
+        </ResponsiveContainer>
+      </div>
 
-        <div className="h-[280px] sm:h-[320px] w-full">
-          <ResponsiveContainer width="100%" height="100%">
-            <AreaChart data={data} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
-              <defs>
-                <linearGradient id={cfg.gradientId} x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor={cfg.color} stopOpacity={0.25} />
-                  <stop offset="95%" stopColor={cfg.color} stopOpacity={0.02} />
-                </linearGradient>
-                <linearGradient id={`${cfg.gradientId}Opt`} x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor="#10b981" stopOpacity={0.06} />
-                  <stop offset="100%" stopColor="#10b981" stopOpacity={0.06} />
-                </linearGradient>
-              </defs>
-              <ReferenceArea
-                y1={cfg.optimalMin}
-                y2={cfg.optimalMax}
-                fill="url(#${cfg.gradientId}Opt)"
-                fillOpacity={1}
-                stroke="#10b981"
-                strokeOpacity={0.2}
-                strokeDasharray="4 4"
-              />
-              <ReferenceLine
-                y={cfg.optimalMax}
-                stroke="#10b981"
-                strokeDasharray="4 4"
-                strokeOpacity={0.5}
-                label={{ value: `${cfg.optimalMax}${cfg.unit}`, fill: '#10b981', fontSize: 10, position: 'insideTopRight' }}
-              />
-              <ReferenceLine
-                y={cfg.optimalMin}
-                stroke="#10b981"
-                strokeDasharray="4 4"
-                strokeOpacity={0.5}
-                label={{ value: `${cfg.optimalMin}${cfg.unit}`, fill: '#10b981', fontSize: 10, position: 'insideBottomRight' }}
-              />
-              <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" vertical={false} />
-              <XAxis
-                dataKey="time"
-                stroke="#1e293b"
-                tick={{ fill: '#64748b', fontSize: 11, fontFamily: 'monospace' }}
-                tickLine={false}
-                axisLine={false}
-                interval={Math.floor(points / 8)}
-              />
-              <YAxis
-                stroke="#1e293b"
-                tick={{ fill: '#64748b', fontSize: 11, fontFamily: 'monospace' }}
-                tickLine={false}
-                axisLine={false}
-                tickFormatter={(v) => `${v}${cfg.unit}`}
-              />
-              <Tooltip content={<CustomTooltip unit={cfg.unit} color={cfg.color} />} />
-              <Area
-                type="monotone"
-                dataKey="value"
-                name={cfg.label}
-                stroke={cfg.color}
-                strokeWidth={2.5}
-                fill={`url(#${cfg.gradientId})`}
-                dot={false}
-                activeDot={{ r: 5, fill: cfg.color, strokeWidth: 0 }}
-              />
-            </AreaChart>
-          </ResponsiveContainer>
+      {/* Legend */}
+      <div className="flex items-center gap-6 mt-2 mb-12 pl-1">
+        <div className="flex items-center gap-2 text-xs text-gray-400">
+          <span className="w-5 h-0.5 rounded-full inline-block" style={{ backgroundColor: cfg.color }} />
+          {cfg.label}
+        </div>
+        <div className="flex items-center gap-2 text-xs text-gray-400">
+          <span className="w-5 inline-block" style={{ borderTop: `1.5px dashed ${cfg.color}` }} />
+          Optimal range
         </div>
       </div>
 
-      {/* Analysis Panel */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-px bg-slate-800 border-t border-slate-800">
-        {/* Key Insights */}
-        <div className="bg-slate-900 p-4 md:p-6">
-          <div className="flex items-center gap-2 mb-4">
-            <Eye className="w-4 h-4 text-slate-400" />
-            <h3 className="text-sm font-semibold text-slate-300 uppercase tracking-wider">Analysis</h3>
+      {/* Analysis + Recommendation — flowing, no cards */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 lg:gap-20">
+
+        <div>
+          <div className="flex items-center gap-2 mb-5">
+            <Eye className="w-4 h-4" style={{ color: cfg.color }} />
+            <span className="text-[11px] font-bold text-gray-400 uppercase tracking-widest">Analysis</span>
           </div>
-          <ul className="space-y-3">
+          <ul className="space-y-4">
             {analysis.insights.map((insight, i) => (
-              <li key={i} className="flex gap-3 text-sm text-slate-400 leading-relaxed">
+              <li key={i} className="flex gap-3.5 text-sm text-gray-600 leading-relaxed">
                 <span
-                  className="mt-1.5 w-1.5 h-1.5 rounded-full flex-shrink-0"
-                  style={{ backgroundColor: i === 2 ? cfg.color : '#475569' }}
+                  className="mt-2 w-2 h-2 rounded-full flex-shrink-0"
+                  style={{ backgroundColor: i === 2 ? cfg.color : '#e2e8f0' }}
                 />
                 {insight}
               </li>
@@ -508,104 +396,38 @@ function SensorSection({ cfg, timeRange }: SensorSectionProps) {
           </ul>
         </div>
 
-        {/* Recommendation */}
-        <div className="bg-slate-900 p-4 md:p-6">
-          <div className="flex items-center gap-2 mb-4">
-            <Target className="w-4 h-4 text-slate-400" />
-            <h3 className="text-sm font-semibold text-slate-300 uppercase tracking-wider">Recommendation</h3>
-          </div>
-          <div className={cn("p-4 rounded-xl border text-sm leading-relaxed", cfg.accentBg, cfg.accentBorder)}>
-            <p className={cn("font-medium mb-2", cfg.accentText)}>Action required:</p>
-            <p className="text-slate-300">{analysis.recommendation}</p>
-          </div>
-          <div className="mt-4 grid grid-cols-2 gap-3 text-xs">
-            <div className="bg-slate-800/60 rounded-xl p-3 border border-slate-700/50">
-              <p className="text-slate-500 mb-1">Optimal range</p>
-              <p className="text-slate-200 font-semibold font-mono">
-                {cfg.optimalMin} – {cfg.optimalMax}<span className="text-slate-500 font-normal ml-0.5">{cfg.unit}</span>
-              </p>
-            </div>
-            <div className="bg-slate-800/60 rounded-xl p-3 border border-slate-700/50">
-              <p className="text-slate-500 mb-1">Critical thresholds</p>
-              <p className="text-slate-200 font-semibold font-mono">
-                {cfg.criticalMin} / {cfg.criticalMax}<span className="text-slate-500 font-normal ml-0.5">{cfg.unit}</span>
-              </p>
-            </div>
-          </div>
-        </div>
-      </div>
-    </section>
-  );
-}
-
-// ─── Overview Summary Bar ─────────────────────────────────────────────────────
-
-function OverviewBar({ configs, timeRange, setTimeRange }: {
-  configs: SensorConfig[];
-  timeRange: TimeRange;
-  setTimeRange: (r: TimeRange) => void;
-}) {
-  const ranges: TimeRange[] = ['6h', '24h', '7d', '30d'];
-
-  return (
-    <div className="bg-slate-900 border border-slate-800 rounded-2xl p-4 md:p-6">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
         <div>
-          <h1 className="text-2xl font-bold text-slate-100 tracking-tight">Sensor Analytics</h1>
-          <p className="text-sm text-slate-400 mt-1">Full historical data and analysis for all monitored parameters</p>
-        </div>
-        <div className="flex items-center gap-1.5 bg-slate-800 rounded-xl p-1 border border-slate-700">
-          {ranges.map(r => (
-            <button
-              key={r}
-              onClick={() => setTimeRange(r)}
-              className={cn(
-                "px-3.5 py-2 rounded-lg text-xs font-bold uppercase tracking-wider transition-all duration-150",
-                timeRange === r
-                  ? "bg-emerald-500 text-white shadow-lg shadow-emerald-500/20"
-                  : "text-slate-400 hover:text-slate-200 hover:bg-slate-700"
-              )}
-            >
-              {r}
-            </button>
-          ))}
-        </div>
-      </div>
+          <div className="flex items-center gap-2 mb-5">
+            <Target className="w-4 h-4" style={{ color: cfg.color }} />
+            <span className="text-[11px] font-bold text-gray-400 uppercase tracking-widest">Recommendation</span>
+          </div>
+          <p className="text-sm text-gray-700 leading-relaxed mb-8">{analysis.recommendation}</p>
 
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-        {configs.map(cfg => {
-          const Icon = cfg.icon;
-          const isOptimal = cfg.currentValue >= cfg.optimalMin && cfg.currentValue <= cfg.optimalMax;
-          const isWarning = !isOptimal && cfg.currentValue >= cfg.criticalMin && cfg.currentValue <= cfg.criticalMax;
-
-          return (
-            <div
-              key={cfg.key}
-              className={cn(
-                "flex items-center gap-3 p-3.5 rounded-xl border transition-all",
-                isOptimal ? "bg-slate-800/60 border-slate-700/50" : isWarning ? "bg-amber-500/5 border-amber-500/20" : "bg-red-500/5 border-red-500/20"
-              )}
-            >
-              <div className={cn("w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0", cfg.accentBg)}>
-                <Icon className={cn("w-4.5 h-4.5 w-5 h-5", cfg.accentText)} />
-              </div>
-              <div className="min-w-0">
-                <p className="text-xs text-slate-500 truncate">{cfg.label}</p>
-                <p className="text-lg font-bold font-mono tabular-nums text-slate-100">
-                  {cfg.currentValue}<span className="text-xs text-slate-400 font-normal ml-0.5">{cfg.unit}</span>
+          <div className="flex flex-wrap gap-8">
+            {[
+              { l: 'Optimal range', v: `${cfg.optimalMin}–${cfg.optimalMax}${cfg.unit}`, highlight: true },
+              { l: 'Critical low', v: `${cfg.criticalMin}${cfg.unit}`, highlight: false },
+              { l: 'Critical high', v: `${cfg.criticalMax}${cfg.unit}`, highlight: false },
+            ].map((item, i) => (
+              <div key={i}>
+                <p className="text-[11px] font-semibold text-gray-400 uppercase tracking-widest mb-1">{item.l}</p>
+                <p
+                  className="text-lg font-bold tabular-nums"
+                  style={{ color: item.highlight ? cfg.color : '#ef4444' }}
+                >
+                  {item.v}
                 </p>
               </div>
-              <div className="ml-auto">
-                {isOptimal
-                  ? <CheckCircle className="w-4 h-4 text-emerald-400" />
-                  : isWarning
-                    ? <AlertTriangle className="w-4 h-4 text-amber-400" />
-                    : <Zap className="w-4 h-4 text-red-400" />}
-              </div>
-            </div>
-          );
-        })}
+            ))}
+          </div>
+        </div>
       </div>
+
+      {/* Flowing divider — colored fade */}
+      <div
+        className="mt-16 h-px w-full"
+        style={{ background: `linear-gradient(to right, ${cfg.color}50, ${cfg.color}10, transparent)` }}
+      />
     </div>
   );
 }
@@ -613,58 +435,94 @@ function OverviewBar({ configs, timeRange, setTimeRange }: {
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
 export default function SensorDataPage() {
-  const [timeRange, setTimeRange] = useState<TimeRange>('24h');
+  const [range, setRange] = useState<TimeRange>('24h');
   const [refreshKey, setRefreshKey] = useState(0);
-  const [lastUpdated, setLastUpdated] = useState(new Date());
-  const [mounted, setMounted] = useState(false);
+  const [now, setNow] = useState(new Date());
+  const ranges: TimeRange[] = ['6h', '24h', '7d', '30d'];
 
-  const refresh = () => {
-    setRefreshKey(k => k + 1);
-    setLastUpdated(new Date());
-  };
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
+  const refresh = () => { setRefreshKey(k => k + 1); setNow(new Date()); };
 
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100">
-      {/* Topbar */}
-      <div className="sticky top-0 z-30 bg-slate-950/80 backdrop-blur-md border-b border-slate-800/80 px-4 md:px-8 h-14 flex items-center justify-between gap-4">
+    <div className="min-h-screen bg-white text-gray-900">
+
+      {/* ── Sticky topbar ── */}
+      <div className="sticky top-0 z-30 bg-white/90 backdrop-blur-md border-b border-gray-100 px-6 md:px-12 h-14 flex items-center justify-between gap-4">
         <div className="flex items-center gap-3">
-          <Cpu className="w-5 h-5 text-emerald-400" />
-          <span className="text-sm font-semibold text-slate-300">Sensor Data</span>
-          <span className="hidden sm:block text-slate-700">/</span>
-          <span className="hidden sm:block text-xs text-slate-500">Plot A — Tomatoes</span>
+          <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse shadow-[0_0_8px_#34d39999]" />
+          <span className="text-sm font-semibold text-gray-700">Sensor Data</span>
+          <span className="text-gray-300">/</span>
+          <span className="text-sm text-gray-400 hidden sm:block">Plot A — Tomatoes</span>
         </div>
         <div className="flex items-center gap-3">
-          <span className="hidden sm:flex items-center gap-1.5 text-xs text-slate-500">
-            <Clock className="w-3.5 h-3.5" />
-            {mounted ? format(lastUpdated, 'HH:mm:ss') : '--:--:--'}
-          </span>
+          {/* Time range pills */}
+          <div className="flex items-center gap-1 bg-gray-50 border border-gray-100 rounded-xl p-1">
+            {ranges.map(r => (
+              <button
+                key={r}
+                onClick={() => setRange(r)}
+                className={cn(
+                  'px-3.5 py-1.5 rounded-lg text-[11px] font-bold uppercase tracking-wider transition-all duration-150',
+                  range === r ? 'bg-gray-900 text-white shadow' : 'text-gray-400 hover:text-gray-700'
+                )}
+              >
+                {r}
+              </button>
+            ))}
+          </div>
           <button
             onClick={refresh}
-            className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-slate-800 border border-slate-700 text-xs text-slate-300 hover:bg-slate-700 transition-all active:scale-95"
+            className="p-2 rounded-xl hover:bg-gray-100 text-gray-400 transition-all active:scale-95"
+            title="Refresh data"
           >
-            <RefreshCw className="w-3.5 h-3.5" />
-            Refresh
+            <RefreshCw className="w-4 h-4" />
           </button>
         </div>
       </div>
 
-      {/* Content */}
-      <div className="p-4 md:p-6 lg:p-8 max-w-[1400px] mx-auto space-y-6 md:space-y-8" key={refreshKey}>
-        <OverviewBar configs={SENSOR_CONFIGS} timeRange={timeRange} setTimeRange={setTimeRange} />
+      {/* ── Page content ── */}
+      <div className="px-6 md:px-12 lg:px-16 max-w-[1200px] mx-auto" key={refreshKey}>
 
-        {SENSOR_CONFIGS.map(cfg => (
-          <SensorSection key={cfg.key} cfg={cfg} timeRange={timeRange} />
+        {/* Page heading */}
+        <div className="pt-14 pb-4">
+          <h1 className="text-4xl md:text-5xl font-black tracking-tight text-gray-900 mb-3">
+            Sensor Analytics
+          </h1>
+          <p className="text-gray-500 text-base max-w-xl leading-relaxed">
+            Real-time readings and trend analysis across all monitored environmental parameters for Plot A.
+          </p>
+        </div>
+
+        {/* Quick status strip — completely inline, no cards */}
+        <div className="flex flex-wrap gap-x-8 gap-y-3 py-6 border-y border-gray-100 mb-2">
+          {SENSORS.map(cfg => {
+            const isOptimal = cfg.currentValue >= cfg.optimalMin && cfg.currentValue <= cfg.optimalMax;
+            const isWarning = !isOptimal && cfg.currentValue >= cfg.criticalMin && cfg.currentValue <= cfg.criticalMax;
+            const Icon = cfg.icon;
+            return (
+              <div key={cfg.key} className="flex items-center gap-2.5">
+                <Icon className="w-4 h-4" style={{ color: cfg.color }} />
+                <span className="text-sm text-gray-500">{cfg.label}</span>
+                <span className="text-sm font-black tabular-nums" style={{ color: cfg.color }}>
+                  {cfg.currentValue}{cfg.unit}
+                </span>
+                {isOptimal
+                  ? <CheckCircle className="w-3.5 h-3.5 text-emerald-500" />
+                  : isWarning
+                  ? <AlertTriangle className="w-3.5 h-3.5 text-amber-500" />
+                  : <Zap className="w-3.5 h-3.5 text-red-500" />}
+              </div>
+            );
+          })}
+        </div>
+
+        {/* All sensors flowing one after another */}
+        {SENSORS.map(cfg => (
+          <SensorSection key={`${cfg.key}-${refreshKey}`} cfg={cfg} range={range} />
         ))}
 
-        {/* Footer note */}
-        <div className="flex items-center justify-center gap-2 py-4 text-xs text-slate-600">
-          <Info className="w-3.5 h-3.5" />
-          <span>Data sourced from ESP32 sensors via Firebase Realtime Database. Graphs show synthetic historical data for demonstration.</span>
-        </div>
+        <p className="pb-10 text-xs text-gray-300 text-center">
+          ESP32 via Firebase · {format(now, 'PPpp')}
+        </p>
       </div>
     </div>
   );

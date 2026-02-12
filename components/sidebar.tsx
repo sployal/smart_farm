@@ -36,6 +36,11 @@ export default function Sidebar() {
   const [collapsed, setCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
 
+  React.useEffect(() => {
+    const sidebarWidth = collapsed ? "80px" : "256px";
+    document.documentElement.style.setProperty("--sidebar-width", sidebarWidth);
+  }, [collapsed]);
+
   return (
     <>
       {/* Desktop Sidebar */}
