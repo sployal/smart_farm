@@ -473,7 +473,7 @@ export default function ProfilePage() {
               <Leaf style={{ width: 16, height: 16 }} className="text-emerald-400" />
             </div>
             <span className="font-bold text-lg tracking-tight text-slate-100">
-              Agri<span className="text-emerald-400">Sense</span>
+              smart<span className="text-emerald-400">farm</span>
             </span>
           </div>
           <button onClick={handleSignOut} className="btn-danger" type="button">
@@ -507,7 +507,7 @@ export default function ProfilePage() {
             {/* Name + meta */}
             <div className="flex-1 text-center sm:text-left">
               <h1 className="text-2xl font-extrabold text-slate-100 mb-1" style={{ letterSpacing: '-0.02em' }}>
-                {user.displayName || 'AgriSense User'}
+                {user.displayName || 'smartfarm User'}
               </h1>
               <p className="text-slate-400 text-sm mb-3" style={{ fontFamily: 'DM Sans, sans-serif' }}>
                 {user.email}
@@ -757,10 +757,10 @@ export default function ProfilePage() {
           <button onClick={handleSignOut} className="btn-danger w-full flex items-center justify-center gap-2 py-3.5 rounded-2xl text-sm" type="button"
             style={{ background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.25)' }}>
             <LogOut style={{ width: 15, height: 15 }} />
-            Sign Out of AgriSense
+            Sign Out of smartfarm
           </button>
           <p className="text-center text-xs text-slate-600 mt-4" style={{ fontFamily: 'DM Sans, sans-serif' }}>
-            AgriSense · Protected by Firebase Auth · {new Date().getFullYear()}
+            smartfarm · Protected by Firebase Auth · {new Date().getFullYear()}
           </p>
         </div>
 
