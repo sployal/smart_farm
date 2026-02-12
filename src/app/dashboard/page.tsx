@@ -27,7 +27,6 @@ import {
   Search,
   RefreshCw,
   Bell,
-  ChevronDown,
   ChevronLeft,
   ChevronRight,
   AlertTriangle,
@@ -54,7 +53,8 @@ import {
 import clsx, { type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
 import { format, subHours } from 'date-fns';
-import { startRealtimeUpdates, fetchSensorData } from '@/lib/firebase';
+import { startRealtimeUpdates, fetchSensorData, auth } from '@/lib/firebase';
+import { onAuthStateChanged, type User as AuthUser } from 'firebase/auth';
 
 // Groq API Configuration
 const AI_API_KEY = process.env.NEXT_PUBLIC_GROQ_API_KEY ?? '';
@@ -339,6 +339,13 @@ export default function SmartFarmDashboard() {
   const [isAITyping, setIsAITyping] = useState(false);
   const chatEndRef = useRef<HTMLDivElement>(null);
   const router = useRouter();
+  const [currentUser, setCurrentUser] = useState<AuthUser | null>(null);
+
+  // Auth: show logged-in user in nav
+  useEffect(() => {
+    const unsub = onAuthStateChanged(auth, (u) => setCurrentUser(u));
+    return () => unsub();
+  }, []);
 
   // Load real-time data from Firebase
   useEffect(() => {
@@ -508,13 +515,32 @@ Give concise, actionable advice. Be friendly and professional.
               </span>
             </button>
 
-            <div className="hidden md:flex items-center gap-3 pl-3 md:pl-4 border-l border-slate-800 flex-shrink-0">
-              <div className="w-8 h-8 rounded-full bg-emerald-600 flex items-center justify-center text-sm font-bold">
-                DM
+            <button
+              onClick={() => router.push('/my_account')}
+              className="hidden md:flex items-center gap-3 pl-3 md:pl-4 border-l border-slate-800 flex-shrink-0 rounded-lg hover:bg-slate-800/50 transition-colors cursor-pointer"
+            >
+              <div className="w-8 h-8 rounded-full bg-emerald-600 flex items-center justify-center text-sm font-bold text-white flex-shrink-0">
+                {currentUser?.photoURL ? (
+                  <img src={currentUser.photoURL} alt="" className="w-8 h-8 rounded-full object-cover" />
+                ) : (
+                  (() => {
+                    const name = currentUser?.displayName ?? null;
+                    const email = currentUser?.email ?? null;
+                    if (name) {
+                      const parts = name.trim().split(' ');
+                      return parts.length >= 2
+                        ? (parts[0][0] + parts[parts.length - 1][0]).toUpperCase()
+                        : name.slice(0, 2).toUpperCase();
+                    }
+                    if (email) return email.slice(0, 2).toUpperCase();
+                    return 'U';
+                  })()
+                )}
               </div>
-              <span className="text-sm font-medium hidden lg:block">David Muigai</span>
-              <ChevronDown className="w-4 h-4 text-slate-500" />
-            </div>
+              <span className="text-sm font-medium hidden lg:block text-slate-200">
+                {currentUser?.displayName || currentUser?.email || 'Account'}
+              </span>
+            </button>
           </div>
         </header>
 
