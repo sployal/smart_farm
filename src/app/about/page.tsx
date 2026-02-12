@@ -342,7 +342,7 @@ export default function LandingPage() {
 
       {/* ── Navbar ───────────────────────────────────────────── */}
       <nav
-        className="fixed top-0 inset-x-0 z-50 nav-blur border-b border-white/5"
+        className="fixed top-0 inset-x-0 z-40 nav-blur border-b border-white/5"
         style={{ transition: 'background 0.3s' }}
       >
         <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
