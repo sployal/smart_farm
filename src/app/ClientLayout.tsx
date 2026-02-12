@@ -1,5 +1,5 @@
 "use client";
-import Sidebar from "../../components/sidebar";
+import Sidebar from "../../components/dashboard/sidebar";
 import { usePathname } from "next/navigation";
 import { Geist, Geist_Mono } from "next/font/google";
 import React from "react";
