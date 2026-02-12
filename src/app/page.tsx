@@ -3,18 +3,18 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import {
-  getAuth,
   signInWithEmailAndPassword,
   signInWithPopup,
-  GoogleAuthProvider,
+  createUserWithEmailAndPassword,
   sendPasswordResetEmail,
   onAuthStateChanged,
+  updateProfile,
 } from 'firebase/auth';
-import { app } from '@/lib/firebase';
-import { Leaf, Eye, EyeOff, ArrowRight, Mail, Lock, AlertCircle, CheckCircle, Loader2 } from 'lucide-react';
+import { auth, googleProvider } from '@/lib/firebase';
+import { Leaf, Eye, EyeOff, ArrowRight, Mail, Lock, User, AlertCircle, CheckCircle, Loader2 } from 'lucide-react';
 
 // ─── Types ───────────────────────────────────────────────────────────────────
-type Mode = 'login' | 'reset';
+type Mode = 'login' | 'signup' | 'reset';
 type Toast = { type: 'success' | 'error'; message: string } | null;
 
 // ─── Animated background particles ───────────────────────────────────────────
@@ -53,7 +53,6 @@ function Particles() {
         if (d.x > canvas.width) d.x = 0;
         if (d.y < 0) d.y = canvas.height;
         if (d.y > canvas.height) d.y = 0;
-
         ctx.beginPath();
         ctx.arc(d.x, d.y, d.r, 0, Math.PI * 2);
         ctx.fillStyle = `rgba(16,185,129,${d.opacity})`;
@@ -99,44 +98,53 @@ function GoogleIcon() {
   );
 }
 
-// ─── Main Login Page ──────────────────────────────────────────────────────────
+// ─── Main Page ────────────────────────────────────────────────────────────────
 export default function LoginPage() {
   const router = useRouter();
 
-  // ── FIX: auth and googleProvider are created INSIDE the component,
-  //         after React has mounted, guaranteeing Firebase is initialised. ──
-  const authRef = useRef(getAuth(app));
-  const googleProviderRef = useRef(new GoogleAuthProvider());
-
   const [mode, setMode] = useState<Mode>('login');
+  const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
   const [showPw, setShowPw] = useState(false);
+  const [showConfirmPw, setShowConfirmPw] = useState(false);
   const [loading, setLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
   const [toast, setToast] = useState<Toast>(null);
   const [mounted, setMounted] = useState(false);
 
-  // Animate in on mount
   useEffect(() => {
     const t = setTimeout(() => setMounted(true), 60);
     return () => clearTimeout(t);
   }, []);
 
-  // If already logged in, redirect
+  // If already logged in, redirect to dashboard
   useEffect(() => {
-    const unsub = onAuthStateChanged(authRef.current, user => {
+    const unsub = onAuthStateChanged(auth, user => {
       if (user) router.replace('/dashboard');
     });
     return () => unsub();
   }, [router]);
 
-  // Auto-dismiss toast after 4 s
+  // Auto-dismiss toast after 4s
   useEffect(() => {
     if (!toast) return;
     const t = setTimeout(() => setToast(null), 4000);
     return () => clearTimeout(t);
   }, [toast]);
+
+  // Clear form fields when switching modes
+  const switchMode = (next: Mode) => {
+    setName('');
+    setEmail('');
+    setPassword('');
+    setConfirmPassword('');
+    setShowPw(false);
+    setShowConfirmPw(false);
+    setToast(null);
+    setMode(next);
+  };
 
   // ── Email / Password sign-in ──────────────────────────────
   const handleEmailLogin = async (e: React.FormEvent) => {
@@ -147,15 +155,15 @@ export default function LoginPage() {
     }
     setLoading(true);
     try {
-      await signInWithEmailAndPassword(authRef.current, email, password);
+      await signInWithEmailAndPassword(auth, email, password);
       setToast({ type: 'success', message: 'Welcome back! Redirecting…' });
       setTimeout(() => router.push('/dashboard'), 800);
     } catch (err: any) {
       const msg =
         err.code === 'auth/user-not-found'
           ? 'No account found with this email.'
-          : err.code === 'auth/wrong-password'
-          ? 'Incorrect password. Try again.'
+          : err.code === 'auth/wrong-password' || err.code === 'auth/invalid-credential'
+          ? 'Incorrect email or password.'
           : err.code === 'auth/invalid-email'
           ? 'Please enter a valid email address.'
           : err.code === 'auth/too-many-requests'
@@ -167,11 +175,47 @@ export default function LoginPage() {
     }
   };
 
-  // ── Google sign-in ─────────────────────────────────────────
+  // ── Email / Password sign-up ──────────────────────────────
+  const handleEmailSignup = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!name || !email || !password || !confirmPassword) {
+      setToast({ type: 'error', message: 'Please fill in all fields.' });
+      return;
+    }
+    if (password.length < 6) {
+      setToast({ type: 'error', message: 'Password must be at least 6 characters.' });
+      return;
+    }
+    if (password !== confirmPassword) {
+      setToast({ type: 'error', message: 'Passwords do not match.' });
+      return;
+    }
+    setLoading(true);
+    try {
+      const credential = await createUserWithEmailAndPassword(auth, email, password);
+      await updateProfile(credential.user, { displayName: name });
+      setToast({ type: 'success', message: 'Account created! Redirecting…' });
+      setTimeout(() => router.push('/dashboard'), 800);
+    } catch (err: any) {
+      const msg =
+        err.code === 'auth/email-already-in-use'
+          ? 'An account with this email already exists.'
+          : err.code === 'auth/invalid-email'
+          ? 'Please enter a valid email address.'
+          : err.code === 'auth/weak-password'
+          ? 'Password is too weak. Use at least 6 characters.'
+          : 'Sign-up failed. Please try again.';
+      setToast({ type: 'error', message: msg });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // ── Google sign-in / sign-up ───────────────────────────────
   const handleGoogleLogin = async () => {
     setGoogleLoading(true);
     try {
-      await signInWithPopup(authRef.current, googleProviderRef.current);
+      await signInWithPopup(auth, googleProvider);
       setToast({ type: 'success', message: 'Signed in with Google! Redirecting…' });
       setTimeout(() => router.push('/dashboard'), 800);
     } catch (err: any) {
@@ -183,7 +227,7 @@ export default function LoginPage() {
     }
   };
 
-  // ── Password reset ──────────────────────────────────────────
+  // ── Password reset ─────────────────────────────────────────
   const handleReset = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!email) {
@@ -192,9 +236,9 @@ export default function LoginPage() {
     }
     setLoading(true);
     try {
-      await sendPasswordResetEmail(authRef.current, email);
+      await sendPasswordResetEmail(auth, email);
       setToast({ type: 'success', message: 'Reset link sent — check your inbox.' });
-      setTimeout(() => setMode('login'), 1500);
+      setTimeout(() => switchMode('login'), 1500);
     } catch {
       setToast({ type: 'error', message: 'Could not send reset email. Check the address.' });
     } finally {
@@ -202,12 +246,18 @@ export default function LoginPage() {
     }
   };
 
+  // ── Heading & subtext per mode ─────────────────────────────
+  const headings = {
+    login:  { title: 'Welcome back',     sub: 'Sign in to your AgriSense dashboard' },
+    signup: { title: 'Create account',   sub: 'Start monitoring your farm today' },
+    reset:  { title: 'Reset password',   sub: "Enter your email and we'll send a reset link" },
+  };
+
   return (
     <div
       className="min-h-screen flex overflow-hidden relative"
       style={{ backgroundColor: '#060910', fontFamily: "'Sora', 'DM Sans', system-ui, sans-serif" }}
     >
-      {/* ── Google Fonts ─────────────────────────────────────── */}
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Sora:wght@300;400;600;700;800&family=DM+Sans:wght@400;500;600&display=swap');
 
@@ -222,19 +272,13 @@ export default function LoginPage() {
           transform: translateY(24px) scale(0.98);
           transition: opacity 0.55s cubic-bezier(.22,.68,0,1.2), transform 0.55s cubic-bezier(.22,.68,0,1.2);
         }
-        .card-appear.show {
-          opacity: 1;
-          transform: translateY(0) scale(1);
-        }
+        .card-appear.show { opacity: 1; transform: translateY(0) scale(1); }
         .left-appear {
           opacity: 0;
           transform: translateX(-28px);
           transition: opacity 0.6s ease 0.1s, transform 0.6s ease 0.1s;
         }
-        .left-appear.show {
-          opacity: 1;
-          transform: translateX(0);
-        }
+        .left-appear.show { opacity: 1; transform: translateX(0); }
         .input-field {
           width: 100%;
           background: rgba(30,41,59,0.6);
@@ -277,7 +321,6 @@ export default function LoginPage() {
         }
         .btn-primary:active:not(:disabled) { transform: translateY(0); }
         .btn-primary:disabled { opacity: 0.55; cursor: not-allowed; }
-
         .btn-google {
           width: 100%;
           padding: 12px;
@@ -301,21 +344,32 @@ export default function LoginPage() {
           transform: translateY(-1px);
         }
         .btn-google:disabled { opacity: 0.55; cursor: not-allowed; }
-
-        .toast-enter {
-          animation: toastIn 0.35s cubic-bezier(.22,.68,0,1.2) both;
+        .mode-tab {
+          flex: 1;
+          padding: 9px;
+          border-radius: 9px;
+          font-size: 13px;
+          font-weight: 600;
+          font-family: inherit;
+          border: none;
+          cursor: pointer;
+          transition: background 0.2s, color 0.2s;
         }
+        .mode-tab.active {
+          background: #10b981;
+          color: #060910;
+        }
+        .mode-tab.inactive {
+          background: transparent;
+          color: #64748b;
+        }
+        .mode-tab.inactive:hover { color: #94a3b8; }
+        .toast-enter { animation: toastIn 0.35s cubic-bezier(.22,.68,0,1.2) both; }
         @keyframes toastIn {
           from { opacity:0; transform: translateY(-12px) scale(0.95); }
           to   { opacity:1; transform: translateY(0) scale(1); }
         }
-
-        .divider-line {
-          flex: 1;
-          height: 1px;
-          background: rgba(71,85,105,0.5);
-        }
-
+        .divider-line { flex: 1; height: 1px; background: rgba(71,85,105,0.5); }
         .stat-pill {
           display: flex;
           align-items: center;
@@ -325,22 +379,16 @@ export default function LoginPage() {
           background: rgba(16,185,129,0.08);
           border: 1px solid rgba(16,185,129,0.2);
         }
-
         .orb {
           position: absolute;
           border-radius: 50%;
           pointer-events: none;
           filter: blur(80px);
         }
-
-        .mode-slide {
-          transition: opacity 0.25s ease, transform 0.25s ease;
-        }
       `}</style>
 
       {/* ── Left panel — branding ────────────────────────────── */}
       <div className="hidden lg:flex flex-col justify-between w-[52%] relative overflow-hidden p-12 grid-bg">
-        {/* background orbs */}
         <div className="orb w-[500px] h-[500px] top-[-100px] left-[-100px]"
           style={{ background: 'radial-gradient(circle, rgba(16,185,129,0.15) 0%, transparent 70%)' }} />
         <div className="orb w-[400px] h-[400px] bottom-[-80px] right-[-80px]"
@@ -351,7 +399,7 @@ export default function LoginPage() {
         {/* logo */}
         <div className={`relative z-10 flex items-center gap-3 left-appear ${mounted ? 'show' : ''}`}>
           <div className="w-9 h-9 rounded-xl bg-emerald-500/20 border border-emerald-500/40 flex items-center justify-center">
-            <Leaf className="w-4.5 h-4.5 text-emerald-400" style={{ width: 18, height: 18 }} />
+            <Leaf style={{ width: 18, height: 18 }} className="text-emerald-400" />
           </div>
           <span className="font-bold text-xl tracking-tight text-slate-100">
             Agri<span className="text-emerald-400">Sense</span>
@@ -359,8 +407,7 @@ export default function LoginPage() {
         </div>
 
         {/* hero copy */}
-        <div className={`relative z-10 left-appear ${mounted ? 'show' : ''}`}
-          style={{ transitionDelay: '0.12s' }}>
+        <div className={`relative z-10 left-appear ${mounted ? 'show' : ''}`} style={{ transitionDelay: '0.12s' }}>
           <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full border border-emerald-500/30 bg-emerald-500/10 mb-7">
             <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
             <span className="text-xs font-semibold tracking-widest uppercase text-emerald-400">
@@ -368,19 +415,15 @@ export default function LoginPage() {
             </span>
           </div>
 
-          <h1
-            className="text-4xl xl:text-5xl font-extrabold text-slate-100 leading-tight mb-5"
-            style={{ letterSpacing: '-0.025em' }}
-          >
+          <h1 className="text-4xl xl:text-5xl font-extrabold text-slate-100 leading-tight mb-5"
+            style={{ letterSpacing: '-0.025em' }}>
             Your Farm.<br />
-            Always <span
-              style={{
-                background: 'linear-gradient(135deg,#10b981 0%,#06b6d4 100%)',
-                WebkitBackgroundClip: 'text',
-                WebkitTextFillColor: 'transparent',
-                backgroundClip: 'text',
-              }}
-            >in Your Hands.</span>
+            Always <span style={{
+              background: 'linear-gradient(135deg,#10b981 0%,#06b6d4 100%)',
+              WebkitBackgroundClip: 'text',
+              WebkitTextFillColor: 'transparent',
+              backgroundClip: 'text',
+            }}>in Your Hands.</span>
           </h1>
 
           <p className="text-slate-400 text-base leading-relaxed max-w-sm mb-10"
@@ -388,7 +431,6 @@ export default function LoginPage() {
             Sign in to access live sensor data, AI-powered insights, and precision controls for your greenhouse, hydroponics, or open field.
           </p>
 
-          {/* feature pills */}
           <div className="flex flex-col gap-3">
             {[
               { emoji: '🌱', label: 'Live soil & climate sensors' },
@@ -397,8 +439,7 @@ export default function LoginPage() {
             ].map(f => (
               <div key={f.label} className="stat-pill w-fit">
                 <span className="text-base">{f.emoji}</span>
-                <span className="text-sm font-medium text-slate-300"
-                  style={{ fontFamily: 'DM Sans, sans-serif' }}>
+                <span className="text-sm font-medium text-slate-300" style={{ fontFamily: 'DM Sans, sans-serif' }}>
                   {f.label}
                 </span>
               </div>
@@ -406,9 +447,8 @@ export default function LoginPage() {
           </div>
         </div>
 
-        {/* bottom stat strip */}
-        <div className={`relative z-10 flex gap-6 left-appear ${mounted ? 'show' : ''}`}
-          style={{ transitionDelay: '0.22s' }}>
+        {/* stat strip */}
+        <div className={`relative z-10 flex gap-6 left-appear ${mounted ? 'show' : ''}`} style={{ transitionDelay: '0.22s' }}>
           {[
             { value: '40%', label: 'Water Saved' },
             { value: '28%', label: 'Yield Boost' },
@@ -416,10 +456,7 @@ export default function LoginPage() {
           ].map(s => (
             <div key={s.label}>
               <p className="text-xl font-extrabold text-emerald-400">{s.value}</p>
-              <p className="text-xs text-slate-500 mt-0.5"
-                style={{ fontFamily: 'DM Sans, sans-serif' }}>
-                {s.label}
-              </p>
+              <p className="text-xs text-slate-500 mt-0.5" style={{ fontFamily: 'DM Sans, sans-serif' }}>{s.label}</p>
             </div>
           ))}
         </div>
@@ -437,12 +474,9 @@ export default function LoginPage() {
           </span>
         </div>
 
-        {/* ── Toast notification ─────────────────────────────── */}
+        {/* Toast */}
         {toast && (
-          <div
-            className="absolute top-6 left-1/2 -translate-x-1/2 z-50 toast-enter"
-            style={{ minWidth: 300, maxWidth: 400 }}
-          >
+          <div className="absolute top-6 left-1/2 -translate-x-1/2 z-50 toast-enter" style={{ minWidth: 300, maxWidth: 400 }}>
             <div className={`flex items-start gap-3 px-5 py-4 rounded-2xl border text-sm font-medium shadow-2xl ${
               toast.type === 'success'
                 ? 'bg-emerald-950 border-emerald-500/40 text-emerald-300'
@@ -457,169 +491,164 @@ export default function LoginPage() {
           </div>
         )}
 
-        {/* ── Card ───────────────────────────────────────────── */}
-        <div
-          className={`card-appear ${mounted ? 'show' : ''} w-full`}
-          style={{ maxWidth: 420 }}
-        >
-          {/* heading */}
-          <div className="mb-8">
-            <h2
-              className="text-2xl sm:text-3xl font-extrabold text-slate-100 mb-2"
-              style={{ letterSpacing: '-0.02em' }}
-            >
-              {mode === 'login' ? 'Welcome back' : 'Reset password'}
+        {/* Card */}
+        <div className={`card-appear ${mounted ? 'show' : ''} w-full`} style={{ maxWidth: 420 }}>
+
+          {/* ── Login / Signup tab switcher (hidden on reset mode) ── */}
+          {mode !== 'reset' && (
+            <div className="flex gap-1 p-1 rounded-xl mb-7"
+              style={{ background: 'rgba(30,41,59,0.6)', border: '1px solid rgba(71,85,105,0.4)' }}>
+              <button className={`mode-tab ${mode === 'login' ? 'active' : 'inactive'}`} onClick={() => switchMode('login')} type="button">
+                Sign In
+              </button>
+              <button className={`mode-tab ${mode === 'signup' ? 'active' : 'inactive'}`} onClick={() => switchMode('signup')} type="button">
+                Sign Up
+              </button>
+            </div>
+          )}
+
+          {/* Heading */}
+          <div className="mb-6">
+            <h2 className="text-2xl sm:text-3xl font-extrabold text-slate-100 mb-2" style={{ letterSpacing: '-0.02em' }}>
+              {headings[mode].title}
             </h2>
             <p className="text-slate-500 text-sm" style={{ fontFamily: 'DM Sans, sans-serif' }}>
-              {mode === 'login'
-                ? 'Sign in to your AgriSense dashboard'
-                : "Enter your email and we\u2019ll send a reset link"
-              }
+              {headings[mode].sub}
             </p>
           </div>
 
-          {/* ─── LOGIN MODE ─────────────────────────────────── */}
+          {/* ─── LOGIN MODE ──────────────────────────────────── */}
           {mode === 'login' && (
-            <div className="mode-slide">
-              {/* Google button */}
-              <button
-                className="btn-google mb-5"
-                onClick={handleGoogleLogin}
-                disabled={googleLoading || loading}
-                type="button"
-              >
-                {googleLoading
-                  ? <Loader2 className="w-4 h-4 animate-spin" />
-                  : <GoogleIcon />
-                }
+            <div>
+              <button className="btn-google mb-5" onClick={handleGoogleLogin} disabled={googleLoading || loading} type="button">
+                {googleLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <GoogleIcon />}
                 Continue with Google
               </button>
 
-              {/* divider */}
               <div className="flex items-center gap-4 mb-5">
                 <div className="divider-line" />
-                <span className="text-xs text-slate-600 font-medium whitespace-nowrap"
-                  style={{ fontFamily: 'DM Sans, sans-serif' }}>
+                <span className="text-xs text-slate-600 font-medium whitespace-nowrap" style={{ fontFamily: 'DM Sans, sans-serif' }}>
                   or sign in with email
                 </span>
                 <div className="divider-line" />
               </div>
 
-              {/* email/password form */}
               <form onSubmit={handleEmailLogin} className="space-y-4">
-                {/* email */}
                 <div className="relative">
-                  <Mail
-                    className="absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none"
-                    style={{ width: 16, height: 16, color: '#475569' }}
-                  />
-                  <input
-                    type="email"
-                    className="input-field"
-                    placeholder="you@example.com"
-                    value={email}
-                    onChange={e => setEmail(e.target.value)}
-                    autoComplete="email"
-                    disabled={loading}
-                  />
+                  <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" style={{ width: 16, height: 16, color: '#475569' }} />
+                  <input type="email" className="input-field" placeholder="you@example.com" value={email}
+                    onChange={e => setEmail(e.target.value)} autoComplete="email" disabled={loading} />
                 </div>
 
-                {/* password */}
                 <div className="relative">
-                  <Lock
-                    className="absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none"
-                    style={{ width: 16, height: 16, color: '#475569' }}
-                  />
-                  <input
-                    type={showPw ? 'text' : 'password'}
-                    className="input-field"
-                    placeholder="Password"
-                    value={password}
-                    onChange={e => setPassword(e.target.value)}
-                    autoComplete="current-password"
-                    disabled={loading}
-                    style={{ paddingRight: 48 }}
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowPw(v => !v)}
-                    className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300 transition-colors"
-                    tabIndex={-1}
-                  >
-                    {showPw
-                      ? <EyeOff style={{ width: 16, height: 16 }} />
-                      : <Eye style={{ width: 16, height: 16 }} />
-                    }
+                  <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" style={{ width: 16, height: 16, color: '#475569' }} />
+                  <input type={showPw ? 'text' : 'password'} className="input-field" placeholder="Password" value={password}
+                    onChange={e => setPassword(e.target.value)} autoComplete="current-password" disabled={loading} style={{ paddingRight: 48 }} />
+                  <button type="button" onClick={() => setShowPw(v => !v)}
+                    className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300 transition-colors" tabIndex={-1}>
+                    {showPw ? <EyeOff style={{ width: 16, height: 16 }} /> : <Eye style={{ width: 16, height: 16 }} />}
                   </button>
                 </div>
 
-                {/* forgot */}
                 <div className="flex justify-end">
-                  <button
-                    type="button"
-                    onClick={() => setMode('reset')}
-                    className="text-xs text-slate-500 hover:text-emerald-400 transition-colors"
-                    style={{ fontFamily: 'DM Sans, sans-serif' }}
-                  >
+                  <button type="button" onClick={() => switchMode('reset')}
+                    className="text-xs text-slate-500 hover:text-emerald-400 transition-colors" style={{ fontFamily: 'DM Sans, sans-serif' }}>
                     Forgot password?
                   </button>
                 </div>
 
-                {/* submit */}
                 <button type="submit" className="btn-primary" disabled={loading || googleLoading}>
-                  {loading
-                    ? <Loader2 className="w-4 h-4 animate-spin" />
-                    : <>Sign In <ArrowRight style={{ width: 15, height: 15 }} /></>
-                  }
+                  {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <>Sign In <ArrowRight style={{ width: 15, height: 15 }} /></>}
                 </button>
               </form>
             </div>
           )}
 
-          {/* ─── RESET MODE ─────────────────────────────────── */}
+          {/* ─── SIGN UP MODE ────────────────────────────────── */}
+          {mode === 'signup' && (
+            <div>
+              <button className="btn-google mb-5" onClick={handleGoogleLogin} disabled={googleLoading || loading} type="button">
+                {googleLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <GoogleIcon />}
+                Continue with Google
+              </button>
+
+              <div className="flex items-center gap-4 mb-5">
+                <div className="divider-line" />
+                <span className="text-xs text-slate-600 font-medium whitespace-nowrap" style={{ fontFamily: 'DM Sans, sans-serif' }}>
+                  or sign up with email
+                </span>
+                <div className="divider-line" />
+              </div>
+
+              <form onSubmit={handleEmailSignup} className="space-y-4">
+                {/* full name */}
+                <div className="relative">
+                  <User className="absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" style={{ width: 16, height: 16, color: '#475569' }} />
+                  <input type="text" className="input-field" placeholder="Full name" value={name}
+                    onChange={e => setName(e.target.value)} autoComplete="name" disabled={loading} />
+                </div>
+
+                {/* email */}
+                <div className="relative">
+                  <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" style={{ width: 16, height: 16, color: '#475569' }} />
+                  <input type="email" className="input-field" placeholder="you@example.com" value={email}
+                    onChange={e => setEmail(e.target.value)} autoComplete="email" disabled={loading} />
+                </div>
+
+                {/* password */}
+                <div className="relative">
+                  <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" style={{ width: 16, height: 16, color: '#475569' }} />
+                  <input type={showPw ? 'text' : 'password'} className="input-field" placeholder="Password (min. 6 characters)" value={password}
+                    onChange={e => setPassword(e.target.value)} autoComplete="new-password" disabled={loading} style={{ paddingRight: 48 }} />
+                  <button type="button" onClick={() => setShowPw(v => !v)}
+                    className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300 transition-colors" tabIndex={-1}>
+                    {showPw ? <EyeOff style={{ width: 16, height: 16 }} /> : <Eye style={{ width: 16, height: 16 }} />}
+                  </button>
+                </div>
+
+                {/* confirm password */}
+                <div className="relative">
+                  <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" style={{ width: 16, height: 16, color: '#475569' }} />
+                  <input type={showConfirmPw ? 'text' : 'password'} className="input-field" placeholder="Confirm password" value={confirmPassword}
+                    onChange={e => setConfirmPassword(e.target.value)} autoComplete="new-password" disabled={loading} style={{ paddingRight: 48 }} />
+                  <button type="button" onClick={() => setShowConfirmPw(v => !v)}
+                    className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300 transition-colors" tabIndex={-1}>
+                    {showConfirmPw ? <EyeOff style={{ width: 16, height: 16 }} /> : <Eye style={{ width: 16, height: 16 }} />}
+                  </button>
+                </div>
+
+                <button type="submit" className="btn-primary" disabled={loading || googleLoading}>
+                  {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <>Create Account <ArrowRight style={{ width: 15, height: 15 }} /></>}
+                </button>
+              </form>
+            </div>
+          )}
+
+          {/* ─── RESET MODE ──────────────────────────────────── */}
           {mode === 'reset' && (
-            <div className="mode-slide">
+            <div>
               <form onSubmit={handleReset} className="space-y-4">
                 <div className="relative">
-                  <Mail
-                    className="absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none"
-                    style={{ width: 16, height: 16, color: '#475569' }}
-                  />
-                  <input
-                    type="email"
-                    className="input-field"
-                    placeholder="you@example.com"
-                    value={email}
-                    onChange={e => setEmail(e.target.value)}
-                    autoComplete="email"
-                    disabled={loading}
-                  />
+                  <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" style={{ width: 16, height: 16, color: '#475569' }} />
+                  <input type="email" className="input-field" placeholder="you@example.com" value={email}
+                    onChange={e => setEmail(e.target.value)} autoComplete="email" disabled={loading} />
                 </div>
 
                 <button type="submit" className="btn-primary" disabled={loading}>
-                  {loading
-                    ? <Loader2 className="w-4 h-4 animate-spin" />
-                    : <>Send Reset Link <ArrowRight style={{ width: 15, height: 15 }} /></>
-                  }
+                  {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <>Send Reset Link <ArrowRight style={{ width: 15, height: 15 }} /></>}
                 </button>
 
-                <button
-                  type="button"
-                  onClick={() => setMode('login')}
-                  className="w-full text-sm text-slate-500 hover:text-slate-300 transition-colors pt-1"
-                  style={{ fontFamily: 'DM Sans, sans-serif' }}
-                >
+                <button type="button" onClick={() => switchMode('login')}
+                  className="w-full text-sm text-slate-500 hover:text-slate-300 transition-colors pt-1" style={{ fontFamily: 'DM Sans, sans-serif' }}>
                   ← Back to sign in
                 </button>
               </form>
             </div>
           )}
 
-          {/* ── bottom border decoration ───────────────────── */}
-          <div
-            className="mt-8 pt-6 text-center text-xs text-slate-600"
-            style={{ borderTop: '1px solid rgba(51,65,85,0.5)', fontFamily: 'DM Sans, sans-serif' }}
-          >
+          {/* footer */}
+          <div className="mt-8 pt-6 text-center text-xs text-slate-600"
+            style={{ borderTop: '1px solid rgba(51,65,85,0.5)', fontFamily: 'DM Sans, sans-serif' }}>
             Protected by Firebase Auth · AgriSense {new Date().getFullYear()}
           </div>
         </div>
