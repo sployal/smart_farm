@@ -14,6 +14,7 @@ import {
   X,
   ChevronLeft,
   ChevronRight,
+  Info,
 } from "lucide-react";
 
 function SidebarItem({ href, icon: Icon, label, collapsed }: { href: string; icon: React.ElementType; label: string; collapsed?: boolean; }) {
@@ -70,6 +71,7 @@ export default function Sidebar() {
             <SidebarItem href="/ai_insights" icon={Brain} label="AI Insights" collapsed={collapsed} />
             <SidebarItem href="/plant_performance" icon={Sprout} label="Plant Performance" collapsed={collapsed} />
             <SidebarItem href="/setings" icon={Settings} label="Settings" collapsed={collapsed} />
+            <SidebarItem href="/about" icon={Info} label="About" collapsed={collapsed} />
           </ul>
         </nav>
 
@@ -127,6 +129,12 @@ export default function Sidebar() {
               <Link href="/setings" onClick={() => setMobileOpen(false)} className="flex items-center gap-3.5 px-4 py-3 rounded-xl text-slate-400 hover:bg-slate-800 hover:text-slate-100">
                 <Settings className="w-5 h-5" />
                 <span>Settings</span>
+              </Link>
+            </li>
+            <li className="mx-2 my-1">
+              <Link href="/about" onClick={() => setMobileOpen(false)} className="flex items-center gap-3.5 px-4 py-3 rounded-xl text-slate-400 hover:bg-slate-800 hover:text-slate-100">
+                <Info className="w-5 h-5" />
+                <span>About</span>
               </Link>
             </li>
           </ul>
