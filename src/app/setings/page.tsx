@@ -661,27 +661,7 @@ Give up to 4 tailored irrigation tips plus optimal watering time.`;
               <SettingRow label="Offline Mode" sublabel="Store readings locally when disconnected">
                 <Toggle checked={settings.offlineMode} onChange={v => set('offlineMode', v)} color="#10b981" />
               </SettingRow>
-              <div className="space-y-2 pt-1">
-                <p className="text-sm font-medium text-slate-200">Groq API Key</p>
-                <div className="relative flex items-center">
-                  <input
-                    type={showKey ? 'text' : 'password'}
-                    defaultValue={AI_API_KEY || ''}
-                    placeholder="gsk_•••••••••••••••••••"
-                    className="w-full pr-10 pl-4 py-2.5 rounded-xl text-sm font-mono outline-none transition-all"
-                    style={{
-                      background: isDark ? '#1e293b' : '#ffffff',
-                      border: `1px solid ${isDark ? '#334155' : '#cbd5e1'}`,
-                      color: isDark ? '#cbd5e1' : '#374151',
-                    }}
-                  />
-                  <button type="button" onClick={() => setShowKey(v => !v)}
-                    className="absolute right-3 text-slate-500 hover:text-slate-300 transition-colors">
-                    {showKey ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                  </button>
-                </div>
-                <p className="text-[11px] text-slate-600">Used for AI-powered crop diagnostics and irrigation tips</p>
-              </div>
+              {/* Groq API Key section removed */}
             </SettingCard>
           </div>
 
