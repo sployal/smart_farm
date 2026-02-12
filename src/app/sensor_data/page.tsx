@@ -199,8 +199,18 @@ const ChartTooltip = ({ active, payload, label, color, unit }: any) => {
 // ─── Sensor Section — flowing, no box isolation ───────────────────────────────
 
 function SensorSection({ cfg, range }: { cfg: SensorConfig; range: TimeRange }) {
-  const data = buildData(cfg.key, range, cfg.currentValue);
-  const analysis = analyze(cfg, data);
+  const [data, setData] = useState<DataPoint[]>([]);
+  const [analysis, setAnalysis] = useState<Analysis | null>(null);
+  
+  useEffect(() => {
+    const chartData = buildData(cfg.key, range, cfg.currentValue);
+    setData(chartData);
+    setAnalysis(analyze(cfg, chartData));
+  }, [cfg, range]);
+  
+  // Don't render until data is available (client-side only)
+  if (!analysis) return null;
+  
   const Icon = cfg.icon;
 
   const statusMap = {
