@@ -1,9 +1,10 @@
 'use client';
 
 import React, { useEffect, useRef, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import {
   Leaf, Cpu, Wifi, BarChart3, Droplets, Thermometer,
-  ShieldCheck, Zap, Globe, ChevronDown, ArrowRight,
+  ShieldCheck, Zap, Globe, ChevronDown, ArrowRight, ArrowLeft,
   FlaskConical, Sun, Wind, Waves, CheckCircle, Star,
   Activity, TreePine, Flower, Home, Layers
 } from 'lucide-react';
@@ -279,6 +280,7 @@ function SectionLabel({ text }: { text: string }) {
 // ─── Main Page ────────────────────────────────────────────────────────────────
 
 export default function LandingPage() {
+  const router = useRouter();
   const [activeCase, setActiveCase] = useState(0);
   const [scrollY, setScrollY] = useState(0);
 
@@ -347,6 +349,14 @@ export default function LandingPage() {
       >
         <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
           <div className="flex items-center gap-2.5">
+            <button
+              type="button"
+              onClick={() => router.back()}
+              className="md:hidden p-1.5 -ml-1 text-slate-400 hover:text-slate-100 transition-colors touch-manipulation"
+              aria-label="Go back"
+            >
+              <ArrowLeft className="w-6 h-6" />
+            </button>
             <div className="w-8 h-8 rounded-lg bg-emerald-500/20 border border-emerald-500/40 flex items-center justify-center">
               <Leaf className="w-4 h-4 text-emerald-400" />
             </div>

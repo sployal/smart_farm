@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useMemo } from 'react';
+import { useRouter } from 'next/navigation';
 import {
   Bell,
   BellOff,
@@ -25,6 +26,7 @@ import {
   Zap,
   Clock,
   CalendarDays,
+  ArrowLeft,
 } from 'lucide-react';
 import clsx, { type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
@@ -278,6 +280,7 @@ function NotifCard({
 
 // ─── Main Page ────────────────────────────────────────────
 export default function NotificationsPage() {
+  const router = useRouter();
   const [notifications, setNotifications] = useState<Notification[]>(INITIAL_NOTIFICATIONS);
   const [activeCategory, setActiveCategory] = useState<NotifCategory>('all');
   const [showUnreadOnly, setShowUnreadOnly] = useState(false);
@@ -343,6 +346,14 @@ export default function NotificationsPage() {
         <div className="max-w-4xl mx-auto px-4 sm:px-6 py-4 sm:py-5">
           <div className="flex items-center justify-between gap-4">
             <div className="flex items-center gap-3">
+              <button
+                type="button"
+                onClick={() => router.back()}
+                className="md:hidden p-1.5 -ml-1 text-slate-400 hover:text-slate-100 transition-colors touch-manipulation flex-shrink-0"
+                aria-label="Go back"
+              >
+                <ArrowLeft className="w-6 h-6" />
+              </button>
               <div className="relative">
                 <div className="w-10 h-10 bg-slate-800 border border-slate-700 rounded-xl flex items-center justify-center">
                   <Bell className="w-5 h-5 text-emerald-400" />

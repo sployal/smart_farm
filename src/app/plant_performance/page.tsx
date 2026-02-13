@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { useRouter } from 'next/navigation';
 import {
   RadarChart, Radar, PolarGrid, PolarAngleAxis, PolarRadiusAxis,
   ResponsiveContainer, AreaChart, Area, XAxis, YAxis, Tooltip, CartesianGrid
@@ -9,7 +10,7 @@ import {
   Leaf, Droplets, Thermometer, Waves, FlaskConical,
   Sprout, Brain, TrendingUp, AlertTriangle, CheckCircle,
   Zap, Sun, Wind, RefreshCw, ChevronRight, Activity,
-  BarChart3, Info, ArrowUp, ArrowDown, Minus
+  BarChart3, Info, ArrowUp, ArrowDown, Minus, ArrowLeft
 } from 'lucide-react';
 
 // ---------------------------------------------------------------------------
@@ -430,6 +431,7 @@ function buildGrowthTimeline(s: SensorData) {
 // Main Page
 // ---------------------------------------------------------------------------
 export default function PlantPerformancePage() {
+  const router = useRouter();
   // ── Sensor state (wired to Firebase in real app; mocked here) ──
   const [sensorData, setSensorData] = useState<SensorData>({
     moisture:     62,
@@ -555,7 +557,16 @@ Produce a JSON plant-health report.`.trim();
 
         {/* ── Page header ── */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-          <div>
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => router.back()}
+              className="md:hidden p-1.5 -ml-1 text-slate-400 hover:text-slate-100 transition-colors touch-manipulation flex-shrink-0"
+              aria-label="Go back"
+            >
+              <ArrowLeft className="w-6 h-6" />
+            </button>
+            <div>
             <div className="flex items-center gap-2 text-slate-500 text-sm mb-1">
               <Sprout className="w-4 h-4" />
               <span>Farm Dashboard</span>
@@ -568,6 +579,7 @@ Produce a JSON plant-health report.`.trim();
             <p className="text-slate-400 text-sm mt-1">
               Roma VF Tomato · Plot A · Real-time diagnostics
             </p>
+            </div>
           </div>
           <button
             onClick={fetchAIReport}

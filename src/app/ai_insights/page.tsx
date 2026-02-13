@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { useRouter } from 'next/navigation';
 import {
   Bot,
   Send,
@@ -20,6 +21,7 @@ import {
   AlertCircle,
   Info,
   ArrowUpRight,
+  ArrowLeft,
   BarChart2,
   CloudRain,
   Sun,
@@ -369,6 +371,7 @@ function SensorPill({
 // ══════════════════════════════════════════════════════════════════════════════
 
 export default function AIInsightsPage() {
+  const router = useRouter();
   // ────────────────────────────────────────────────────────────────────────────
   // STATE
   // ────────────────────────────────────────────────────────────────────────────
@@ -582,7 +585,15 @@ Give concise, actionable advice. Use bullet points sparingly. Be friendly and pr
 
       <div className="px-4 sm:px-6 lg:px-8 pt-6 pb-4 border-b border-slate-800 bg-slate-900/50 backdrop-blur-md sticky top-0 z-30">
         <div className="max-w-6xl mx-auto flex items-center justify-between gap-4 flex-wrap">
-          
+          {/* Mobile return icon — part of header, visible only on small screens */}
+          <button
+            type="button"
+            onClick={() => router.back()}
+            className="md:hidden p-1.5 -ml-1 text-slate-400 hover:text-slate-100 transition-colors touch-manipulation order-first"
+            aria-label="Go back"
+          >
+            <ArrowLeft className="w-6 h-6" />
+          </button>
           {/* Logo & Title */}
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center shadow-lg shadow-emerald-500/20">

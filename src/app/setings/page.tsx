@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useCallback, useRef } from 'react';
+import { useRouter } from 'next/navigation';
 import { useTheme } from 'next-themes';
 import {
   Droplets, Sun, Moon, Bell, Database, ChevronRight,
@@ -8,7 +9,7 @@ import {
   Leaf, Volume2, VolumeX, Smartphone,
   Eye, EyeOff, Save, RotateCcw,
   BatteryCharging, Radio, MapPin, Activity,
-  Gauge, Info, Sliders
+  Gauge, Info, Sliders, ArrowLeft
 } from 'lucide-react';
 
 // ---------------------------------------------------------------------------
@@ -302,6 +303,7 @@ function SettingRow({ label, sublabel, children }: {
 // Main Page
 // ---------------------------------------------------------------------------
 export default function SettingsPage() {
+  const router = useRouter();
   // ─── HYDRATION FIX ───────────────────────────────────────────────────────
   // Never read resolvedTheme on the server. Gate ALL theme-dependent rendering
   // behind `mounted === true`. The skeleton below is rendered on both server
@@ -456,24 +458,41 @@ Give up to 4 tailored irrigation tips plus optimal watering time.`;
           style={{ background: 'rgba(59,130,246,0.05)' }} />
       </div>
 
-      <div className="relative z-10 max-w-[1200px] mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
+      <div className="relative z-10 max-w-[1200px] mx-auto px-4 sm:px-6 lg:px-8 space-y-6">
 
-        {/* Header */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-          <div>
+        {/* Header bar — in-flow, not fixed; back icon is part of this bar */}
+        <div
+          className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 py-4 sm:py-6 border-b min-h-[4rem] -mx-4 sm:-mx-6 lg:-mx-8 px-4 sm:px-6 lg:px-8"
+          style={{
+            borderColor: isDark ? 'rgba(51,65,85,0.6)' : 'rgba(226,232,240,0.8)',
+            background: isDark ? 'rgba(15,23,42,0.4)' : 'rgba(255,255,255,0.5)',
+          }}
+        >
+          <div className="flex items-center gap-2 min-w-0">
+            <button
+              type="button"
+              onClick={() => router.back()}
+              className="md:hidden p-1.5 -ml-1 flex-shrink-0 transition-colors touch-manipulation"
+              style={{ color: isDark ? '#94a3b8' : '#64748b' }}
+              aria-label="Go back"
+            >
+              <ArrowLeft className="w-6 h-6" />
+            </button>
+            <div className="min-w-0">
             <div className="flex items-center gap-2 text-sm mb-1"
               style={{ color: isDark ? '#64748b' : '#94a3b8' }}>
-              <Leaf className="w-4 h-4 text-emerald-500" />
+              <Leaf className="w-4 h-4 text-emerald-500 flex-shrink-0" />
               <span>Farm Dashboard</span>
-              <ChevronRight className="w-3 h-3" />
+              <ChevronRight className="w-3 h-3 flex-shrink-0" />
               <span className="text-emerald-500">Settings</span>
             </div>
             <h1 className="text-3xl font-black tracking-tight">Farm Settings</h1>
             <p className="text-sm mt-1" style={{ color: isDark ? '#94a3b8' : '#64748b' }}>
               Control irrigation, alerts, system preferences and display
             </p>
+            </div>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 flex-shrink-0">
             <button onClick={handleReset}
               className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold transition-all"
               style={{

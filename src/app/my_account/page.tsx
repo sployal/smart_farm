@@ -16,7 +16,7 @@ import { auth } from '@/lib/firebase';
 import {
   Leaf, User as UserIcon, Mail, Lock, Camera, Edit2, Check, X,
   AlertCircle, CheckCircle, Loader2, Shield, LogOut, Eye, EyeOff,
-  Calendar, Globe, Phone,
+  Calendar, Globe, Phone, ArrowLeft,
 } from 'lucide-react';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -469,6 +469,14 @@ export default function ProfilePage() {
         {/* ── Top nav bar ─────────────────────────────────── */}
         <div className={`flex items-center justify-between mb-10 page-appear ${mounted ? 'show' : ''}`}>
           <div className="flex items-center gap-3">
+            <button
+              type="button"
+              onClick={() => router.back()}
+              className="md:hidden p-1.5 -ml-1 text-slate-400 hover:text-slate-100 transition-colors touch-manipulation flex-shrink-0"
+              aria-label="Go back"
+            >
+              <ArrowLeft className="w-6 h-6" />
+            </button>
             <div className="w-8 h-8 rounded-xl bg-emerald-500/20 border border-emerald-500/40 flex items-center justify-center">
               <Leaf style={{ width: 16, height: 16 }} className="text-emerald-400" />
             </div>

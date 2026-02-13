@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import {
   AreaChart, Area, XAxis, YAxis, CartesianGrid,
   Tooltip, ResponsiveContainer, ReferenceLine
@@ -8,7 +9,7 @@ import {
 import {
   Thermometer, Droplets, Waves, FlaskConical,
   CheckCircle, AlertTriangle, Zap, RefreshCw,
-  ArrowUpRight, ArrowDownRight, Minus, Target, Eye
+  ArrowUpRight, ArrowDownRight, Minus, Target, Eye, ArrowLeft
 } from 'lucide-react';
 import { format, subHours } from 'date-fns';
 import clsx, { type ClassValue } from 'clsx';
@@ -414,6 +415,7 @@ function SensorSection({ cfg, range }: { cfg: SensorConfig; range: TimeRange }) 
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
 export default function SensorDataPage() {
+  const router = useRouter();
   const [range, setRange]           = useState<TimeRange>('24h');
   const [refreshKey, setRefreshKey] = useState(0);
   const [now, setNow]               = useState(new Date());
@@ -471,6 +473,14 @@ export default function SensorDataPage() {
       {/* ── Topbar — same style as dashboard header ── */}
       <div className="sticky top-0 z-30 h-14 bg-slate-900/80 backdrop-blur-md border-b border-slate-800 flex items-center justify-between px-6 md:px-10 gap-4">
         <div className="flex items-center gap-3">
+          <button
+            type="button"
+            onClick={() => router.back()}
+            className="md:hidden p-1.5 -ml-1 text-slate-400 hover:text-slate-100 transition-colors touch-manipulation flex-shrink-0"
+            aria-label="Go back"
+          >
+            <ArrowLeft className="w-6 h-6" />
+          </button>
           <span className={cn(
             'w-2 h-2 rounded-full animate-pulse',
             isConnected
