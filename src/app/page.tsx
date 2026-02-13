@@ -248,7 +248,7 @@ export default function LoginPage() {
 
   // ── Heading & subtext per mode ─────────────────────────────
   const headings = {
-    login:  { title: 'Welcome back',     sub: 'Sign in to your AgriSense dashboard' },
+    login:  { title: 'Welcome back',     sub: 'Sign in to your smartfarm dashboard' },
     signup: { title: 'Create account',   sub: 'Start monitoring your farm today' },
     reset:  { title: 'Reset password',   sub: "Enter your email and we'll send a reset link" },
   };
@@ -402,7 +402,7 @@ export default function LoginPage() {
             <Leaf style={{ width: 18, height: 18 }} className="text-emerald-400" />
           </div>
           <span className="font-bold text-xl tracking-tight text-slate-100">
-            Agri<span className="text-emerald-400">Sense</span>
+            smart<span className="text-emerald-400">farm</span>
           </span>
         </div>
 
@@ -470,7 +470,7 @@ export default function LoginPage() {
             <Leaf className="w-4 h-4 text-emerald-400" />
           </div>
           <span className="font-bold text-lg tracking-tight text-slate-100">
-            Agri<span className="text-emerald-400">Sense</span>
+            Smart<span className="text-emerald-400">farm</span>
           </span>
         </div>
 
@@ -649,7 +649,7 @@ export default function LoginPage() {
           {/* footer */}
           <div className="mt-8 pt-6 text-center text-xs text-slate-600"
             style={{ borderTop: '1px solid rgba(51,65,85,0.5)', fontFamily: 'DM Sans, sans-serif' }}>
-            Protected by Firebase Auth · AgriSense {new Date().getFullYear()}
+            Protected by Firebase Auth · smartfarm {new Date().getFullYear()}
           </div>
         </div>
       </div>
