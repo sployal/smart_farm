@@ -18,7 +18,7 @@ export default function ClientLayout({ children }: { children: React.ReactNode }
   const pathname = usePathname();
   const hideSidebar = pathname === "/";
   return (
-    <div className={`${geistSans.variable} ${geistMono.variable} antialiased`} style={{ "--sidebar-width": "256px" } as React.CSSProperties}>
+    <div className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
       {!hideSidebar && <Sidebar />}
       <main
         className="transition-all duration-300 min-h-screen"
