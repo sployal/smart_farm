@@ -50,6 +50,16 @@ export default function Sidebar() {
     return () => document.removeEventListener('toggleMobileMenu', handleToggleMobileMenu);
   }, []);
 
+  // Prevent body scroll when mobile menu is open so viewport height stays stable (no bottom "snap")
+  React.useEffect(() => {
+    if (!mobileOpen) return;
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => {
+      document.body.style.overflow = prev;
+    };
+  }, [mobileOpen]);
+
   return (
     <>
       {/* Mobile backdrop - close menu when clicking outside */}
@@ -98,7 +108,7 @@ export default function Sidebar() {
       </aside>
 
       {/* Mobile Sidebar */}
-      <aside className={`fixed top-0 left-0 bottom-0 w-64 h-[100dvh] bg-slate-900 border-r border-slate-800 flex flex-col overflow-hidden transition-all duration-300 z-40 lg:hidden ${mobileOpen ? "translate-x-0" : "-translate-x-full"}`}>
+      <aside className={`fixed top-0 left-0 w-64 h-screen bg-slate-900 border-r border-slate-800 flex flex-col overflow-hidden transition-all duration-300 z-40 lg:hidden ${mobileOpen ? "translate-x-0" : "-translate-x-full"}`}>
         <div className="p-6 flex items-center justify-between border-b border-slate-800 flex-shrink-0">
           <div className="flex items-center gap-3 text-emerald-500">
             <Leaf className="w-8 h-8" />
