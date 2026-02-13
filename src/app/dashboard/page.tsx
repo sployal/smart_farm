@@ -517,7 +517,7 @@ Give concise, actionable advice. Be friendly and professional.
 
             <button
               onClick={() => router.push('/my_account')}
-              className="hidden md:flex items-center gap-3 pl-3 md:pl-4 border-l border-slate-800 flex-shrink-0 rounded-lg hover:bg-slate-800/50 transition-colors cursor-pointer"
+              className="flex items-center gap-3 pl-2 sm:pl-3 md:pl-4 border-l border-slate-800 flex-shrink-0 rounded-lg hover:bg-slate-800/50 transition-colors cursor-pointer"
             >
               <div className="w-8 h-8 rounded-full bg-emerald-600 flex items-center justify-center text-sm font-bold text-white flex-shrink-0">
                 {currentUser?.photoURL ? (
