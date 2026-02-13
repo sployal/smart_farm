@@ -52,6 +52,16 @@ export default function Sidebar() {
 
   return (
     <>
+      {/* Mobile backdrop - close menu when clicking outside */}
+      {mobileOpen && (
+        <button
+          type="button"
+          aria-label="Close menu"
+          className="fixed inset-0 bg-black/50 z-30 lg:hidden"
+          onClick={() => setMobileOpen(false)}
+        />
+      )}
+
       {/* Desktop Sidebar */}
       <aside className={`fixed h-screen bg-slate-900 border-r border-slate-800 flex flex-col transition-all duration-300 z-50 hidden lg:flex ${collapsed ? "w-20" : "w-64"}`}>
         <div className={`p-4 border-b border-slate-800 gap-4 ${collapsed ? "flex flex-col items-center" : "flex flex-row items-center justify-between"}`}>
@@ -88,8 +98,8 @@ export default function Sidebar() {
       </aside>
 
       {/* Mobile Sidebar */}
-      <aside className={`fixed h-screen w-64 bg-slate-900 border-r border-slate-800 flex flex-col transition-all duration-300 z-40 lg:hidden ${mobileOpen ? "translate-x-0" : "-translate-x-full"}`}>
-        <div className="p-6 flex items-center justify-between border-b border-slate-800">
+      <aside className={`fixed top-0 left-0 bottom-0 w-64 h-[100dvh] bg-slate-900 border-r border-slate-800 flex flex-col overflow-hidden transition-all duration-300 z-40 lg:hidden ${mobileOpen ? "translate-x-0" : "-translate-x-full"}`}>
+        <div className="p-6 flex items-center justify-between border-b border-slate-800 flex-shrink-0">
           <div className="flex items-center gap-3 text-emerald-500">
             <Leaf className="w-8 h-8" />
             <span className="text-xl font-bold tracking-tight">SmartFarm</span>
@@ -99,7 +109,7 @@ export default function Sidebar() {
           </button>
         </div>
 
-        <nav className="flex-1 py-4 overflow-y-auto">
+        <nav className="flex-1 min-h-0 py-4 overflow-y-auto">
           <ul className="space-y-1">
             <li className="mx-2 my-1">
               <Link href="/dashboard" onClick={() => setMobileOpen(false)} className="flex items-center gap-3.5 px-4 py-3 rounded-xl text-slate-400 hover:bg-slate-800 hover:text-slate-100">
@@ -140,7 +150,7 @@ export default function Sidebar() {
           </ul>
         </nav>
 
-        <div className="p-4 border-t border-slate-800 space-y-3">
+        <div className="p-4 pb-6 border-t border-slate-800 space-y-3 flex-shrink-0">
           <div className="flex items-center gap-2 text-sm">
             <span className="w-2 h-2 rounded-full animate-pulse bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.6)]" />
             <span className="text-slate-400">ESP32 Online</span>
