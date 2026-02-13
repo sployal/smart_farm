@@ -826,12 +826,12 @@ Give concise, actionable advice. Use bullet points sparingly. Be friendly and pr
 
         {activeTab === 'chat' && (
           <div 
-            className="flex flex-col" 
+            className="flex flex-col relative" 
             style={{ height: 'calc(100vh - 220px)', minHeight: '500px' }}
           >
 
             {/* Messages List */}
-            <div className="flex-1 overflow-y-auto space-y-4 pb-4 pr-1">
+            <div className="flex-1 overflow-y-auto space-y-4 pb-4 pr-1 mb-[180px] md:mb-0">
               {messages.map(msg => (
                 <div 
                   key={msg.id} 
@@ -890,51 +890,54 @@ Give concise, actionable advice. Use bullet points sparingly. Be friendly and pr
               <div ref={chatEndRef} />
             </div>
 
-            {/* Quick Prompts */}
-            <div className="flex gap-2 flex-wrap mb-3">
-              {quickPrompts.map(qp => (
+            {/* Input Section - Sticky on mobile */}
+            <div className="md:relative fixed md:static bottom-0 left-0 right-0 bg-slate-950/95 backdrop-blur-md border-t border-slate-800 md:border-t-0 md:bg-transparent md:backdrop-blur-none z-40 px-4 sm:px-0 -mx-4 sm:mx-0 pt-3 pb-3 md:pt-0 md:pb-0">
+              {/* Quick Prompts */}
+              <div className="flex gap-2 flex-wrap mb-3 px-4 sm:px-0">
+                {quickPrompts.map(qp => (
+                  <button
+                    key={qp.label}
+                    onClick={() => setInput(qp.prompt)}
+                    className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-800 hover:bg-slate-700 border border-slate-700 hover:border-emerald-500/40 text-slate-300 hover:text-emerald-300 rounded-xl text-xs font-medium transition-all"
+                  >
+                    {qp.icon}
+                    {qp.label}
+                  </button>
+                ))}
+              </div>
+
+              {/* Input Bar */}
+              <div className="flex gap-2 bg-slate-800/80 border border-slate-700 rounded-2xl p-2 backdrop-blur-sm mx-4 sm:mx-0">
+                <textarea
+                  rows={1}
+                  value={input}
+                  onChange={e => setInput(e.target.value)}
+                  onKeyDown={e => { 
+                    if (e.key === 'Enter' && !e.shiftKey) { 
+                      e.preventDefault(); 
+                      handleSend(); 
+                    } 
+                  }}
+                  placeholder="Ask about your crops, soil, irrigation, pests…"
+                  className="flex-1 bg-transparent text-sm text-slate-200 placeholder:text-slate-500 resize-none focus:outline-none px-2 py-1.5 leading-relaxed"
+                />
                 <button
-                  key={qp.label}
-                  onClick={() => setInput(qp.prompt)}
-                  className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-800 hover:bg-slate-700 border border-slate-700 hover:border-emerald-500/40 text-slate-300 hover:text-emerald-300 rounded-xl text-xs font-medium transition-all"
+                  onClick={handleSend}
+                  disabled={!input.trim() || chatLoading}
+                  className="w-10 h-10 bg-emerald-600 hover:bg-emerald-500 disabled:opacity-40 disabled:cursor-not-allowed rounded-xl flex items-center justify-center text-white transition-all active:scale-95 flex-shrink-0 self-end"
                 >
-                  {qp.icon}
-                  {qp.label}
+                  {chatLoading ? (
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                  ) : (
+                    <Send className="w-4 h-4" />
+                  )}
                 </button>
-              ))}
-            </div>
+              </div>
 
-            {/* Input Bar */}
-            <div className="flex gap-2 bg-slate-800/80 border border-slate-700 rounded-2xl p-2 backdrop-blur-sm">
-              <textarea
-                rows={1}
-                value={input}
-                onChange={e => setInput(e.target.value)}
-                onKeyDown={e => { 
-                  if (e.key === 'Enter' && !e.shiftKey) { 
-                    e.preventDefault(); 
-                    handleSend(); 
-                  } 
-                }}
-                placeholder="Ask about your crops, soil, irrigation, pests…"
-                className="flex-1 bg-transparent text-sm text-slate-200 placeholder:text-slate-500 resize-none focus:outline-none px-2 py-1.5 leading-relaxed"
-              />
-              <button
-                onClick={handleSend}
-                disabled={!input.trim() || chatLoading}
-                className="w-10 h-10 bg-emerald-600 hover:bg-emerald-500 disabled:opacity-40 disabled:cursor-not-allowed rounded-xl flex items-center justify-center text-white transition-all active:scale-95 flex-shrink-0 self-end"
-              >
-                {chatLoading ? (
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                ) : (
-                  <Send className="w-4 h-4" />
-                )}
-              </button>
+              <p className="text-center text-[11px] text-slate-600 mt-2 px-4 sm:px-0 hidden md:block">
+                AI has access to live sensor data from Firebase · Press Enter to send
+              </p>
             </div>
-
-            <p className="text-center text-[11px] text-slate-600 mt-2">
-              AI has access to live sensor data from Firebase · Press Enter to send
-            </p>
           </div>
         )}
       </div>
