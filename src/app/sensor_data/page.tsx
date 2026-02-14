@@ -423,7 +423,7 @@ export default function SensorDataPage() {
   const [lastSync, setLastSync]     = useState('—');
 
   const [liveValues, setLiveValues] = useState<Record<SensorKey, number>>({
-    temperature: 22.8,
+    temperature: 0,
     humidity:    65,
     moisture:    58,
     ph:          6.5,   // static — ESP32 doesn't send pH
