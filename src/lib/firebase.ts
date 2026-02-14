@@ -1,6 +1,7 @@
 import { initializeApp } from "firebase/app";
 import { getDatabase, ref, onValue, get } from "firebase/database";
 import { getAuth, GoogleAuthProvider } from "firebase/auth";
+import { getFirestore } from "firebase/firestore"; // ← added for user roles
 
 const firebaseConfig = {
   apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
@@ -21,11 +22,14 @@ export const database = getDatabase(app);
 export const auth = getAuth(app);
 export const googleProvider = new GoogleAuthProvider();
 
+// Firestore — used for storing user roles (separate from Realtime Database)
+export const db = getFirestore(app); // ← added
+
 // ─── Sensor helpers ───────────────────────────────────────────────────────────
 export const fetchSensorData = async () => {
   try {
     const tempRef = ref(database, "sensorData/temperature");
-    const humRef = ref(database, "sensorData/humidity");
+    const humRef  = ref(database, "sensorData/humidity");
     const soilRef = ref(database, "sensorData/soilMoisture");
 
     const [tempSnap, humSnap, soilSnap] = await Promise.all([
@@ -36,8 +40,8 @@ export const fetchSensorData = async () => {
 
     return {
       temperature: tempSnap.val() || 0,
-      humidity: humSnap.val() || 0,
-      moisture: soilSnap.val() || 0,
+      humidity:    humSnap.val()  || 0,
+      moisture:    soilSnap.val() || 0,
     };
   } catch (error) {
     console.error("Error fetching sensor data:", error);
@@ -46,14 +50,14 @@ export const fetchSensorData = async () => {
 };
 
 export const startRealtimeUpdates = (callback: (data: any) => void) => {
-  const sensorRef = ref(database, "sensorData");
+  const sensorRef   = ref(database, "sensorData");
   const unsubscribe = onValue(sensorRef, (snapshot) => {
     if (snapshot.exists()) {
       const data = snapshot.val();
       callback({
-        temperature: data.temperature || 0,
-        humidity: data.humidity || 0,
-        moisture: data.soilMoisture || 0,
+        temperature: data.temperature  || 0,
+        humidity:    data.humidity     || 0,
+        moisture:    data.soilMoisture || 0,
       });
     }
   });

@@ -9,8 +9,10 @@ import {
   Leaf, Volume2, VolumeX, Smartphone,
   Eye, EyeOff, Save, RotateCcw,
   BatteryCharging, Radio, MapPin, Activity,
-  Gauge, Info, Sliders, ArrowLeft
+  Gauge, Info, Sliders, ArrowLeft,
+  Lock, Users, ShieldCheck,
 } from 'lucide-react';
+import { useRole } from '@/hooks/useRole';
 
 // ---------------------------------------------------------------------------
 // Config
@@ -86,7 +88,7 @@ function cn(...c: (string | false | null | undefined)[]): string {
 }
 
 // ---------------------------------------------------------------------------
-// WaterTank – pure SVG, no theme dependency, no styled-jsx
+// WaterTank
 // ---------------------------------------------------------------------------
 function WaterTank({ current, capacity, low }: { current: number; capacity: number; low: number }) {
   const pct   = Math.min(100, Math.max(0, (current / capacity) * 100));
@@ -113,36 +115,21 @@ function WaterTank({ current, capacity, low }: { current: number; capacity: numb
           <rect x="8" y="8" width="96" height="152" rx="12"
             fill="url(#tankBody)" stroke="#334155" strokeWidth="2" />
           <g clipPath="url(#tankClip)">
-            <rect
-              x="8"
-              y={8 + 152 * (1 - pct / 100)}
-              width="96"
-              height={152 * (pct / 100)}
-              fill="url(#waterFill)"
-            />
+            <rect x="8" y={8 + 152 * (1 - pct / 100)} width="96" height={152 * (pct / 100)} fill="url(#waterFill)" />
             {pct > 2 && (
               <path
                 d={`M 8 ${8 + 152 * (1 - pct / 100)}
                     Q 36 ${8 + 152 * (1 - pct / 100) - 6} 56 ${8 + 152 * (1 - pct / 100)}
                     Q 76 ${8 + 152 * (1 - pct / 100) + 6} 104 ${8 + 152 * (1 - pct / 100)}
                     V 160 H 8 Z`}
-                fill={color}
-                opacity="0.25"
-              >
-                <animateTransform
-                  attributeName="transform"
-                  type="translate"
-                  values="-48 0;48 0;-48 0"
-                  dur="3s"
-                  repeatCount="indefinite"
-                />
+                fill={color} opacity="0.25">
+                <animateTransform attributeName="transform" type="translate" values="-48 0;48 0;-48 0" dur="3s" repeatCount="indefinite" />
               </path>
             )}
           </g>
           {[25, 50, 75].map(t => (
             <g key={t}>
-              <line x1="100" y1={8 + 152 * (1 - t / 100)} x2="108" y2={8 + 152 * (1 - t / 100)}
-                stroke="#475569" strokeWidth="1.5" />
+              <line x1="100" y1={8 + 152 * (1 - t / 100)} x2="108" y2={8 + 152 * (1 - t / 100)} stroke="#475569" strokeWidth="1.5" />
               <text x="80" y={8 + 152 * (1 - t / 100) + 4} fontSize="8" fill="#475569" textAnchor="end">{t}%</text>
             </g>
           ))}
@@ -177,29 +164,31 @@ function WaterTank({ current, capacity, low }: { current: number; capacity: numb
 }
 
 // ---------------------------------------------------------------------------
-// Toggle
+// Toggle — respects readOnly prop
 // ---------------------------------------------------------------------------
 function Toggle({
-  checked, onChange, size = 'md', color = '#10b981', disabled = false,
+  checked, onChange, size = 'md', color = '#10b981', disabled = false, readOnly = false,
 }: {
   checked: boolean; onChange: (v: boolean) => void;
-  size?: 'sm' | 'md' | 'lg'; color?: string; disabled?: boolean;
+  size?: 'sm' | 'md' | 'lg'; color?: string; disabled?: boolean; readOnly?: boolean;
 }) {
   const dims = {
     sm: { w: 36, h: 20, thumb: 14, pad: 3 },
     md: { w: 48, h: 26, thumb: 18, pad: 4 },
     lg: { w: 60, h: 32, thumb: 22, pad: 5 },
   }[size];
+  const isBlocked = disabled || readOnly;
   return (
     <button
       type="button"
-      onClick={() => !disabled && onChange(!checked)}
-      disabled={disabled}
-      className="relative flex-shrink-0 rounded-full focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 disabled:opacity-40 disabled:cursor-not-allowed"
+      onClick={() => !isBlocked && onChange(!checked)}
+      disabled={isBlocked}
+      className="relative flex-shrink-0 rounded-full focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 disabled:cursor-not-allowed"
       style={{
         width: dims.w, height: dims.h,
-        background: checked ? color : '#334155',
-        boxShadow: checked ? `0 0 12px ${color}55` : 'none',
+        background: checked ? (readOnly ? '#4b5563' : color) : '#334155',
+        boxShadow: checked && !readOnly ? `0 0 12px ${color}55` : 'none',
+        opacity: readOnly ? 0.55 : disabled ? 0.4 : 1,
         transition: 'background 0.3s, box-shadow 0.3s',
       }}
       aria-checked={checked}
@@ -218,16 +207,16 @@ function Toggle({
 }
 
 // ---------------------------------------------------------------------------
-// SliderRow
+// SliderRow — respects readOnly prop
 // ---------------------------------------------------------------------------
 function SliderRow({
-  label, value, min, max, step = 1, unit, onChange, color = '#10b981',
+  label, value, min, max, step = 1, unit, onChange, color = '#10b981', readOnly = false,
 }: {
   label: string; value: number; min: number; max: number;
-  step?: number; unit: string; onChange: (v: number) => void; color?: string;
+  step?: number; unit: string; onChange: (v: number) => void; color?: string; readOnly?: boolean;
 }) {
   return (
-    <div className="space-y-2">
+    <div className="space-y-2" style={{ opacity: readOnly ? 0.6 : 1 }}>
       <div className="flex justify-between text-xs">
         <span className="text-slate-400 font-medium">{label}</span>
         <span className="font-bold tabular-nums" style={{ color }}>{value}{unit}</span>
@@ -235,13 +224,14 @@ function SliderRow({
       <div className="relative h-6 flex items-center">
         <div className="w-full h-1.5 bg-slate-800 rounded-full overflow-hidden">
           <div className="h-full rounded-full transition-all duration-150"
-            style={{ width: `${((value - min) / (max - min)) * 100}%`, background: color }} />
+            style={{ width: `${((value - min) / (max - min)) * 100}%`, background: readOnly ? '#4b5563' : color }} />
         </div>
         <input type="range" min={min} max={max} step={step} value={value}
-          onChange={e => onChange(Number(e.target.value))}
-          className="absolute inset-0 w-full opacity-0 cursor-pointer" />
+          onChange={e => !readOnly && onChange(Number(e.target.value))}
+          disabled={readOnly}
+          className="absolute inset-0 w-full opacity-0 cursor-pointer disabled:cursor-not-allowed" />
         <div className="absolute w-4 h-4 rounded-full bg-white shadow-lg border-2 pointer-events-none transition-all duration-150"
-          style={{ left: `calc(${((value - min) / (max - min)) * 100}% - 8px)`, borderColor: color }} />
+          style={{ left: `calc(${((value - min) / (max - min)) * 100}% - 8px)`, borderColor: readOnly ? '#4b5563' : color }} />
       </div>
       <div className="flex justify-between text-[10px] text-slate-600">
         <span>{min}{unit}</span><span>{max}{unit}</span>
@@ -251,7 +241,7 @@ function SliderRow({
 }
 
 // ---------------------------------------------------------------------------
-// SettingCard – no isDark inside; callers pass inline styles if needed
+// SettingCard
 // ---------------------------------------------------------------------------
 function SettingCard({
   icon: Icon, title, subtitle, children, accent = '#10b981', badge,
@@ -300,18 +290,41 @@ function SettingRow({ label, sublabel, children }: {
 }
 
 // ---------------------------------------------------------------------------
+// ReadOnly banner — shown at the top when user role is 'user'
+// ---------------------------------------------------------------------------
+function ReadOnlyBanner() {
+  return (
+    <div className="flex items-center gap-3 px-4 py-3 rounded-xl"
+      style={{ background: 'rgba(245,158,11,0.08)', border: '1px solid rgba(245,158,11,0.25)' }}>
+      <Lock className="w-4 h-4 text-amber-400 flex-shrink-0" />
+      <div className="flex-1 min-w-0">
+        <p className="text-sm font-semibold text-amber-300">View-only mode</p>
+        <p className="text-xs text-slate-500 mt-0.5">
+          Your account has the <span className="text-amber-400 font-medium">User</span> role.
+          Contact an admin to be upgraded to <span className="text-emerald-400 font-medium">Gardener</span> to make changes.
+        </p>
+      </div>
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
 // Main Page
 // ---------------------------------------------------------------------------
 export default function SettingsPage() {
   const router = useRouter();
-  // ─── HYDRATION FIX ───────────────────────────────────────────────────────
-  // Never read resolvedTheme on the server. Gate ALL theme-dependent rendering
-  // behind `mounted === true`. The skeleton below is rendered on both server
-  // and client identically, eliminating every class-hash mismatch.
+
   const { setTheme, resolvedTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
   useEffect(() => { setMounted(true); }, []);
   const isDark = mounted ? resolvedTheme !== 'light' : true;
+
+  // ── Role-based access ─────────────────────────────────────────────────────
+  const { role, loading: roleLoading } = useRole();
+  // True when the user can only view (not interact)
+  const isReadOnly = !roleLoading && role === 'user';
+  // True only for admin
+  const isAdmin    = !roleLoading && role === 'admin';
   // ─────────────────────────────────────────────────────────────────────────
 
   const [settings, setSettings] = useState<FarmSettings>({
@@ -346,7 +359,6 @@ export default function SettingsPage() {
   const [wateringOn,  setWateringOn]  = useState(false);
   const [waterTimer,  setWaterTimer]  = useState(0);
   const [saved,       setSaved]       = useState(false);
-  const [showKey,     setShowKey]     = useState(false);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   useEffect(() => {
@@ -370,8 +382,7 @@ export default function SettingsPage() {
   }, [wateringOn]);
 
   const fetchAITips = useCallback(async () => {
-    setAiLoading(true);
-    setAiError('');
+    setAiLoading(true); setAiError('');
     try {
       const sys = `You are an expert agronomist AI. Reply ONLY with valid JSON, no prose, no markdown.
 Schema: { "tips": [{ "type": "info"|"warning"|"success", "text": "<max 20 words>" }], "optimalWateringTime": "<HH:MM>", "weeklyWaterEstimate": <integer> }`;
@@ -384,25 +395,26 @@ Give up to 4 tailored irrigation tips plus optimal watering time.`;
       setAiTips(parsed.tips ?? []);
       setAiOptTime(parsed.optimalWateringTime ?? '');
       setAiWeeklyEst(parsed.weeklyWaterEstimate ?? 0);
-    } catch (e) {
-      setAiError((e as Error).message);
-    } finally {
-      setAiLoading(false);
-    }
+    } catch (e) { setAiError((e as Error).message); }
+    finally { setAiLoading(false); }
   }, [settings]);
 
   useEffect(() => { fetchAITips(); }, []);
 
-  const set = <K extends keyof FarmSettings>(key: K, val: FarmSettings[K]) =>
+  const set = <K extends keyof FarmSettings>(key: K, val: FarmSettings[K]) => {
+    if (isReadOnly) return; // extra safety — shouldn't be reachable from UI
     setSettings(s => ({ ...s, [key]: val }));
+  };
 
   const handleSave = () => {
+    if (isReadOnly) return;
     setSaved(true);
     setTimeout(() => setSaved(false), 2500);
     if (typeof window !== 'undefined') localStorage.setItem('farmSettings', JSON.stringify(settings));
   };
 
   const handleReset = () => {
+    if (isReadOnly) return;
     if (confirm('Reset all settings to factory defaults?')) {
       localStorage.removeItem('farmSettings');
       window.location.reload();
@@ -419,7 +431,7 @@ Give up to 4 tailored irrigation tips plus optimal watering time.`;
   };
   const tipIcon = { info: Info, warning: AlertTriangle, success: CheckCircle };
 
-  // ── Static skeleton — identical on SSR and first client paint ──
+  // ── Static skeleton ──────────────────────────────────────────────────────
   if (!mounted) {
     return (
       <div className="min-h-screen bg-slate-950 text-slate-100 font-sans">
@@ -428,10 +440,7 @@ Give up to 4 tailored irrigation tips plus optimal watering time.`;
           <div className="h-4 w-80 bg-slate-800 rounded-lg animate-pulse" />
           <div className="mt-6 grid grid-cols-1 lg:grid-cols-3 gap-5">
             {[...Array(4)].map((_, i) => (
-              <div key={i}
-                className={cn('rounded-2xl bg-slate-900 border border-slate-800 h-56 animate-pulse',
-                  i < 2 ? 'lg:col-span-2' : '')}
-              />
+              <div key={i} className={cn('rounded-2xl bg-slate-900 border border-slate-800 h-56 animate-pulse', i < 2 ? 'lg:col-span-2' : '')} />
             ))}
           </div>
         </div>
@@ -439,7 +448,6 @@ Give up to 4 tailored irrigation tips plus optimal watering time.`;
     );
   }
 
-  // ── Full UI — only rendered after client hydration ──
   return (
     <div
       className="min-h-screen font-sans"
@@ -450,7 +458,7 @@ Give up to 4 tailored irrigation tips plus optimal watering time.`;
         color: isDark ? '#f1f5f9' : '#0f172a',
       }}
     >
-      {/* Ambient blobs — no Tailwind class branching, only inline styles */}
+      {/* Ambient blobs */}
       <div className="fixed inset-0 pointer-events-none overflow-hidden z-0">
         <div className="absolute top-0 right-0 w-96 h-96 rounded-full blur-3xl"
           style={{ background: 'rgba(16,185,129,0.06)' }} />
@@ -460,53 +468,75 @@ Give up to 4 tailored irrigation tips plus optimal watering time.`;
 
       <div className="relative z-10 max-w-[1200px] mx-auto px-4 sm:px-6 lg:px-8 space-y-6">
 
-        {/* Header bar — in-flow, not fixed; back icon is part of this bar */}
+        {/* ── Header bar ─────────────────────────────────────────────────── */}
         <div
           className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 py-4 sm:py-6 border-b min-h-[4rem] -mx-4 sm:-mx-6 lg:-mx-8 px-4 sm:px-6 lg:px-8"
           style={{
             borderColor: isDark ? 'rgba(51,65,85,0.6)' : 'rgba(226,232,240,0.8)',
-            background: isDark ? 'rgba(15,23,42,0.4)' : 'rgba(255,255,255,0.5)',
+            background:  isDark ? 'rgba(15,23,42,0.4)' : 'rgba(255,255,255,0.5)',
           }}
         >
           <div className="flex items-center gap-2 min-w-0">
-            <button
-              type="button"
-              onClick={() => router.back()}
+            <button type="button" onClick={() => router.back()}
               className="md:hidden p-1.5 -ml-1 flex-shrink-0 transition-colors touch-manipulation"
-              style={{ color: isDark ? '#94a3b8' : '#64748b' }}
-              aria-label="Go back"
-            >
+              style={{ color: isDark ? '#94a3b8' : '#64748b' }} aria-label="Go back">
               <ArrowLeft className="w-6 h-6" />
             </button>
             <div className="min-w-0">
-            <div className="flex items-center gap-2 text-sm mb-1"
-              style={{ color: isDark ? '#64748b' : '#94a3b8' }}>
-              <Leaf className="w-4 h-4 text-emerald-500 flex-shrink-0" />
-              <span>Farm Dashboard</span>
-              <ChevronRight className="w-3 h-3 flex-shrink-0" />
-              <span className="text-emerald-500">Settings</span>
-            </div>
-            <h1 className="text-3xl font-black tracking-tight">Farm Settings</h1>
-            <p className="text-sm mt-1" style={{ color: isDark ? '#94a3b8' : '#64748b' }}>
-              Control irrigation, alerts, system preferences and display
-            </p>
+              <div className="flex items-center gap-2 text-sm mb-1" style={{ color: isDark ? '#64748b' : '#94a3b8' }}>
+                <Leaf className="w-4 h-4 text-emerald-500 flex-shrink-0" />
+                <span>Farm Dashboard</span>
+                <ChevronRight className="w-3 h-3 flex-shrink-0" />
+                <span className="text-emerald-500">Settings</span>
+              </div>
+              <h1 className="text-3xl font-black tracking-tight">Farm Settings</h1>
+              <p className="text-sm mt-1" style={{ color: isDark ? '#94a3b8' : '#64748b' }}>
+                Control irrigation, alerts, system preferences and display
+              </p>
             </div>
           </div>
-          <div className="flex items-center gap-2 flex-shrink-0">
-            <button onClick={handleReset}
-              className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold transition-all"
+
+          {/* Right side buttons */}
+          <div className="flex items-center gap-2 flex-shrink-0 flex-wrap">
+
+            {/* ── Admin-only: Manage Users button ── */}
+            {isAdmin && (
+              <button
+                onClick={() => router.push('/admin')}
+                className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold transition-all"
+                style={{
+                  background: 'rgba(168,85,247,0.12)',
+                  border: '1px solid rgba(168,85,247,0.35)',
+                  color: '#d8b4fe',
+                  boxShadow: '0 0 16px rgba(168,85,247,0.12)',
+                }}
+              >
+                <ShieldCheck className="w-4 h-4" />
+                Manage Users
+              </button>
+            )}
+
+            {/* Reset — disabled for user role */}
+            <button
+              onClick={handleReset}
+              disabled={isReadOnly}
+              className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold transition-all disabled:opacity-40 disabled:cursor-not-allowed"
               style={{
                 background: isDark ? '#1e293b' : '#ffffff',
                 border: `1px solid ${isDark ? '#334155' : '#e2e8f0'}`,
                 color: isDark ? '#cbd5e1' : '#475569',
               }}>
-              <RotateCcw className="w-4 h-4" />Reset
+              <RotateCcw className="w-4 h-4" /> Reset
             </button>
-            <button onClick={handleSave}
-              className="flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-bold text-white transition-all"
+
+            {/* Save — disabled for user role */}
+            <button
+              onClick={handleSave}
+              disabled={isReadOnly}
+              className="flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-bold text-white transition-all disabled:opacity-40 disabled:cursor-not-allowed"
               style={{
                 background: saved ? '#059669' : '#10b981',
-                boxShadow: saved ? 'none' : '0 4px 14px rgba(16,185,129,0.3)',
+                boxShadow: saved || isReadOnly ? 'none' : '0 4px 14px rgba(16,185,129,0.3)',
                 transform: saved ? 'scale(0.96)' : 'scale(1)',
               }}>
               {saved ? <CheckCircle className="w-4 h-4" /> : <Save className="w-4 h-4" />}
@@ -515,7 +545,10 @@ Give up to 4 tailored irrigation tips plus optimal watering time.`;
           </div>
         </div>
 
-        {/* Main grid */}
+        {/* ── Read-only banner for user role ───────────────────────────── */}
+        {isReadOnly && <ReadOnlyBanner />}
+
+        {/* ── Main grid ────────────────────────────────────────────────── */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
 
           {/* LEFT COLUMN */}
@@ -565,25 +598,31 @@ Give up to 4 tailored irrigation tips plus optimal watering time.`;
                     )}
                   </div>
                   <Toggle checked={wateringOn} onChange={setWateringOn}
-                    size="lg" color="#38bdf8" disabled={settings.tankCurrent < 5} />
+                    size="lg" color="#38bdf8"
+                    disabled={settings.tankCurrent < 5}
+                    readOnly={isReadOnly} />
                 </div>
               </div>
 
               <SettingRow label="Auto-Irrigation System" sublabel="Enable automatic soil moisture control">
-                <Toggle checked={settings.irrigationActive} onChange={v => set('irrigationActive', v)} color="#38bdf8" />
+                <Toggle checked={settings.irrigationActive} onChange={v => set('irrigationActive', v)} color="#38bdf8" readOnly={isReadOnly} />
               </SettingRow>
 
+              {/* Mode selector */}
               <div className="space-y-2">
                 <p className="text-sm font-medium text-slate-200">Irrigation Mode</p>
                 <div className="grid grid-cols-3 gap-2">
                   {(['manual', 'auto', 'scheduled'] as IrrigationMode[]).map(mode => (
-                    <button key={mode} onClick={() => set('irrigationMode', mode)}
-                      className="py-2.5 px-3 rounded-xl text-sm font-semibold capitalize transition-all"
+                    <button key={mode}
+                      onClick={() => !isReadOnly && set('irrigationMode', mode)}
+                      disabled={isReadOnly}
+                      className="py-2.5 px-3 rounded-xl text-sm font-semibold capitalize transition-all disabled:cursor-not-allowed"
                       style={{
-                        background: settings.irrigationMode === mode ? '#0284c7' : isDark ? '#1e293b' : '#f8fafc',
-                        border: `1px solid ${settings.irrigationMode === mode ? '#0ea5e9' : isDark ? '#334155' : '#e2e8f0'}`,
+                        background: settings.irrigationMode === mode ? (isReadOnly ? '#374151' : '#0284c7') : isDark ? '#1e293b' : '#f8fafc',
+                        border: `1px solid ${settings.irrigationMode === mode ? (isReadOnly ? '#4b5563' : '#0ea5e9') : isDark ? '#334155' : '#e2e8f0'}`,
                         color: settings.irrigationMode === mode ? '#ffffff' : isDark ? '#94a3b8' : '#64748b',
-                        boxShadow: settings.irrigationMode === mode ? '0 4px 12px rgba(14,165,233,0.25)' : 'none',
+                        opacity: isReadOnly ? 0.65 : 1,
+                        boxShadow: settings.irrigationMode === mode && !isReadOnly ? '0 4px 12px rgba(14,165,233,0.25)' : 'none',
                       }}>
                       {mode}
                     </button>
@@ -592,17 +631,18 @@ Give up to 4 tailored irrigation tips plus optimal watering time.`;
               </div>
 
               <SliderRow label="Watering Duration" value={settings.wateringDuration}
-                min={5} max={60} step={5} unit=" min" onChange={v => set('wateringDuration', v)} color="#38bdf8" />
+                min={5} max={60} step={5} unit=" min" onChange={v => set('wateringDuration', v)} color="#38bdf8" readOnly={isReadOnly} />
               {settings.irrigationMode === 'auto' && (
                 <SliderRow label="Auto-cycle Frequency" value={settings.wateringFrequency}
-                  min={2} max={48} step={2} unit=" hrs" onChange={v => set('wateringFrequency', v)} color="#38bdf8" />
+                  min={2} max={48} step={2} unit=" hrs" onChange={v => set('wateringFrequency', v)} color="#38bdf8" readOnly={isReadOnly} />
               )}
               {settings.irrigationMode === 'scheduled' && (
                 <div className="space-y-2">
                   <p className="text-xs text-slate-400 font-medium">Scheduled Time</p>
                   <input type="time" value={settings.scheduledTime}
-                    onChange={e => set('scheduledTime', e.target.value)}
-                    className="px-4 py-2.5 rounded-xl text-sm font-mono outline-none transition-all"
+                    onChange={e => !isReadOnly && set('scheduledTime', e.target.value)}
+                    disabled={isReadOnly}
+                    className="px-4 py-2.5 rounded-xl text-sm font-mono outline-none transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                     style={{
                       background: isDark ? '#1e293b' : '#ffffff',
                       border: `1px solid ${isDark ? '#334155' : '#cbd5e1'}`,
@@ -610,8 +650,7 @@ Give up to 4 tailored irrigation tips plus optimal watering time.`;
                     }} />
                   {aiOptTime && (
                     <p className="text-xs text-emerald-400 flex items-center gap-1.5">
-                      <Brain className="w-3 h-3" />
-                      AI recommends: <strong>{aiOptTime}</strong>
+                      <Brain className="w-3 h-3" />AI recommends: <strong>{aiOptTime}</strong>
                     </p>
                   )}
                 </div>
@@ -623,16 +662,16 @@ Give up to 4 tailored irrigation tips plus optimal watering time.`;
               subtitle="Alert and automation trigger boundaries" accent="#a78bfa">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
                 <div className="space-y-4">
-                  <SliderRow label="Min Moisture" value={settings.moistureMin} min={10} max={50} unit="%" onChange={v => set('moistureMin', v)} color="#a78bfa" />
-                  <SliderRow label="Max Moisture" value={settings.moistureMax} min={50} max={95} unit="%" onChange={v => set('moistureMax', v)} color="#a78bfa" />
+                  <SliderRow label="Min Moisture" value={settings.moistureMin} min={10} max={50} unit="%" onChange={v => set('moistureMin', v)} color="#a78bfa" readOnly={isReadOnly} />
+                  <SliderRow label="Max Moisture" value={settings.moistureMax} min={50} max={95} unit="%" onChange={v => set('moistureMax', v)} color="#a78bfa" readOnly={isReadOnly} />
                 </div>
                 <div className="space-y-4">
-                  <SliderRow label="Min Temperature" value={settings.tempMin} min={5} max={20} unit="°C" onChange={v => set('tempMin', v)} color="#f59e0b" />
-                  <SliderRow label="Max Temperature" value={settings.tempMax} min={25} max={45} unit="°C" onChange={v => set('tempMax', v)} color="#f59e0b" />
+                  <SliderRow label="Min Temperature" value={settings.tempMin} min={5} max={20} unit="°C" onChange={v => set('tempMin', v)} color="#f59e0b" readOnly={isReadOnly} />
+                  <SliderRow label="Max Temperature" value={settings.tempMax} min={25} max={45} unit="°C" onChange={v => set('tempMax', v)} color="#f59e0b" readOnly={isReadOnly} />
                 </div>
                 <div className="space-y-4">
-                  <SliderRow label="Min pH" value={settings.phMin} min={4} max={7} step={0.1} unit="" onChange={v => set('phMin', v)} color="#34d399" />
-                  <SliderRow label="Max pH"  value={settings.phMax} min={7} max={9} step={0.1} unit="" onChange={v => set('phMax', v)} color="#34d399" />
+                  <SliderRow label="Min pH" value={settings.phMin} min={4} max={7} step={0.1} unit="" onChange={v => set('phMin', v)} color="#34d399" readOnly={isReadOnly} />
+                  <SliderRow label="Max pH"  value={settings.phMax} min={7} max={9} step={0.1} unit="" onChange={v => set('phMax', v)} color="#34d399" readOnly={isReadOnly} />
                 </div>
               </div>
             </SettingCard>
@@ -644,12 +683,15 @@ Give up to 4 tailored irrigation tips plus optimal watering time.`;
                 <p className="text-sm font-medium text-slate-200">Alert Level</p>
                 <div className="flex gap-2 flex-wrap">
                   {(['all', 'critical', 'none'] as AlertLevel[]).map(level => (
-                    <button key={level} onClick={() => set('alertLevel', level)}
-                      className="px-4 py-2 rounded-xl text-sm font-semibold capitalize transition-all"
+                    <button key={level}
+                      onClick={() => !isReadOnly && set('alertLevel', level)}
+                      disabled={isReadOnly}
+                      className="px-4 py-2 rounded-xl text-sm font-semibold capitalize transition-all disabled:cursor-not-allowed"
                       style={{
-                        background: settings.alertLevel === level ? '#d97706' : isDark ? '#1e293b' : '#f8fafc',
-                        border: `1px solid ${settings.alertLevel === level ? '#f59e0b' : isDark ? '#334155' : '#e2e8f0'}`,
+                        background: settings.alertLevel === level ? (isReadOnly ? '#374151' : '#d97706') : isDark ? '#1e293b' : '#f8fafc',
+                        border: `1px solid ${settings.alertLevel === level ? (isReadOnly ? '#4b5563' : '#f59e0b') : isDark ? '#334155' : '#e2e8f0'}`,
                         color: settings.alertLevel === level ? '#fff' : isDark ? '#94a3b8' : '#64748b',
+                        opacity: isReadOnly ? 0.65 : 1,
                       }}>
                       {level === 'all' ? 'All Alerts' : level === 'critical' ? 'Critical Only' : 'Muted'}
                     </button>
@@ -657,15 +699,15 @@ Give up to 4 tailored irrigation tips plus optimal watering time.`;
                 </div>
               </div>
               <SettingRow label="Push Notifications" sublabel="Browser / mobile push">
-                <Toggle checked={settings.pushEnabled} onChange={v => set('pushEnabled', v)} color="#f59e0b" />
+                <Toggle checked={settings.pushEnabled} onChange={v => set('pushEnabled', v)} color="#f59e0b" readOnly={isReadOnly} />
               </SettingRow>
               <SettingRow label="SMS Alerts" sublabel="Sent to registered phone (+254…)">
-                <Toggle checked={settings.smsEnabled} onChange={v => set('smsEnabled', v)} color="#f59e0b" />
+                <Toggle checked={settings.smsEnabled} onChange={v => set('smsEnabled', v)} color="#f59e0b" readOnly={isReadOnly} />
               </SettingRow>
               <SettingRow label="Sound Alerts" sublabel="In-app audio notifications">
                 <div className="flex items-center gap-2">
                   {settings.soundEnabled ? <Volume2 className="w-4 h-4 text-amber-400" /> : <VolumeX className="w-4 h-4 text-slate-500" />}
-                  <Toggle checked={settings.soundEnabled} onChange={v => set('soundEnabled', v)} color="#f59e0b" />
+                  <Toggle checked={settings.soundEnabled} onChange={v => set('soundEnabled', v)} color="#f59e0b" readOnly={isReadOnly} />
                 </div>
               </SettingRow>
             </SettingCard>
@@ -674,13 +716,12 @@ Give up to 4 tailored irrigation tips plus optimal watering time.`;
             <SettingCard icon={Database} title="System & Connectivity"
               subtitle="Sync, storage and offline behaviour" accent="#10b981">
               <SliderRow label="Data Sync Interval" value={settings.syncInterval}
-                min={10} max={300} step={10} unit="s" onChange={v => set('syncInterval', v)} color="#10b981" />
+                min={10} max={300} step={10} unit="s" onChange={v => set('syncInterval', v)} color="#10b981" readOnly={isReadOnly} />
               <SliderRow label="Data Retention Period" value={settings.dataRetention}
-                min={7} max={365} step={7} unit=" days" onChange={v => set('dataRetention', v)} color="#10b981" />
+                min={7} max={365} step={7} unit=" days" onChange={v => set('dataRetention', v)} color="#10b981" readOnly={isReadOnly} />
               <SettingRow label="Offline Mode" sublabel="Store readings locally when disconnected">
-                <Toggle checked={settings.offlineMode} onChange={v => set('offlineMode', v)} color="#10b981" />
+                <Toggle checked={settings.offlineMode} onChange={v => set('offlineMode', v)} color="#10b981" readOnly={isReadOnly} />
               </SettingRow>
-              {/* Groq API Key section removed */}
             </SettingCard>
           </div>
 
@@ -695,8 +736,9 @@ Give up to 4 tailored irrigation tips plus optimal watering time.`;
               <div className="grid grid-cols-3 gap-2 mt-2">
                 {[25, 50, 100].map(pct => (
                   <button key={pct}
-                    onClick={() => set('tankCurrent', Math.min(settings.tankCapacity, settings.tankCurrent + settings.tankCapacity * (pct / 100)))}
-                    className="py-2 rounded-xl text-xs font-bold transition-all hover:scale-[1.03] active:scale-95"
+                    onClick={() => !isReadOnly && set('tankCurrent', Math.min(settings.tankCapacity, settings.tankCurrent + settings.tankCapacity * (pct / 100)))}
+                    disabled={isReadOnly}
+                    className="py-2 rounded-xl text-xs font-bold transition-all hover:scale-[1.03] active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:scale-100"
                     style={{
                       background: isDark ? '#1e293b' : '#f8fafc',
                       border: `1px solid ${isDark ? '#334155' : '#e2e8f0'}`,
@@ -707,18 +749,16 @@ Give up to 4 tailored irrigation tips plus optimal watering time.`;
                 ))}
               </div>
               <SliderRow label="Tank Capacity" value={settings.tankCapacity}
-                min={100} max={2000} step={50} unit=" L" onChange={v => set('tankCapacity', v)} color="#38bdf8" />
+                min={100} max={2000} step={50} unit=" L" onChange={v => set('tankCapacity', v)} color="#38bdf8" readOnly={isReadOnly} />
               <SliderRow label="Low-Water Alert" value={settings.lowWaterThreshold}
-                min={5} max={40} step={5} unit="%" onChange={v => set('lowWaterThreshold', v)} color="#f87171" />
+                min={5} max={40} step={5} unit="%" onChange={v => set('lowWaterThreshold', v)} color="#f87171" readOnly={isReadOnly} />
               {aiWeeklyEst > 0 && (
                 <div className="flex items-start gap-2 p-3 rounded-xl text-xs"
                   style={{ background: 'rgba(56,189,248,0.05)', border: '1px solid rgba(56,189,248,0.2)' }}>
                   <Gauge className="w-4 h-4 text-blue-400 flex-shrink-0 mt-0.5" />
                   <div>
                     <p className="text-blue-300 font-semibold mb-0.5">Weekly Estimate</p>
-                    <p className="text-slate-400">
-                      AI predicts ~<strong className="text-blue-300">{aiWeeklyEst} L</strong> usage this week
-                    </p>
+                    <p className="text-slate-400">AI predicts ~<strong className="text-blue-300">{aiWeeklyEst} L</strong> usage this week</p>
                   </div>
                 </div>
               )}
@@ -727,7 +767,6 @@ Give up to 4 tailored irrigation tips plus optimal watering time.`;
             {/* Display & Theme */}
             <SettingCard icon={Sun} title="Display & Theme"
               subtitle="Visual appearance for all pages" accent="#fbbf24">
-              {/* Theme toggle */}
               <div className="relative rounded-2xl overflow-hidden p-4 transition-all duration-500"
                 style={{
                   background: isDark ? 'linear-gradient(135deg,#1e293b,#0f172a)' : 'linear-gradient(135deg,#fef3c7,#e0f2fe)',
@@ -751,17 +790,15 @@ Give up to 4 tailored irrigation tips plus optimal watering time.`;
                     </div>
                     <div>
                       <p className="font-bold text-sm">{isDark ? 'Dark Mode' : 'Light Mode'}</p>
-                      <p className="text-xs mt-0.5" style={{ color: isDark ? '#64748b' : '#92400e' }}>
-                        Applies to all pages
-                      </p>
+                      <p className="text-xs mt-0.5" style={{ color: isDark ? '#64748b' : '#92400e' }}>Applies to all pages</p>
                     </div>
                   </div>
+                  {/* Theme toggle is always available — cosmetic, not destructive */}
                   <Toggle checked={!isDark} onChange={v => setTheme(v ? 'light' : 'dark')}
                     size="lg" color={isDark ? '#60a5fa' : '#f59e0b'} />
                 </div>
               </div>
 
-              {/* Theme presets */}
               <div className="space-y-2">
                 <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Theme Preset</p>
                 <div className="grid grid-cols-2 gap-2">
@@ -775,8 +812,7 @@ Give up to 4 tailored irrigation tips plus optimal watering time.`;
                       className="relative overflow-hidden rounded-xl h-12 transition-all hover:scale-[1.02] active:scale-95 border border-transparent hover:border-white/20"
                       style={{ background: `linear-gradient(135deg,${preset.from},${preset.to})` }}>
                       <span className="absolute bottom-1.5 left-2.5 text-xs font-bold text-white/80">{preset.label}</span>
-                      <div className="absolute top-1.5 right-1.5 w-3 h-3 rounded-full"
-                        style={{ background: preset.accent }} />
+                      <div className="absolute top-1.5 right-1.5 w-3 h-3 rounded-full" style={{ background: preset.accent }} />
                     </button>
                   ))}
                 </div>
@@ -807,8 +843,7 @@ Give up to 4 tailored irrigation tips plus optimal watering time.`;
                   {aiTips.map((tip, i) => {
                     const TipIcon = tipIcon[tip.type as keyof typeof tipIcon] ?? Info;
                     return (
-                      <div key={i}
-                        className={cn('flex items-start gap-2.5 p-3 rounded-xl border text-xs leading-relaxed', tipStyle[tip.type])}>
+                      <div key={i} className={cn('flex items-start gap-2.5 p-3 rounded-xl border text-xs leading-relaxed', tipStyle[tip.type])}>
                         <TipIcon className="w-3.5 h-3.5 flex-shrink-0 mt-0.5" />
                         {tip.text}
                       </div>
@@ -821,14 +856,13 @@ Give up to 4 tailored irrigation tips plus optimal watering time.`;
             {/* Device Info */}
             <SettingCard icon={Radio} title="Device Info" subtitle="ESP32 sensor node status" accent="#34d399">
               {[
-                { label: 'Device ID', value: 'ESP32-NODE-01', Icon: Smartphone   },
+                { label: 'Device ID', value: 'ESP32-NODE-01', Icon: Smartphone      },
                 { label: 'Firmware',  value: 'v2.4.1',        Icon: BatteryCharging },
-                { label: 'Location',  value: 'Plot A',        Icon: MapPin       },
-                { label: 'Signal',    value: '-67 dBm',       Icon: Activity     },
-                { label: 'Last Seen', value: 'Just now',      Icon: CheckCircle  },
+                { label: 'Location',  value: 'Plot A',        Icon: MapPin          },
+                { label: 'Signal',    value: '-67 dBm',       Icon: Activity        },
+                { label: 'Last Seen', value: 'Just now',      Icon: CheckCircle     },
               ].map((row, idx, arr) => (
-                <div key={row.label}
-                  className="flex items-center justify-between py-2"
+                <div key={row.label} className="flex items-center justify-between py-2"
                   style={{ borderBottom: idx < arr.length - 1 ? `1px solid ${isDark ? '#1e293b' : '#f1f5f9'}` : 'none' }}>
                   <div className="flex items-center gap-2 text-xs text-slate-400">
                     <row.Icon className="w-3.5 h-3.5" />{row.label}
@@ -845,17 +879,14 @@ Give up to 4 tailored irrigation tips plus optimal watering time.`;
           style={{ color: isDark ? '#334155' : '#94a3b8' }}>
           <div className="flex items-center gap-1.5">
             <Info className="w-3.5 h-3.5 flex-shrink-0" />
-            Changes apply immediately. Theme switch propagates site-wide via next-themes.
+            {isReadOnly
+              ? 'You are in view-only mode. Contact an admin to request Gardener access.'
+              : 'Changes apply immediately. Theme switch propagates site-wide via next-themes.'}
           </div>
           <span>SmartFarm v1.0 · Kenya</span>
         </div>
       </div>
 
-      {/*
-        Plain <style> tag (NOT styled-jsx).
-        styled-jsx generates different hash IDs server vs client, which was the
-        root cause of every jsx-XXXXXXXX mismatch in the error log.
-      */}
       <style>{`
         @keyframes sfPing {
           0%   { transform: scale(0.5); opacity: 0.6; }
