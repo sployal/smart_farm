@@ -2,6 +2,7 @@
 #include <HTTPClient.h>
 #include <LiquidCrystal_I2C.h>
 #include <DHT.h>
+#include <time.h>  // ← added for NTP Unix timestamp
 
 const char *ssid = "Griffon";
 const char *password = "10481reban";
@@ -37,6 +38,10 @@ void blinkLED() {
 void uploadToFirebase() {
   if (err) return;
 
+  // ← get real Unix timestamp instead of millis()
+  time_t now;
+  time(&now);
+
   Serial.println("----------------------------------------");
   Serial.println("         UPLOADING TO FIREBASE          ");
   Serial.println("----------------------------------------");
@@ -60,12 +65,18 @@ void uploadToFirebase() {
   Serial.printf("  [SOIL]  %.1f %% (raw: %d)  -->  HTTP %d\n", soilPct, soilRaw, httpCode);
   http.end();
 
+  // ← write real Unix timestamp so the sidebar can check staleness
+  http.begin(String(firebaseHost) + "/sensorData/timestamp.json");
+  httpCode = http.PUT(String((unsigned long)now));
+  Serial.printf("  [TIME]  Unix: %lu  -->  HTTP %d\n", (unsigned long)now, httpCode);
+  http.end();
+
   String json = "{\"temperature\":" + String(temp) +
                 ",\"humidity\":" + String(hum) +
                 ",\"soilMoisture\":" + String(soilPct) +
-                ",\"timestamp\":" + String(millis()) + "}";
+                ",\"timestamp\":" + String((unsigned long)now) + "}";  // ← was millis()
 
-  http.begin(String(firebaseHost) + "/sensorData/history/" + String(millis()) + ".json");
+  http.begin(String(firebaseHost) + "/sensorData/history/" + String((unsigned long)now) + ".json");
   httpCode = http.PUT(json);
   Serial.printf("  [HIST]  JSON sent  -->  HTTP %d\n", httpCode);
   Serial.printf("          Payload: %s\n", json.c_str());
@@ -113,6 +124,16 @@ void setup() {
   lcd.clear();
   lcd.print("WiFi Connected");
   delay(1000);
+
+  // ← sync time via NTP (UTC+3 = Nairobi)
+  configTime(3 * 3600, 0, "pool.ntp.org");
+  Serial.print("[NTP]  Syncing time");
+  struct tm timeinfo;
+  while (!getLocalTime(&timeinfo)) {
+    delay(500);
+    Serial.print(".");
+  }
+  Serial.println(" done!");
 
   Serial.println("[SYSTEM] Ready - uploading every 5 seconds\n");
   lcd.clear();

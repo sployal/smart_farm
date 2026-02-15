@@ -1,7 +1,7 @@
 import { initializeApp } from "firebase/app";
 import { getDatabase, ref, onValue, get } from "firebase/database";
 import { getAuth, GoogleAuthProvider } from "firebase/auth";
-import { getFirestore } from "firebase/firestore"; // ← added for user roles
+import { getFirestore } from "firebase/firestore";
 
 const firebaseConfig = {
   apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
@@ -13,19 +13,23 @@ const firebaseConfig = {
   appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
 };
 
-// Initialize Firebase — this runs once when the module is first imported
 export const app = initializeApp(firebaseConfig);
 export const database = getDatabase(app);
-
-// Auth is created here, in the same module as initializeApp,
-// so it is ALWAYS safe to import and use anywhere in the app.
 export const auth = getAuth(app);
 export const googleProvider = new GoogleAuthProvider();
+export const db = getFirestore(app);
 
-// Firestore — used for storing user roles (separate from Realtime Database)
-export const db = getFirestore(app); // ← added
+// ─── ESP32 Status Types ────────────────────────────────────────────────────────
+
+export type ESP32Status = "online" | "offline" | "no_connection";
+
+export type ESP32StatusResult = {
+  status: ESP32Status;
+  lastSync: string; // human-readable e.g. "Just now", "12s ago", "Offline"
+};
 
 // ─── Sensor helpers ───────────────────────────────────────────────────────────
+
 export const fetchSensorData = async () => {
   try {
     const tempRef = ref(database, "sensorData/temperature");
@@ -62,4 +66,89 @@ export const startRealtimeUpdates = (callback: (data: any) => void) => {
     }
   });
   return unsubscribe;
+};
+
+// ─── ESP32 Status Helper ──────────────────────────────────────────────────────
+
+/**
+ * Subscribes to both Firebase connection state and ESP32 timestamp staleness.
+ *
+ * Status logic:
+ *  - "no_connection" → browser is not connected to Firebase at all
+ *  - "offline"       → Firebase is reachable but ESP32 hasn't sent data in >15s
+ *  - "online"        → Firebase connected AND ESP32 timestamp is fresh
+ *
+ * The ESP32 must write a Unix timestamp (seconds) to sensorData/timestamp
+ * via NTP for staleness detection to work accurately.
+ *
+ * @param callback  Called every time status or lastSync changes
+ * @returns         Unsubscribe function — call it on component unmount
+ */
+export const subscribeToESP32Status = (
+  callback: (result: ESP32StatusResult) => void
+): (() => void) => {
+  // Track both states so we can combine them
+  let firebaseConnected = false;
+  let lastTimestamp: number | null = null;
+
+  // Helper: formats a Unix timestamp (seconds) into a human-readable string
+  const formatLastSync = (unixSeconds: number | null): string => {
+    if (unixSeconds === null) return "Never";
+    const nowSeconds = Math.floor(Date.now() / 1000);
+    const diffSeconds = nowSeconds - unixSeconds;
+    if (diffSeconds < 5)  return "Just now";
+    if (diffSeconds < 60) return `${diffSeconds}s ago`;
+    if (diffSeconds < 3600) return `${Math.floor(diffSeconds / 60)}m ago`;
+    return `${Math.floor(diffSeconds / 3600)}h ago`;
+  };
+
+  // Helper: derives the combined status and emits it via callback
+  const emitStatus = () => {
+    if (!firebaseConnected) {
+      callback({ status: "no_connection", lastSync: "No connection" });
+      return;
+    }
+
+    if (lastTimestamp === null) {
+      // Connected to Firebase but no ESP32 data received yet
+      callback({ status: "offline", lastSync: "Never" });
+      return;
+    }
+
+    const nowSeconds  = Math.floor(Date.now() / 1000);
+    const diffSeconds = nowSeconds - lastTimestamp;
+    const isStale     = diffSeconds > 15; // ESP32 uploads every 5s, so 15s is generous
+
+    callback({
+      status:   isStale ? "offline" : "online",
+      lastSync: isStale ? `${diffSeconds}s ago` : formatLastSync(lastTimestamp),
+    });
+  };
+
+  // 1️⃣ Subscribe to Firebase's built-in connection indicator
+  const connectedRef    = ref(database, ".info/connected");
+  const unsubConnected  = onValue(connectedRef, (snap) => {
+    firebaseConnected = snap.val() === true;
+    emitStatus();
+  });
+
+  // 2️⃣ Subscribe to the ESP32's timestamp field
+  const timestampRef    = ref(database, "sensorData/timestamp");
+  const unsubTimestamp  = onValue(timestampRef, (snap) => {
+    if (snap.exists()) {
+      lastTimestamp = snap.val() as number;
+    }
+    emitStatus();
+  });
+
+  // 3️⃣ Re-evaluate staleness every 5 seconds even if no new data arrives
+  //    This ensures the status flips to "offline" if the ESP32 goes silent
+  const interval = setInterval(emitStatus, 5000);
+
+  // Return a single unsubscribe function that cleans everything up
+  return () => {
+    unsubConnected();
+    unsubTimestamp();
+    clearInterval(interval);
+  };
 };

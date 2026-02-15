@@ -10,9 +10,11 @@ import {
   Eye, EyeOff, Save, RotateCcw,
   BatteryCharging, Radio, MapPin, Activity,
   Gauge, Info, Sliders, ArrowLeft,
-  Lock, Users, ShieldCheck,
+  Lock, Users, ShieldCheck, WifiOff,
 } from 'lucide-react';
 import { useRole } from '@/hooks/useRole';
+// ← change 1: import the ESP32 status subscriber
+import { subscribeToESP32Status, type ESP32StatusResult } from '@/lib/firebase';
 
 // ---------------------------------------------------------------------------
 // Config
@@ -321,11 +323,18 @@ export default function SettingsPage() {
 
   // ── Role-based access ─────────────────────────────────────────────────────
   const { role, loading: roleLoading } = useRole();
-  // True when the user can only view (not interact)
   const isReadOnly = !roleLoading && role === 'user';
-  // True only for admin
   const isAdmin    = !roleLoading && role === 'admin';
-  // ─────────────────────────────────────────────────────────────────────────
+
+  // ← change 2: subscribe to live ESP32 status
+  const [esp32Status, setEsp32Status] = useState<ESP32StatusResult>({
+    status: 'no_connection',
+    lastSync: 'Connecting...',
+  });
+  useEffect(() => {
+    const unsubscribe = subscribeToESP32Status(setEsp32Status);
+    return () => unsubscribe();
+  }, []);
 
   const [settings, setSettings] = useState<FarmSettings>({
     irrigationActive:   false,
@@ -402,7 +411,7 @@ Give up to 4 tailored irrigation tips plus optimal watering time.`;
   useEffect(() => { fetchAITips(); }, []);
 
   const set = <K extends keyof FarmSettings>(key: K, val: FarmSettings[K]) => {
-    if (isReadOnly) return; // extra safety — shouldn't be reachable from UI
+    if (isReadOnly) return;
     setSettings(s => ({ ...s, [key]: val }));
   };
 
@@ -447,6 +456,13 @@ Give up to 4 tailored irrigation tips plus optimal watering time.`;
       </div>
     );
   }
+
+  // ← change 3: derive display values from live esp32Status
+  const esp32StatusConfig = {
+    online:        { label: 'Online',        dotColor: '#10b981', textColor: '#6ee7b7', Icon: CheckCircle },
+    offline:       { label: 'Offline',       dotColor: '#f59e0b', textColor: '#fcd34d', Icon: WifiOff    },
+    no_connection: { label: 'No Connection', dotColor: '#ef4444', textColor: '#fca5a5', Icon: WifiOff    },
+  }[esp32Status.status];
 
   return (
     <div
@@ -498,8 +514,6 @@ Give up to 4 tailored irrigation tips plus optimal watering time.`;
 
           {/* Right side buttons */}
           <div className="flex items-center gap-2 flex-shrink-0 flex-wrap">
-
-            {/* ── Admin-only: Manage Users button ── */}
             {isAdmin && (
               <button
                 onClick={() => router.push('/admin')}
@@ -515,8 +529,6 @@ Give up to 4 tailored irrigation tips plus optimal watering time.`;
                 Manage Users
               </button>
             )}
-
-            {/* Reset — disabled for user role */}
             <button
               onClick={handleReset}
               disabled={isReadOnly}
@@ -528,8 +540,6 @@ Give up to 4 tailored irrigation tips plus optimal watering time.`;
               }}>
               <RotateCcw className="w-4 h-4" /> Reset
             </button>
-
-            {/* Save — disabled for user role */}
             <button
               onClick={handleSave}
               disabled={isReadOnly}
@@ -793,7 +803,6 @@ Give up to 4 tailored irrigation tips plus optimal watering time.`;
                       <p className="text-xs mt-0.5" style={{ color: isDark ? '#64748b' : '#92400e' }}>Applies to all pages</p>
                     </div>
                   </div>
-                  {/* Theme toggle is always available — cosmetic, not destructive */}
                   <Toggle checked={!isDark} onChange={v => setTheme(v ? 'light' : 'dark')}
                     size="lg" color={isDark ? '#60a5fa' : '#f59e0b'} />
                 </div>
@@ -853,24 +862,38 @@ Give up to 4 tailored irrigation tips plus optimal watering time.`;
               )}
             </SettingCard>
 
-            {/* Device Info */}
-            <SettingCard icon={Radio} title="Device Info" subtitle="ESP32 sensor node status" accent="#34d399">
+            {/* ← change 3: Device Info card now uses live esp32Status */}
+            <SettingCard icon={Radio} title="Device Info" subtitle="ESP32 sensor node status" accent="#34d399"
+              badge={
+                <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold"
+                  style={{ background: `${esp32StatusConfig.dotColor}18`, border: `1px solid ${esp32StatusConfig.dotColor}40`, color: esp32StatusConfig.textColor }}>
+                  <span className="w-1.5 h-1.5 rounded-full flex-shrink-0"
+                    style={{ background: esp32StatusConfig.dotColor, boxShadow: esp32Status.status === 'online' ? `0 0 6px ${esp32StatusConfig.dotColor}` : 'none',
+                      animation: esp32Status.status === 'online' ? 'pulse 2s infinite' : 'none' }} />
+                  {esp32StatusConfig.label}
+                </div>
+              }>
               {[
-                { label: 'Device ID', value: 'ESP32-NODE-01', Icon: Smartphone      },
-                { label: 'Firmware',  value: 'v2.4.1',        Icon: BatteryCharging },
-                { label: 'Location',  value: 'Plot A',        Icon: MapPin          },
-                { label: 'Signal',    value: '-67 dBm',       Icon: Activity        },
-                { label: 'Last Seen', value: 'Just now',      Icon: CheckCircle     },
+                { label: 'Device ID', value: 'ESP32-NODE-01',           Icon: Smartphone      },
+                { label: 'Firmware',  value: 'v2.4.1',                  Icon: BatteryCharging },
+                { label: 'Location',  value: 'Plot A',                  Icon: MapPin          },
+                { label: 'Signal',    value: '-67 dBm',                 Icon: Activity        },
+                { label: 'Status',    value: esp32StatusConfig.label,   Icon: esp32StatusConfig.Icon },
+                { label: 'Last Seen', value: esp32Status.lastSync,      Icon: CheckCircle     },
               ].map((row, idx, arr) => (
                 <div key={row.label} className="flex items-center justify-between py-2"
                   style={{ borderBottom: idx < arr.length - 1 ? `1px solid ${isDark ? '#1e293b' : '#f1f5f9'}` : 'none' }}>
                   <div className="flex items-center gap-2 text-xs text-slate-400">
                     <row.Icon className="w-3.5 h-3.5" />{row.label}
                   </div>
-                  <span className="text-xs font-semibold text-slate-200">{row.value}</span>
+                  <span className="text-xs font-semibold tabular-nums"
+                    style={{ color: row.label === 'Status' ? esp32StatusConfig.textColor : row.label === 'Last Seen' ? '#94a3b8' : '#e2e8f0' }}>
+                    {row.value}
+                  </span>
                 </div>
               ))}
             </SettingCard>
+
           </div>
         </div>
 
