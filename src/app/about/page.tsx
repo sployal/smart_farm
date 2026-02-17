@@ -37,6 +37,15 @@ type Advantage = {
   accent: string;
 };
 
+type Testimonial = {
+  quote: string;
+  name: string;
+  title: string;
+  initials: string;
+  avatarColor: string;
+  stars: number;
+};
+
 // ─── Data ────────────────────────────────────────────────────────────────────
 
 const USE_CASES: UseCase[] = [
@@ -237,6 +246,57 @@ const ADVANTAGES: Advantage[] = [
   },
 ];
 
+const TESTIMONIALS: Testimonial[] = [
+  {
+    quote: "We cut our water bill by 42 % in the first season and haven't lost a single batch to nutrient imbalance since deploying smartfarm across our 3-acre greenhouse.",
+    name: 'David Muigai',
+    title: 'Head Agronomist, Nairobi Greenhouse Farms',
+    initials: 'DM',
+    avatarColor: '#10b981',
+    stars: 5,
+  },
+  {
+    quote: "The pH and EC monitoring for our NFT channels is flawless. The AI caught a potassium deficiency two days before our plants showed any yellowing — that alone paid for the whole system.",
+    name: 'Amara Osei',
+    title: 'Hydroponic Farm Manager, Accra Urban Greens',
+    initials: 'AO',
+    avatarColor: '#06b6d4',
+    stars: 5,
+  },
+  {
+    quote: "I manage 18 hectares of open field tomatoes. Before smartfarm I was guessing irrigation schedules. Now my soil moisture data tells me exactly when and where to run the pumps. Fuel costs are down 30 %.",
+    name: 'James Kariuki',
+    title: 'Commercial Farmer, Nakuru County',
+    initials: 'JK',
+    avatarColor: '#f59e0b',
+    stars: 5,
+  },
+  {
+    quote: "Set up took less than 20 minutes on my balcony garden. The app tells me exactly when each of my 12 pots needs water, and my herbs have never been healthier. Absolute game changer for city growing.",
+    name: 'Priya Njogu',
+    title: 'Urban Gardener, Nairobi',
+    initials: 'PN',
+    avatarColor: '#a78bfa',
+    stars: 5,
+  },
+  {
+    quote: "We integrated smartfarm into our vertical farm's automation stack via the Firebase API. Real-time NPK data feeds directly into our nutrient dosing pumps. Zero manual adjustments needed.",
+    name: 'Chen Wei',
+    title: 'CTO, VerticalRoot Technologies',
+    initials: 'CW',
+    avatarColor: '#f472b6',
+    stars: 5,
+  },
+  {
+    quote: "The early disease detection feature flagged high-humidity conditions in our east wing three days before a botrytis outbreak would have started. We saved an entire rose crop worth over $12,000.",
+    name: 'Sarah Wangari',
+    title: 'Head of Operations, Kiserian Flower Farm',
+    initials: 'SW',
+    avatarColor: '#f97316',
+    stars: 5,
+  },
+];
+
 // ─── Sub-components ──────────────────────────────────────────────────────────
 
 function AnimatedCounter({ target, suffix = '' }: { target: number; suffix?: string }) {
@@ -273,6 +333,116 @@ function SectionLabel({ text }: { text: string }) {
     <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full border border-emerald-500/30 bg-emerald-500/10 mb-5">
       <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
       <span className="text-xs font-semibold tracking-widest uppercase text-emerald-400">{text}</span>
+    </div>
+  );
+}
+
+// ─── Testimonial Card ─────────────────────────────────────────────────────────
+
+function TestimonialCard({ testimonial }: { testimonial: Testimonial }) {
+  return (
+    <div
+      className="flex-shrink-0 w-[380px] sm:w-[440px] p-8 rounded-3xl border mx-3"
+      style={{
+        borderColor: 'rgba(16,185,129,0.2)',
+        background: 'linear-gradient(to bottom right, rgba(30,41,59,0.9), rgba(15,23,42,0.95))',
+        boxShadow: '0 8px 32px rgba(0,0,0,0.3)',
+      }}
+    >
+      <div className="flex gap-1 mb-5">
+        {Array(testimonial.stars).fill(0).map((_, i) => (
+          <Star key={i} className="w-4 h-4 text-amber-400 fill-amber-400" />
+        ))}
+      </div>
+      <blockquote
+        className="text-slate-200 text-sm sm:text-base leading-relaxed mb-6"
+        style={{ fontFamily: 'Sora, sans-serif', fontStyle: 'italic' }}
+      >
+        "{testimonial.quote}"
+      </blockquote>
+      <div className="flex items-center gap-3">
+        <div
+          className="w-10 h-10 rounded-full flex items-center justify-center font-bold text-sm text-white flex-shrink-0"
+          style={{ backgroundColor: testimonial.avatarColor }}
+        >
+          {testimonial.initials}
+        </div>
+        <div>
+          <p className="font-semibold text-slate-200 text-sm">{testimonial.name}</p>
+          <p className="text-slate-500 text-xs">{testimonial.title}</p>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─── Testimonial Carousel ─────────────────────────────────────────────────────
+
+function TestimonialCarousel() {
+  const trackRef = useRef<HTMLDivElement>(null);
+  const animRef = useRef<number>(0);
+  const posRef = useRef<number>(0);
+  const isPausedRef = useRef<boolean>(false);
+
+  // Duplicate the testimonials 3× so the loop is seamless
+  const items = [...TESTIMONIALS, ...TESTIMONIALS, ...TESTIMONIALS];
+
+  useEffect(() => {
+    const track = trackRef.current;
+    if (!track) return;
+
+    // Width of one full set of testimonials
+    const cardWidth = window.innerWidth < 640 ? 380 + 24 : 440 + 24; // card + mx-3*2
+    const singleSetWidth = TESTIMONIALS.length * cardWidth;
+
+    const speed = 0.6; // px per frame — tweak for faster/slower
+
+    const animate = () => {
+      if (!isPausedRef.current) {
+        posRef.current += speed;
+        // Once we've scrolled one full set, snap back seamlessly
+        if (posRef.current >= singleSetWidth) {
+          posRef.current -= singleSetWidth;
+        }
+        if (track) {
+          track.style.transform = `translateX(-${posRef.current}px)`;
+        }
+      }
+      animRef.current = requestAnimationFrame(animate);
+    };
+
+    animRef.current = requestAnimationFrame(animate);
+    return () => cancelAnimationFrame(animRef.current);
+  }, []);
+
+  return (
+    <div
+      className="relative overflow-hidden"
+      onMouseEnter={() => { isPausedRef.current = true; }}
+      onMouseLeave={() => { isPausedRef.current = false; }}
+      onTouchStart={() => { isPausedRef.current = true; }}
+      onTouchEnd={() => { isPausedRef.current = false; }}
+    >
+      {/* left fade */}
+      <div
+        className="absolute left-0 top-0 bottom-0 w-24 z-10 pointer-events-none"
+        style={{ background: 'linear-gradient(to right, rgba(26,35,50,1), transparent)' }}
+      />
+      {/* right fade */}
+      <div
+        className="absolute right-0 top-0 bottom-0 w-24 z-10 pointer-events-none"
+        style={{ background: 'linear-gradient(to left, rgba(26,35,50,1), transparent)' }}
+      />
+
+      <div
+        ref={trackRef}
+        className="flex py-4"
+        style={{ willChange: 'transform', width: 'max-content' }}
+      >
+        {items.map((t, i) => (
+          <TestimonialCard key={i} testimonial={t} />
+        ))}
+      </div>
     </div>
   );
 }
@@ -493,7 +663,7 @@ export default function LandingPage() {
             { value: 40, suffix: '%', label: 'Average Water Saved' },
             { value: 28, suffix: '%', label: 'Yield Increase' },
             { value: 500, suffix: '+', label: 'Plants Supported' },
-            { value: 6, suffix: ' mo', label: 'Battery Life (Solar)' },
+            { value: 60, suffix: '%', label: 'Energy Saved via Solar' },
           ].map(stat => (
             <div key={stat.label} className="py-8 px-6 text-center">
               <div
@@ -800,27 +970,22 @@ export default function LandingPage() {
             ))}
           </div>
 
-          {/* testimonial / highlight */}
-          <div className="mt-16 p-8 sm:p-12 rounded-3xl border text-center"
-            style={{
-              borderColor: 'rgba(16,185,129,0.2)',
-              background: 'linear-gradient(to bottom right, rgba(16,185,129,0.05), rgba(6,182,212,0.05))'
-            }}>
-            <div className="flex justify-center gap-1 mb-5">
-              {Array(5).fill(0).map((_, i) => (
-                <Star key={i} className="w-5 h-5 text-amber-400 fill-amber-400" />
-              ))}
+          {/* ── Testimonial Carousel ──────────────────────────── */}
+          <div className="mt-20">
+            <div className="text-center mb-10">
+              <SectionLabel text="What Growers Say" />
+              <h3
+                className="text-2xl sm:text-3xl font-bold text-slate-100"
+                style={{ fontFamily: 'Sora, sans-serif', letterSpacing: '-0.01em' }}
+              >
+                Trusted by Farmers &amp; Gardeners
+              </h3>
+              <p className="mt-3 text-slate-400 text-sm max-w-xl mx-auto">
+                From commercial greenhouses to city balconies — here's what growers around the world are saying.
+              </p>
             </div>
-            <blockquote className="text-xl sm:text-2xl font-medium text-slate-200 max-w-3xl mx-auto leading-relaxed mb-6" style={{ fontFamily: 'Sora, sans-serif' }}>
-              "We cut our water bill by 42 % in the first season and haven't lost a single batch to nutrient imbalance since deploying smartfarm across our 3-acre greenhouse."
-            </blockquote>
-            <div className="flex items-center justify-center gap-3">
-              <div className="w-10 h-10 rounded-full bg-emerald-600 flex items-center justify-center font-bold text-sm">DM</div>
-              <div className="text-left">
-                <p className="font-semibold text-slate-200 text-sm">David Muigai</p>
-                <p className="text-slate-500 text-xs">Head Agronomist, Nairobi Greenhouse Farms</p>
-              </div>
-            </div>
+
+            <TestimonialCarousel />
           </div>
         </div>
       </section>
