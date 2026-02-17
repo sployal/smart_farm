@@ -32,7 +32,7 @@ type SensorConfig = {
   unit: string;
   icon: React.ElementType;
   color: string;
-  colorDim: string;      // muted version for slate backgrounds
+  colorDim: string;
   optimalMin: number;
   optimalMax: number;
   criticalMin: number;
@@ -49,7 +49,7 @@ const SENSOR_BASES = [
     label: 'Temperature',
     unit: '°C',
     icon: Thermometer,
-    color: '#f59e0b',    // amber-400 — matches dashboard temp card
+    color: '#f59e0b',
     colorDim: '#f59e0b22',
     optimalMin: 18, optimalMax: 28,
     criticalMin: 10, criticalMax: 38,
@@ -61,7 +61,7 @@ const SENSOR_BASES = [
     label: 'Relative Humidity',
     unit: '%',
     icon: Waves,
-    color: '#06b6d4',    // cyan-500 — matches dashboard humidity card
+    color: '#06b6d4',
     colorDim: '#06b6d422',
     optimalMin: 55, optimalMax: 80,
     criticalMin: 30, criticalMax: 95,
@@ -73,7 +73,7 @@ const SENSOR_BASES = [
     label: 'Soil Moisture',
     unit: '%',
     icon: Droplets,
-    color: '#3b82f6',    // blue-500 — matches dashboard moisture card
+    color: '#3b82f6',
     colorDim: '#3b82f622',
     optimalMin: 40, optimalMax: 70,
     criticalMin: 20, criticalMax: 85,
@@ -85,7 +85,7 @@ const SENSOR_BASES = [
     label: 'Soil pH',
     unit: 'pH',
     icon: FlaskConical,
-    color: '#a855f7',    // violet-500 — matches dashboard pH table row
+    color: '#a855f7',
     colorDim: '#a855f722',
     optimalMin: 6.0, optimalMax: 7.0,
     criticalMin: 4.5, criticalMax: 8.5,
@@ -183,13 +183,14 @@ function analyze(cfg: SensorConfig, data: DataPoint[]): Analysis {
   return { status, trend, trendPct, avg, min, max, insights, recommendation: recs[cfg.key][status] };
 }
 
-// ─── Custom Tooltip — dark to match slate dashboard ──────────────────────────
+// ─── Custom Tooltip ───────────────────────────────────────────────────────────
+// Slightly lighter to match the new charcoal palette
 
 const ChartTooltip = ({ active, payload, label, color, unit }: any) => {
   if (!active || !payload?.length) return null;
   return (
-    <div className="bg-slate-900 border border-slate-700 rounded-xl px-4 py-3 shadow-2xl text-sm pointer-events-none">
-      <p className="text-slate-500 text-xs font-mono mb-1">{label}</p>
+    <div className="bg-slate-700 border border-slate-600 rounded-xl px-4 py-3 shadow-2xl text-sm pointer-events-none">
+      <p className="text-slate-400 text-xs font-mono mb-1">{label}</p>
       <p className="font-bold text-base" style={{ color }}>
         {payload[0].value?.toFixed(2)}{unit}
       </p>
@@ -197,21 +198,20 @@ const ChartTooltip = ({ active, payload, label, color, unit }: any) => {
   );
 };
 
-// ─── Sensor Section — flowing, no box isolation ───────────────────────────────
+// ─── Sensor Section ───────────────────────────────────────────────────────────
 
 function SensorSection({ cfg, range }: { cfg: SensorConfig; range: TimeRange }) {
   const [data, setData] = useState<DataPoint[]>([]);
   const [analysis, setAnalysis] = useState<Analysis | null>(null);
-  
+
   useEffect(() => {
     const chartData = buildData(cfg.key, range, cfg.currentValue);
     setData(chartData);
     setAnalysis(analyze(cfg, chartData));
   }, [cfg, range]);
-  
-  // Don't render until data is available (client-side only)
+
   if (!analysis) return null;
-  
+
   const Icon = cfg.icon;
 
   const statusMap = {
@@ -236,7 +236,7 @@ function SensorSection({ cfg, range }: { cfg: SensorConfig; range: TimeRange }) 
 
         {/* Icon */}
         <div
-          className="w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0 bg-slate-800"
+          className="w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0 bg-slate-600"
           style={{ boxShadow: `0 0 0 1px ${cfg.color}30` }}
         >
           <Icon className="w-6 h-6" style={{ color: cfg.color }} />
@@ -249,7 +249,7 @@ function SensorSection({ cfg, range }: { cfg: SensorConfig; range: TimeRange }) 
             <span className={cn('inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold', st.cls)}>
               {st.icon}{st.label}
             </span>
-            <span className="inline-flex items-center gap-1 text-[11px] font-bold text-slate-400 bg-slate-800 px-2.5 py-1 rounded-full border border-slate-700">
+            <span className="inline-flex items-center gap-1 text-[11px] font-bold text-slate-300 bg-slate-600 px-2.5 py-1 rounded-full border border-slate-500">
               {trendEl}
             </span>
           </div>
@@ -260,13 +260,13 @@ function SensorSection({ cfg, range }: { cfg: SensorConfig; range: TimeRange }) 
         <div className="text-right flex-shrink-0 sm:ml-4">
           <div className="text-5xl font-black tabular-nums" style={{ color: cfg.color }}>
             {cfg.currentValue}
-            <span className="text-xl font-medium text-slate-500 ml-1">{cfg.unit}</span>
+            <span className="text-xl font-medium text-slate-400 ml-1">{cfg.unit}</span>
           </div>
-          <p className="text-[11px] font-semibold text-slate-500 uppercase tracking-widest mt-1">Live</p>
+          <p className="text-[11px] font-semibold text-slate-400 uppercase tracking-widest mt-1">Live</p>
         </div>
       </div>
 
-      {/* ── Stats inline — no boxes ── */}
+      {/* ── Stats inline ── */}
       <div className="flex flex-wrap gap-x-10 gap-y-3 mb-10">
         {[
           { l: 'Avg',     v: `${analysis.avg}${cfg.unit}` },
@@ -275,13 +275,13 @@ function SensorSection({ cfg, range }: { cfg: SensorConfig; range: TimeRange }) 
           { l: 'Optimal', v: `${cfg.optimalMin}–${cfg.optimalMax}${cfg.unit}` },
         ].map((s, i) => (
           <div key={i}>
-            <p className="text-[11px] font-semibold text-slate-500 uppercase tracking-widest mb-0.5">{s.l}</p>
+            <p className="text-[11px] font-semibold text-slate-400 uppercase tracking-widest mb-0.5">{s.l}</p>
             <p className="text-xl font-bold text-slate-200 tabular-nums">{s.v}</p>
           </div>
         ))}
       </div>
 
-      {/* ── Chart — bare, no wrapping box ── */}
+      {/* ── Chart ── */}
       <div className="w-full h-[280px] sm:h-[340px]">
         <ResponsiveContainer width="100%" height="100%">
           <AreaChart data={data} margin={{ top: 8, right: 4, left: -22, bottom: 0 }}>
@@ -292,15 +292,8 @@ function SensorSection({ cfg, range }: { cfg: SensorConfig; range: TimeRange }) 
               </linearGradient>
             </defs>
 
-            {/* subtle optimal zone fill */}
-            <defs>
-              <linearGradient id={`zone-${cfg.key}`} x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%"   stopColor={cfg.color} stopOpacity={0.06} />
-                <stop offset="100%" stopColor={cfg.color} stopOpacity={0.06} />
-              </linearGradient>
-            </defs>
-
-            <CartesianGrid stroke="#1e293b" strokeDasharray="0" vertical={false} />
+            {/* subtle grid — one shade lighter than bg so it reads on charcoal */}
+            <CartesianGrid stroke="#475569" strokeDasharray="0" vertical={false} />
 
             <ReferenceLine
               y={cfg.optimalMax}
@@ -320,14 +313,14 @@ function SensorSection({ cfg, range }: { cfg: SensorConfig; range: TimeRange }) 
             <XAxis
               dataKey="time"
               stroke="transparent"
-              tick={{ fill: '#475569', fontSize: 11, fontFamily: 'monospace' }}
+              tick={{ fill: '#94a3b8', fontSize: 11, fontFamily: 'monospace' }}
               tickLine={false}
               axisLine={false}
               interval={Math.floor(data.length / 7)}
             />
             <YAxis
               stroke="transparent"
-              tick={{ fill: '#475569', fontSize: 11, fontFamily: 'monospace' }}
+              tick={{ fill: '#94a3b8', fontSize: 11, fontFamily: 'monospace' }}
               tickLine={false}
               axisLine={false}
               tickFormatter={v => `${v}${cfg.unit}`}
@@ -340,7 +333,7 @@ function SensorSection({ cfg, range }: { cfg: SensorConfig; range: TimeRange }) 
               strokeWidth={2.5}
               fill={`url(#g-${cfg.key})`}
               dot={false}
-              activeDot={{ r: 6, fill: cfg.color, stroke: '#0f172a', strokeWidth: 3 }}
+              activeDot={{ r: 6, fill: cfg.color, stroke: '#334155', strokeWidth: 3 }}
             />
           </AreaChart>
         </ResponsiveContainer>
@@ -348,30 +341,30 @@ function SensorSection({ cfg, range }: { cfg: SensorConfig; range: TimeRange }) 
 
       {/* ── Legend ── */}
       <div className="flex items-center gap-6 mt-2 mb-12 pl-1">
-        <div className="flex items-center gap-2 text-xs text-slate-500">
+        <div className="flex items-center gap-2 text-xs text-slate-400">
           <span className="w-5 h-0.5 rounded-full inline-block" style={{ backgroundColor: cfg.color }} />
           {cfg.label}
         </div>
-        <div className="flex items-center gap-2 text-xs text-slate-500">
+        <div className="flex items-center gap-2 text-xs text-slate-400">
           <span className="w-5 inline-block" style={{ borderTop: `1.5px dashed ${cfg.color}` }} />
           Optimal range ({cfg.optimalMin}–{cfg.optimalMax}{cfg.unit})
         </div>
       </div>
 
-      {/* ── Analysis + Recommendation — flowing text, no cards ── */}
+      {/* ── Analysis + Recommendation ── */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 lg:gap-20">
 
         <div>
           <div className="flex items-center gap-2 mb-5">
             <Eye className="w-4 h-4" style={{ color: cfg.color }} />
-            <span className="text-[11px] font-bold text-slate-500 uppercase tracking-widest">Analysis</span>
+            <span className="text-[11px] font-bold text-slate-400 uppercase tracking-widest">Analysis</span>
           </div>
           <ul className="space-y-4">
             {analysis.insights.map((insight, i) => (
-              <li key={i} className="flex gap-3.5 text-sm text-slate-400 leading-relaxed">
+              <li key={i} className="flex gap-3.5 text-sm text-slate-300 leading-relaxed">
                 <span
                   className="mt-2 w-2 h-2 rounded-full flex-shrink-0"
-                  style={{ backgroundColor: i === 2 ? cfg.color : '#334155' }}
+                  style={{ backgroundColor: i === 2 ? cfg.color : '#475569' }}
                 />
                 {insight}
               </li>
@@ -382,9 +375,9 @@ function SensorSection({ cfg, range }: { cfg: SensorConfig; range: TimeRange }) 
         <div>
           <div className="flex items-center gap-2 mb-5">
             <Target className="w-4 h-4" style={{ color: cfg.color }} />
-            <span className="text-[11px] font-bold text-slate-500 uppercase tracking-widest">Recommendation</span>
+            <span className="text-[11px] font-bold text-slate-400 uppercase tracking-widest">Recommendation</span>
           </div>
-          <p className="text-sm text-slate-300 leading-relaxed mb-8">{analysis.recommendation}</p>
+          <p className="text-sm text-slate-200 leading-relaxed mb-8">{analysis.recommendation}</p>
 
           <div className="flex flex-wrap gap-8">
             {[
@@ -393,7 +386,7 @@ function SensorSection({ cfg, range }: { cfg: SensorConfig; range: TimeRange }) 
               { l: 'Critical high', v: `${cfg.criticalMax}${cfg.unit}`, highlight: false },
             ].map((item, i) => (
               <div key={i}>
-                <p className="text-[11px] font-semibold text-slate-500 uppercase tracking-widest mb-1">{item.l}</p>
+                <p className="text-[11px] font-semibold text-slate-400 uppercase tracking-widest mb-1">{item.l}</p>
                 <p className="text-lg font-bold tabular-nums" style={{ color: item.highlight ? cfg.color : '#f87171' }}>
                   {item.v}
                 </p>
@@ -403,7 +396,7 @@ function SensorSection({ cfg, range }: { cfg: SensorConfig; range: TimeRange }) 
         </div>
       </div>
 
-      {/* ── Section divider — colored fade on dark ── */}
+      {/* ── Section divider ── */}
       <div
         className="mt-16 h-px w-full"
         style={{ background: `linear-gradient(to right, ${cfg.color}40, ${cfg.color}10, transparent)` }}
@@ -426,7 +419,7 @@ export default function SensorDataPage() {
     temperature: 0,
     humidity:    65,
     moisture:    58,
-    ph:          6.5,   // static — ESP32 doesn't send pH
+    ph:          6.5,
   });
 
   const ranges: TimeRange[] = ['6h', '24h', '7d', '30d'];
@@ -461,17 +454,17 @@ export default function SensorDataPage() {
 
   const refresh = () => { setRefreshKey(k => k + 1); setNow(new Date()); };
 
-  // Merge live values into full configs
   const SENSORS: SensorConfig[] = SENSOR_BASES.map(base => ({
     ...base,
     currentValue: liveValues[base.key],
   }));
 
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100">
+    // ── slate-800 page bg — notably lighter than slate-950, still comfortably dark ──
+    <div className="min-h-screen bg-slate-800 text-slate-100">
 
-      {/* ── Topbar — same style as dashboard header ── */}
-      <div className="sticky top-0 z-30 h-14 bg-slate-900/80 backdrop-blur-md border-b border-slate-800 flex items-center justify-between px-6 md:px-10 gap-4">
+      {/* ── Topbar — slate-700 instead of slate-900 ── */}
+      <div className="sticky top-0 z-30 h-14 bg-slate-700/90 backdrop-blur-md border-b border-slate-600 flex items-center justify-between px-6 md:px-10 gap-4">
         <div className="flex items-center gap-3">
           <button
             type="button"
@@ -487,17 +480,17 @@ export default function SensorDataPage() {
               ? 'bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.6)]'
               : 'bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.6)]'
           )} />
-          <span className="text-sm font-semibold text-slate-300">Sensor Data</span>
-          <span className="text-slate-700">/</span>
-          <span className="text-sm text-slate-500 hidden sm:block">Plot A — Tomatoes</span>
+          <span className="text-sm font-semibold text-slate-200">Sensor Data</span>
+          <span className="text-slate-500">/</span>
+          <span className="text-sm text-slate-400 hidden sm:block">Plot A — Tomatoes</span>
           {lastSync !== '—' && (
-            <span className="hidden md:block text-xs text-slate-600">· synced {lastSync}</span>
+            <span className="hidden md:block text-xs text-slate-500">· synced {lastSync}</span>
           )}
         </div>
 
         <div className="flex items-center gap-3">
           {/* Time range selector */}
-          <div className="flex items-center gap-1 bg-slate-950 border border-slate-800 rounded-xl p-1">
+          <div className="flex items-center gap-1 bg-slate-800 border border-slate-600 rounded-xl p-1">
             {ranges.map(r => (
               <button
                 key={r}
@@ -506,7 +499,7 @@ export default function SensorDataPage() {
                   'px-3 py-1.5 rounded-lg text-[11px] font-bold uppercase tracking-wider transition-all duration-150',
                   range === r
                     ? 'bg-emerald-500 text-white shadow-lg shadow-emerald-500/20'
-                    : 'text-slate-500 hover:text-slate-300 hover:bg-slate-800'
+                    : 'text-slate-400 hover:text-slate-200 hover:bg-slate-600'
                 )}
               >
                 {r}
@@ -516,7 +509,7 @@ export default function SensorDataPage() {
 
           <button
             onClick={refresh}
-            className="p-2 rounded-xl hover:bg-slate-800 text-slate-500 hover:text-slate-300 transition-all active:scale-95"
+            className="p-2 rounded-xl hover:bg-slate-600 text-slate-400 hover:text-slate-200 transition-all active:scale-95"
           >
             <RefreshCw className="w-4 h-4" />
           </button>
@@ -536,8 +529,8 @@ export default function SensorDataPage() {
           </p>
         </div>
 
-        {/* ── Quick status strip — inline, no boxes ── */}
-        <div className="flex flex-wrap gap-x-8 gap-y-3 py-6 border-y border-slate-800 mb-2">
+        {/* ── Quick status strip ── */}
+        <div className="flex flex-wrap gap-x-8 gap-y-3 py-6 border-y border-slate-600 mb-2">
           {SENSORS.map(cfg => {
             const isOptimal = cfg.currentValue >= cfg.optimalMin && cfg.currentValue <= cfg.optimalMax;
             const isWarning = !isOptimal && cfg.currentValue >= cfg.criticalMin && cfg.currentValue <= cfg.criticalMax;
@@ -545,7 +538,7 @@ export default function SensorDataPage() {
             return (
               <div key={cfg.key} className="flex items-center gap-2.5">
                 <Icon className="w-4 h-4" style={{ color: cfg.color }} />
-                <span className="text-sm text-slate-500">{cfg.label}</span>
+                <span className="text-sm text-slate-400">{cfg.label}</span>
                 <span className="text-sm font-black tabular-nums" style={{ color: cfg.color }}>
                   {cfg.currentValue}{cfg.unit}
                 </span>
@@ -559,12 +552,12 @@ export default function SensorDataPage() {
           })}
         </div>
 
-        {/* ── All sensor sections, flowing ── */}
+        {/* ── All sensor sections ── */}
         {SENSORS.map(cfg => (
           <SensorSection key={`${cfg.key}-${refreshKey}`} cfg={cfg} range={range} />
         ))}
 
-        <p className="pb-10 text-xs text-slate-700 text-center">
+        <p className="pb-10 text-xs text-slate-500 text-center">
           ESP32 via Firebase · {format(now, 'PPpp')}
         </p>
       </div>

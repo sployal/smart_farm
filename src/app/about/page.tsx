@@ -293,7 +293,7 @@ export default function LandingPage() {
   return (
     <div
       className="min-h-screen text-slate-100 overflow-x-hidden"
-      style={{ backgroundColor: '#060910', fontFamily: "'DM Sans', 'Sora', system-ui, sans-serif" }}
+      style={{ background: '#1a2332', fontFamily: "'DM Sans', 'Sora', system-ui, sans-serif" }}
     >
       {/* ── Google Fonts ─────────────────────────────────────── */}
       <style>{`
@@ -314,7 +314,7 @@ export default function LandingPage() {
           box-shadow: 0 24px 60px rgba(0,0,0,0.5);
         }
         .nav-blur {
-          background: rgba(6,9,16,0.7);
+          background: rgba(30,41,59,0.5);
           backdrop-filter: blur(20px);
           -webkit-backdrop-filter: blur(20px);
         }
@@ -344,8 +344,8 @@ export default function LandingPage() {
 
       {/* ── Navbar ───────────────────────────────────────────── */}
       <nav
-        className="fixed top-0 inset-x-0 z-40 nav-blur border-b border-white/5"
-        style={{ transition: 'background 0.3s' }}
+        className="fixed top-0 inset-x-0 z-40 nav-blur border-b"
+        style={{ transition: 'background 0.3s', borderColor: 'rgba(71,85,105,0.2)' }}
       >
         <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
           <div className="flex items-center gap-2.5">
@@ -432,7 +432,10 @@ export default function LandingPage() {
             </a>
             <a
               href="#how-it-works"
-              className="flex items-center gap-2 px-7 py-3.5 rounded-full border border-slate-700 text-slate-300 hover:border-emerald-500/50 hover:text-emerald-400 font-semibold text-base transition-all"
+              className="flex items-center gap-2 px-7 py-3.5 rounded-full border text-slate-300 hover:text-emerald-400 font-semibold text-base transition-all"
+              style={{ borderColor: 'rgba(71,85,105,0.4)' }}
+              onMouseEnter={(e) => e.currentTarget.style.borderColor = 'rgba(16,185,129,0.5)'}
+              onMouseLeave={(e) => e.currentTarget.style.borderColor = 'rgba(71,85,105,0.4)'}
             >
               How it Works <ChevronDown className="w-4 h-4" />
             </a>
@@ -441,8 +444,10 @@ export default function LandingPage() {
 
         {/* dashboard preview mockup */}
         <div className="relative z-10 mt-20 w-full max-w-5xl mx-auto float">
-          <div className="relative rounded-2xl border border-slate-700/60 overflow-hidden shadow-2xl glow-green">
-            <div className="flex items-center gap-2 px-5 py-3.5 bg-slate-900/90 border-b border-slate-700/50">
+          <div className="relative rounded-2xl border overflow-hidden shadow-2xl glow-green"
+            style={{ borderColor: 'rgba(71,85,105,0.4)' }}>
+            <div className="flex items-center gap-2 px-5 py-3.5 border-b"
+              style={{ background: 'rgba(30,41,59,0.9)', borderColor: 'rgba(71,85,105,0.3)' }}>
               <div className="w-3 h-3 rounded-full bg-red-500/80" />
               <div className="w-3 h-3 rounded-full bg-amber-500/80" />
               <div className="w-3 h-3 rounded-full bg-emerald-500/80" />
@@ -454,14 +459,16 @@ export default function LandingPage() {
               className="w-full h-[280px] sm:h-[360px] object-cover opacity-70"
             />
             {/* overlay stats */}
-            <div className="absolute bottom-0 inset-x-0 p-5 bg-gradient-to-t from-slate-950 to-transparent flex flex-wrap gap-4 justify-center">
+            <div className="absolute bottom-0 inset-x-0 p-5 flex flex-wrap gap-4 justify-center"
+              style={{ background: 'linear-gradient(to top, rgba(26,35,50,0.95), transparent)' }}>
               {[
                 { label: 'Moisture', value: '62%', color: '#3b82f6' },
                 { label: 'Temperature', value: '24°C', color: '#f59e0b' },
                 { label: 'Humidity', value: '71%', color: '#06b6d4' },
                 { label: 'pH', value: '6.5', color: '#a78bfa' },
               ].map(s => (
-                <div key={s.label} className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-slate-900/80 border border-slate-700/50">
+                <div key={s.label} className="flex items-center gap-2 px-3 py-1.5 rounded-lg border"
+                  style={{ background: 'rgba(30,41,59,0.8)', borderColor: 'rgba(71,85,105,0.3)' }}>
                   <span className="w-2 h-2 rounded-full" style={{ backgroundColor: s.color }} />
                   <span className="text-xs text-slate-400">{s.label}</span>
                   <span className="text-xs font-bold text-slate-100">{s.value}</span>
@@ -479,8 +486,9 @@ export default function LandingPage() {
       </section>
 
       {/* ── Stats Bar ────────────────────────────────────────── */}
-      <div className="border-y border-slate-800 bg-slate-900/40">
-        <div className="max-w-6xl mx-auto grid grid-cols-2 md:grid-cols-4 divide-y md:divide-y-0 divide-x divide-slate-800">
+      <div className="border-y" style={{ borderColor: 'rgba(71,85,105,0.4)', background: 'rgba(30,41,59,0.4)' }}>
+        <div className="max-w-6xl mx-auto grid grid-cols-2 md:grid-cols-4 divide-y md:divide-y-0 divide-x"
+          style={{ borderColor: 'rgba(71,85,105,0.4)' }}>
           {[
             { value: 40, suffix: '%', label: 'Average Water Saved' },
             { value: 28, suffix: '%', label: 'Yield Increase' },
@@ -542,7 +550,8 @@ export default function LandingPage() {
             ].map((item, i) => (
               <div
                 key={i}
-                className="relative p-8 rounded-2xl border border-slate-800 bg-slate-900/60 card-hover text-center"
+                className="relative p-8 rounded-2xl border card-hover text-center"
+                style={{ background: 'rgba(30,41,59,0.6)', borderColor: 'rgba(71,85,105,0.4)' }}
               >
                 <div
                   className="inline-flex w-16 h-16 rounded-2xl items-center justify-center mb-6 mx-auto"
@@ -562,7 +571,7 @@ export default function LandingPage() {
       </section>
 
       {/* ── Use Cases ────────────────────────────────────────── */}
-      <section id="use-cases" className="py-28 px-6 bg-slate-900/30">
+      <section id="use-cases" className="py-28 px-6" style={{ background: 'rgba(30,41,59,0.3)' }}>
         <div className="max-w-6xl mx-auto">
           <div className="text-center mb-16">
             <SectionLabel text="Use Cases" />
@@ -581,7 +590,7 @@ export default function LandingPage() {
                 style={
                   activeCase === i
                     ? { background: `${uc.accent}22`, border: `1px solid ${uc.accent}66`, color: uc.accent }
-                    : { background: 'transparent', border: '1px solid #334155', color: '#94a3b8' }
+                    : { background: 'transparent', border: '1px solid rgba(71,85,105,0.4)', color: '#94a3b8' }
                 }
               >
                 <uc.icon className="w-3.5 h-3.5" />
@@ -671,13 +680,15 @@ export default function LandingPage() {
           </div>
 
           {/* hero hardware image */}
-          <div className="relative rounded-3xl overflow-hidden mb-16 border border-slate-800 shadow-2xl">
+          <div className="relative rounded-3xl overflow-hidden mb-16 border shadow-2xl"
+            style={{ borderColor: 'rgba(71,85,105,0.4)' }}>
             <img
               src="https://images.unsplash.com/photo-1518770660439-4636190af475?w=1200&h=500&fit=crop"
               alt="ESP32 IoT Hardware System"
               className="w-full h-[300px] sm:h-[420px] object-cover"
             />
-            <div className="absolute inset-0 bg-gradient-to-r from-slate-950/90 via-slate-950/50 to-transparent" />
+            <div className="absolute inset-0"
+              style={{ background: 'linear-gradient(to right, rgba(26,35,50,0.9), rgba(26,35,50,0.5), transparent)' }} />
             <div className="absolute inset-0 flex flex-col justify-center px-10 sm:px-16 max-w-xl">
               <span className="text-xs font-bold tracking-widest uppercase text-emerald-400 mb-3">Core Hardware</span>
               <h3 className="text-2xl sm:text-4xl font-bold text-slate-100 mb-4" style={{ fontFamily: 'Sora, sans-serif' }}>
@@ -698,25 +709,27 @@ export default function LandingPage() {
 
           {/* second hardware image - circuit detail */}
           <div className="grid md:grid-cols-2 gap-6 mb-16">
-            <div className="relative rounded-2xl overflow-hidden border border-slate-800" style={{ height: 280 }}>
+            <div className="relative rounded-2xl overflow-hidden border" style={{ height: 280, borderColor: 'rgba(71,85,105,0.4)' }}>
               <img
                 src="https://images.unsplash.com/photo-1553406830-ef2513450d76?w=700&h=400&fit=crop"
                 alt="ESP32 PCB circuit board close up"
                 className="w-full h-full object-cover"
               />
-              <div className="absolute inset-0 bg-gradient-to-t from-slate-950/80 to-transparent" />
+              <div className="absolute inset-0"
+                style={{ background: 'linear-gradient(to top, rgba(26,35,50,0.8), transparent)' }} />
               <div className="absolute bottom-4 left-4">
                 <p className="text-xs text-emerald-400 font-semibold uppercase tracking-widest mb-1">Microcontroller</p>
                 <p className="text-white font-bold text-lg">ESP32 Development Board</p>
               </div>
             </div>
-            <div className="relative rounded-2xl overflow-hidden border border-slate-800" style={{ height: 280 }}>
+            <div className="relative rounded-2xl overflow-hidden border" style={{ height: 280, borderColor: 'rgba(71,85,105,0.4)' }}>
               <img
                 src="https://images.unsplash.com/photo-1592861956120-e524fc739696?w=700&h=400&fit=crop"
                 alt="IoT soil sensors probes in field"
                 className="w-full h-full object-cover"
               />
-              <div className="absolute inset-0 bg-gradient-to-t from-slate-950/80 to-transparent" />
+              <div className="absolute inset-0"
+                style={{ background: 'linear-gradient(to top, rgba(26,35,50,0.8), transparent)' }} />
               <div className="absolute bottom-4 left-4">
                 <p className="text-xs text-cyan-400 font-semibold uppercase tracking-widest mb-1">Field Deployment</p>
                 <p className="text-white font-bold text-lg">Sensor Array in Soil</p>
@@ -729,7 +742,8 @@ export default function LandingPage() {
             {DEVICES.map((device, i) => (
               <div
                 key={i}
-                className="p-6 rounded-2xl border border-slate-800 bg-slate-900/50 card-hover group"
+                className="p-6 rounded-2xl border card-hover group"
+                style={{ background: 'rgba(30,41,59,0.5)', borderColor: 'rgba(71,85,105,0.4)' }}
               >
                 <div
                   className="w-10 h-10 rounded-xl flex items-center justify-center mb-5"
@@ -758,7 +772,7 @@ export default function LandingPage() {
       </section>
 
       {/* ── Advantages ───────────────────────────────────────── */}
-      <section id="advantages" className="py-28 px-6 bg-slate-900/30">
+      <section id="advantages" className="py-28 px-6" style={{ background: 'rgba(30,41,59,0.3)' }}>
         <div className="max-w-6xl mx-auto">
           <div className="text-center mb-16">
             <SectionLabel text="Why smartfarm" />
@@ -771,7 +785,8 @@ export default function LandingPage() {
             {ADVANTAGES.map((adv, i) => (
               <div
                 key={i}
-                className="p-7 rounded-2xl border border-slate-800 bg-slate-900/60 card-hover group cursor-default"
+                className="p-7 rounded-2xl border card-hover group cursor-default"
+                style={{ background: 'rgba(30,41,59,0.6)', borderColor: 'rgba(71,85,105,0.4)' }}
               >
                 <div
                   className="w-12 h-12 rounded-2xl flex items-center justify-center mb-5"
@@ -786,7 +801,11 @@ export default function LandingPage() {
           </div>
 
           {/* testimonial / highlight */}
-          <div className="mt-16 p-8 sm:p-12 rounded-3xl border border-emerald-500/20 bg-gradient-to-br from-emerald-500/5 to-cyan-500/5 text-center">
+          <div className="mt-16 p-8 sm:p-12 rounded-3xl border text-center"
+            style={{
+              borderColor: 'rgba(16,185,129,0.2)',
+              background: 'linear-gradient(to bottom right, rgba(16,185,129,0.05), rgba(6,182,212,0.05))'
+            }}>
             <div className="flex justify-center gap-1 mb-5">
               {Array(5).fill(0).map((_, i) => (
                 <Star key={i} className="w-5 h-5 text-amber-400 fill-amber-400" />
@@ -833,7 +852,7 @@ export default function LandingPage() {
       </section>
 
       {/* ── Footer ───────────────────────────────────────────── */}
-      <footer className="border-t border-slate-800 py-10 px-6">
+      <footer className="border-t py-10 px-6" style={{ borderColor: 'rgba(71,85,105,0.4)' }}>
         <div className="max-w-6xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4">
           <div className="flex items-center gap-2.5">
             <div className="w-7 h-7 rounded-lg bg-emerald-500/20 border border-emerald-500/40 flex items-center justify-center">

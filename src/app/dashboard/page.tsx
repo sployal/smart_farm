@@ -480,9 +480,28 @@ Give concise, actionable advice. Be friendly and professional.
   const miniChartData = generateRandomData(10, 40, 80);
 
   return (
-    <div className="bg-slate-950 text-slate-100 font-sans overflow-x-hidden">
+    <div 
+      className="text-slate-100 font-sans overflow-x-hidden min-h-screen"
+      style={{ 
+        background: '#1a2332',
+        color: '#f1f5f9' 
+      }}
+    >
+      {/* Subtle ambient blobs - much more subdued */}
+      <div className="fixed inset-0 pointer-events-none overflow-hidden z-0">
+        <div className="absolute top-0 right-0 w-96 h-96 rounded-full blur-3xl"
+          style={{ background: 'rgba(16,185,129,0.02)' }} />
+        <div className="absolute bottom-0 left-0 w-80 h-80 rounded-full blur-3xl"
+          style={{ background: 'rgba(59,130,246,0.015)' }} />
+      </div>
+
+      <div className="relative z-10">
         {/* Header */}
-        <header className="sticky top-0 z-40 h-16 bg-slate-900/80 backdrop-blur-md border-b border-slate-800 flex items-center justify-between px-3 sm:px-4 md:px-6 lg:px-8 gap-2 sm:gap-3 md:gap-4 flex-wrap sm:flex-nowrap">
+        <header className="sticky top-0 z-40 h-16 backdrop-blur-md border-b border-slate-800 flex items-center justify-between px-3 sm:px-4 md:px-6 lg:px-8 gap-2 sm:gap-3 md:gap-4 flex-wrap sm:flex-nowrap"
+          style={{
+            background: 'rgba(30,41,59,0.3)',
+            borderColor: 'rgba(100,116,139,0.3)'
+          }}>
           <button
             onClick={() => {
               document.dispatchEvent(new CustomEvent('toggleMobileMenu'));
@@ -997,6 +1016,7 @@ Give concise, actionable advice. Be friendly and professional.
             </div>
           </div>
         </div>
+      </div>
 
       {/* AI Chat Modal */}
       {chatOpen && (

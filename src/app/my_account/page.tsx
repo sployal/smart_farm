@@ -1,30 +1,22 @@
 'use client';
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import {
-  onAuthStateChanged,
-  updateProfile,
-  updateEmail,
-  updatePassword,
-  reauthenticateWithCredential,
-  EmailAuthProvider,
-  sendEmailVerification,
-  User,
+  onAuthStateChanged, updateProfile, updateEmail, updatePassword,
+  reauthenticateWithCredential, EmailAuthProvider, sendEmailVerification, User,
 } from 'firebase/auth';
 import { auth } from '@/lib/firebase';
 import { useRole } from '@/hooks/useRole';
 import {
-  Leaf, User as UserIcon, Mail, Lock, Camera, Edit2, Check, X,
+  Leaf, User as UserIcon, Mail, Lock, Edit2, Check, X,
   AlertCircle, CheckCircle, Loader2, Shield, LogOut, Eye, EyeOff,
-  Calendar, Globe, Phone, ArrowLeft, Sprout, ShieldCheck, UserCircle2,
+  Calendar, Globe, ArrowLeft, Sprout, ShieldCheck, UserCircle2, ChevronRight,
 } from 'lucide-react';
 
-// ─── Types ────────────────────────────────────────────────────────────────────
-type Toast = { type: 'success' | 'error' | 'info'; message: string } | null;
-type EditingField = 'name' | 'email' | 'phone' | 'password' | null;
+type Toast        = { type: 'success' | 'error' | 'info'; message: string } | null;
+type EditingField = 'name' | 'email' | 'password' | null;
 
-// ─── Avatar initials helper ───────────────────────────────────────────────────
 function getInitials(name: string | null, email: string | null): string {
   if (name) {
     const parts = name.trim().split(' ');
@@ -32,52 +24,34 @@ function getInitials(name: string | null, email: string | null): string {
       ? (parts[0][0] + parts[parts.length - 1][0]).toUpperCase()
       : parts[0].slice(0, 2).toUpperCase();
   }
-  if (email) return email.slice(0, 2).toUpperCase();
-  return 'U';
+  return email ? email.slice(0, 2).toUpperCase() : 'U';
 }
 
-// ─── Role badge ───────────────────────────────────────────────────────────────
 function RoleBadge({ role }: { role: string | null }) {
   if (!role) return null;
-
   const config: Record<string, { bg: string; border: string; color: string; icon: React.ReactNode; label: string }> = {
     admin: {
-      bg: 'rgba(168,85,247,0.12)',
-      border: 'rgba(168,85,247,0.35)',
-      color: '#d8b4fe',
-      icon: <ShieldCheck style={{ width: 11, height: 11 }} />,
-      label: 'Admin',
+      bg: 'rgba(168,85,247,0.12)', border: 'rgba(168,85,247,0.35)', color: '#d8b4fe',
+      icon: <ShieldCheck style={{ width: 11, height: 11 }} />, label: 'Admin',
     },
     gardener: {
-      bg: 'rgba(16,185,129,0.12)',
-      border: 'rgba(16,185,129,0.35)',
-      color: '#6ee7b7',
-      icon: <Sprout style={{ width: 11, height: 11 }} />,
-      label: 'Gardener',
+      bg: 'rgba(16,185,129,0.12)', border: 'rgba(16,185,129,0.35)', color: '#6ee7b7',
+      icon: <Sprout style={{ width: 11, height: 11 }} />, label: 'Gardener',
     },
     user: {
-      bg: 'rgba(100,116,139,0.12)',
-      border: 'rgba(100,116,139,0.35)',
-      color: '#94a3b8',
-      icon: <UserCircle2 style={{ width: 11, height: 11 }} />,
-      label: 'User',
+      bg: 'rgba(100,116,139,0.12)', border: 'rgba(100,116,139,0.35)', color: '#94a3b8',
+      icon: <UserCircle2 style={{ width: 11, height: 11 }} />, label: 'User',
     },
   };
-
   const c = config[role] ?? config.user;
-
   return (
-    <span
-      className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold"
-      style={{ background: c.bg, border: `1px solid ${c.border}`, color: c.color }}
-    >
-      {c.icon}
-      {c.label}
+    <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold"
+      style={{ background: c.bg, border: `1px solid ${c.border}`, color: c.color }}>
+      {c.icon} {c.label}
     </span>
   );
 }
 
-// ─── Provider badge ───────────────────────────────────────────────────────────
 function ProviderBadge({ providerId }: { providerId: string }) {
   const isGoogle = providerId === 'google.com';
   return (
@@ -102,33 +76,45 @@ function ProviderBadge({ providerId }: { providerId: string }) {
   );
 }
 
-// ─── Section card ─────────────────────────────────────────────────────────────
-function Card({ children, className = '' }: { children: React.ReactNode; className?: string }) {
+function SectionCard({ children, accentColor = '#10b981', title, titleIcon }: {
+  children: React.ReactNode; accentColor?: string; title?: string; titleIcon?: React.ReactNode;
+}) {
   return (
-    <div className={`rounded-2xl p-6 ${className}`}
-      style={{ background: 'rgba(15,23,42,0.8)', border: '1px solid rgba(51,65,85,0.6)' }}>
-      {children}
+    <div className="rounded-2xl border backdrop-blur-sm overflow-hidden"
+      style={{
+        background: 'rgba(30,41,59,0.6)', borderColor: 'rgba(71,85,105,0.4)',
+        borderLeftWidth: 3, borderLeftStyle: 'solid', borderLeftColor: accentColor,
+      }}>
+      {title && (
+        <div className="flex items-center gap-3 px-5 py-4 border-b" style={{ borderColor: 'rgba(71,85,105,0.3)' }}>
+          {titleIcon && (
+            <div className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0"
+              style={{ background: `${accentColor}18`, border: `1px solid ${accentColor}30` }}>
+              {titleIcon}
+            </div>
+          )}
+          <h2 className="font-bold text-sm text-slate-100">{title}</h2>
+        </div>
+      )}
+      <div className="p-5">{children}</div>
     </div>
   );
 }
 
-// ─── Inline editable field ────────────────────────────────────────────────────
-function InfoRow({
-  icon, label, value, placeholder = '—', editable = false, onEdit,
-}: {
+function InfoRow({ icon, label, value, placeholder = '—', editable = false, onEdit, noBorder = false }: {
   icon: React.ReactNode; label: string; value: string | null | undefined;
-  placeholder?: string; editable?: boolean; onEdit?: () => void;
+  placeholder?: string; editable?: boolean; onEdit?: () => void; noBorder?: boolean;
 }) {
   return (
     <div className="flex items-center justify-between py-3.5"
-      style={{ borderBottom: '1px solid rgba(51,65,85,0.4)' }}>
+      style={noBorder ? {} : { borderBottom: '1px solid rgba(71,85,105,0.25)' }}>
       <div className="flex items-center gap-3 min-w-0">
         <div className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0"
           style={{ background: 'rgba(16,185,129,0.1)', border: '1px solid rgba(16,185,129,0.2)' }}>
           {icon}
         </div>
         <div className="min-w-0">
-          <p className="text-xs text-slate-500 mb-0.5" style={{ fontFamily: 'DM Sans, sans-serif' }}>{label}</p>
+          <p className="text-xs text-slate-500 mb-0.5">{label}</p>
           <p className="text-sm font-medium text-slate-200 truncate">
             {value || <span className="text-slate-600 italic">{placeholder}</span>}
           </p>
@@ -136,7 +122,16 @@ function InfoRow({
       </div>
       {editable && onEdit && (
         <button onClick={onEdit} type="button"
-          className="ml-4 flex-shrink-0 p-1.5 rounded-lg text-slate-500 hover:text-emerald-400 hover:bg-emerald-500/10 transition-all">
+          className="ml-4 flex-shrink-0 p-1.5 rounded-lg transition-all"
+          style={{ color: '#475569' }}
+          onMouseEnter={e => {
+            (e.currentTarget as HTMLButtonElement).style.color = '#34d399';
+            (e.currentTarget as HTMLButtonElement).style.background = 'rgba(52,211,153,0.1)';
+          }}
+          onMouseLeave={e => {
+            (e.currentTarget as HTMLButtonElement).style.color = '#475569';
+            (e.currentTarget as HTMLButtonElement).style.background = 'transparent';
+          }}>
           <Edit2 style={{ width: 14, height: 14 }} />
         </button>
       )}
@@ -144,38 +139,111 @@ function InfoRow({
   );
 }
 
-// ─── Main Profile Page ────────────────────────────────────────────────────────
+function EditPanel({ children }: { children: React.ReactNode }) {
+  return (
+    <div className="mt-3 p-4 rounded-2xl"
+      style={{
+        background: 'rgba(15,23,42,0.6)', border: '1px solid rgba(16,185,129,0.2)',
+        animation: 'panelIn .22s cubic-bezier(.22,.68,0,1.2)',
+      }}>
+      {children}
+    </div>
+  );
+}
+
+function InputField({ type = 'text', placeholder, value, onChange, icon, rightSlot, autoFocus }: {
+  type?: string; placeholder: string; value: string; onChange: (v: string) => void;
+  icon?: React.ReactNode; rightSlot?: React.ReactNode; autoFocus?: boolean;
+}) {
+  return (
+    <div className="relative">
+      {icon && (
+        <div className="absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" style={{ color: '#475569' }}>
+          {icon}
+        </div>
+      )}
+      <input
+        type={type} placeholder={placeholder} value={value}
+        onChange={e => onChange(e.target.value)} autoFocus={autoFocus}
+        className="w-full rounded-xl text-sm outline-none transition-all"
+        style={{
+          background: 'rgba(15,23,42,0.5)', border: '1px solid rgba(71,85,105,0.5)',
+          color: '#f1f5f9', fontFamily: 'inherit',
+          padding: icon
+            ? rightSlot ? '11px 44px 11px 38px' : '11px 14px 11px 38px'
+            : rightSlot ? '11px 44px 11px 14px' : '11px 14px',
+        }}
+        onFocus={e => {
+          e.currentTarget.style.borderColor = 'rgba(16,185,129,0.5)';
+          e.currentTarget.style.boxShadow = '0 0 0 3px rgba(16,185,129,0.08)';
+          e.currentTarget.style.background = 'rgba(15,23,42,0.8)';
+        }}
+        onBlur={e => {
+          e.currentTarget.style.borderColor = 'rgba(71,85,105,0.5)';
+          e.currentTarget.style.boxShadow = 'none';
+          e.currentTarget.style.background = 'rgba(15,23,42,0.5)';
+        }}
+      />
+      {rightSlot && <div className="absolute right-3 top-1/2 -translate-y-1/2">{rightSlot}</div>}
+    </div>
+  );
+}
+
+function SaveButton({ onClick, disabled, children }: {
+  onClick: () => void; disabled?: boolean; children: React.ReactNode;
+}) {
+  return (
+    <button onClick={onClick} disabled={disabled}
+      className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-bold transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+      style={{ background: '#10b981', color: '#051c12', boxShadow: disabled ? 'none' : '0 4px 14px rgba(16,185,129,0.25)' }}>
+      {children}
+    </button>
+  );
+}
+
+function CancelButton({ onClick }: { onClick: () => void }) {
+  return (
+    <button onClick={onClick} type="button"
+      className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-semibold transition-all"
+      style={{ background: 'rgba(30,41,59,0.6)', border: '1px solid rgba(71,85,105,0.5)', color: '#94a3b8' }}
+      onMouseEnter={e => (e.currentTarget.style.color = '#cbd5e1')}
+      onMouseLeave={e => (e.currentTarget.style.color = '#94a3b8')}>
+      <X style={{ width: 14, height: 14 }} /> Cancel
+    </button>
+  );
+}
+
+function EyeToggle({ show, onToggle }: { show: boolean; onToggle: () => void }) {
+  return (
+    <button type="button" onClick={onToggle} tabIndex={-1}
+      className="transition-colors" style={{ color: '#475569' }}
+      onMouseEnter={e => (e.currentTarget.style.color = '#94a3b8')}
+      onMouseLeave={e => (e.currentTarget.style.color = '#475569')}>
+      {show ? <EyeOff style={{ width: 15, height: 15 }} /> : <Eye style={{ width: 15, height: 15 }} />}
+    </button>
+  );
+}
+
 export default function ProfilePage() {
   const router = useRouter();
-
-  const [user, setUser] = useState<User | null>(null);
+  const [user,        setUser]        = useState<User | null>(null);
   const [authLoading, setAuthLoading] = useState(true);
-  const [mounted, setMounted] = useState(false);
-
-  // ── Role from Firestore ──────────────────────────────────
   const { role, loading: roleLoading } = useRole();
 
-  // editing state
-  const [editingField, setEditingField] = useState<EditingField>(null);
-  const [fieldValue, setFieldValue] = useState('');
-  const [newPassword, setNewPassword] = useState('');
+  const [editingField,    setEditingField]    = useState<EditingField>(null);
+  const [fieldValue,      setFieldValue]      = useState('');
+  const [newPassword,     setNewPassword]     = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [currentPassword, setCurrentPassword] = useState('');
-  const [showPw, setShowPw] = useState(false);
-  const [showNewPw, setShowNewPw] = useState(false);
-  const [showConfirmPw, setShowConfirmPw] = useState(false);
-  const [saving, setSaving] = useState(false);
-
-  const [toast, setToast] = useState<Toast>(null);
-
-  useEffect(() => {
-    const t = setTimeout(() => setMounted(true), 60);
-    return () => clearTimeout(t);
-  }, []);
+  const [showPw,          setShowPw]          = useState(false);
+  const [showNewPw,       setShowNewPw]       = useState(false);
+  const [showConfirmPw,   setShowConfirmPw]   = useState(false);
+  const [saving,          setSaving]          = useState(false);
+  const [toast,           setToast]           = useState<Toast>(null);
 
   useEffect(() => {
-    const unsub = onAuthStateChanged(auth, (u) => {
-      if (!u) { router.replace('/'); } else { setUser(u); }
+    const unsub = onAuthStateChanged(auth, u => {
+      if (!u) router.replace('/'); else setUser(u);
       setAuthLoading(false);
     });
     return () => unsub();
@@ -187,24 +255,17 @@ export default function ProfilePage() {
     return () => clearTimeout(t);
   }, [toast]);
 
-  const isEmailProvider  = user?.providerData.some(p => p.providerId === 'password');
-  const isGoogleProvider = user?.providerData.some(p => p.providerId === 'google.com');
+  const isEmailProvider = user?.providerData.some(p => p.providerId === 'password');
 
   const openEdit = (field: EditingField) => {
-    setFieldValue(
-      field === 'name'  ? user?.displayName  || '' :
-      field === 'email' ? user?.email        || '' :
-      field === 'phone' ? user?.phoneNumber  || '' : ''
-    );
+    setFieldValue(field === 'name' ? user?.displayName || '' : field === 'email' ? user?.email || '' : '');
     setNewPassword(''); setConfirmPassword(''); setCurrentPassword('');
     setShowPw(false); setShowNewPw(false); setShowConfirmPw(false);
     setEditingField(field);
   };
 
-  const cancelEdit = () => setEditingField(null);
-
   const reauth = async () => {
-    if (!user?.email) throw new Error('No email on account');
+    if (!user?.email) throw new Error('No email');
     const cred = EmailAuthProvider.credential(user.email, currentPassword);
     await reauthenticateWithCredential(user, cred);
   };
@@ -233,17 +294,17 @@ export default function ProfilePage() {
       setEditingField(null);
     } catch (err: any) {
       const msg =
-        err.code === 'auth/wrong-password' || err.code === 'auth/invalid-credential' ? 'Incorrect current password.'     :
-        err.code === 'auth/email-already-in-use'                                      ? 'This email is already in use.'   :
-        err.code === 'auth/invalid-email'                                             ? 'Please enter a valid email.'     :
+        err.code === 'auth/wrong-password' || err.code === 'auth/invalid-credential' ? 'Incorrect current password.'   :
+        err.code === 'auth/email-already-in-use'                                      ? 'This email is already in use.' :
+        err.code === 'auth/invalid-email'                                             ? 'Please enter a valid email.'   :
         'Failed to update email. Try again.';
       setToast({ type: 'error', message: msg });
     } finally { setSaving(false); }
   };
 
   const handleSavePassword = async () => {
-    if (!currentPassword)       { setToast({ type: 'error', message: 'Enter your current password.' }); return; }
-    if (newPassword.length < 6) { setToast({ type: 'error', message: 'New password must be at least 6 characters.' }); return; }
+    if (!currentPassword)            { setToast({ type: 'error', message: 'Enter your current password.' }); return; }
+    if (newPassword.length < 6)      { setToast({ type: 'error', message: 'New password must be at least 6 characters.' }); return; }
     if (newPassword !== confirmPassword) { setToast({ type: 'error', message: 'New passwords do not match.' }); return; }
     setSaving(true);
     try {
@@ -276,14 +337,11 @@ export default function ProfilePage() {
     } catch { setToast({ type: 'error', message: 'Could not send verification email.' }); }
   };
 
-  if (authLoading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: '#060910' }}>
-        <Loader2 className="w-8 h-8 text-emerald-400 animate-spin" />
-      </div>
-    );
-  }
-
+  if (authLoading) return (
+    <div className="min-h-screen flex items-center justify-center" style={{ background: '#1a2332' }}>
+      <Loader2 className="w-8 h-8 text-emerald-400 animate-spin" />
+    </div>
+  );
   if (!user) return null;
 
   const initials = getInitials(user.displayName, user.email);
@@ -291,130 +349,133 @@ export default function ProfilePage() {
     ? new Date(user.metadata.creationTime).toLocaleDateString('en-US', { month: 'long', year: 'numeric' })
     : 'Unknown';
 
-  // Human-readable role label for the info row
-  const roleLabel = roleLoading ? 'Loading…' : role
-    ? role.charAt(0).toUpperCase() + role.slice(1)
-    : 'User';
-
   return (
-    <div className="min-h-screen" style={{ backgroundColor: '#060910', fontFamily: "'Sora', 'DM Sans', system-ui, sans-serif" }}>
+    <div className="min-h-screen font-sans" style={{ background: '#1a2332', color: '#f1f5f9' }}>
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Sora:wght@300;400;600;700;800&family=DM+Sans:wght@400;500;600&display=swap');
-        .page-appear { opacity:0; transform:translateY(20px); transition:opacity .5s cubic-bezier(.22,.68,0,1.2),transform .5s cubic-bezier(.22,.68,0,1.2); }
-        .page-appear.show { opacity:1; transform:translateY(0); }
-        .stagger-1 { transition-delay:.05s; }
-        .stagger-2 { transition-delay:.12s; }
-        .stagger-3 { transition-delay:.19s; }
-        .stagger-4 { transition-delay:.26s; }
-        .input-field { width:100%; background:rgba(30,41,59,.6); border:1px solid rgba(71,85,105,.6); border-radius:10px; padding:11px 40px 11px 40px; color:#f1f5f9; font-size:14px; font-family:inherit; outline:none; transition:border-color .2s,box-shadow .2s,background .2s; }
-        .input-field.no-icon { padding-left:14px; }
-        .input-field::placeholder { color:#475569; }
-        .input-field:focus { border-color:rgba(16,185,129,.6); box-shadow:0 0 0 3px rgba(16,185,129,.1); background:rgba(30,41,59,.9); }
-        .btn-save { padding:10px 20px; border-radius:10px; background:#10b981; color:#060910; font-weight:700; font-size:13px; font-family:inherit; border:none; cursor:pointer; display:inline-flex; align-items:center; gap:6px; transition:background .2s,box-shadow .2s,transform .15s; }
-        .btn-save:hover:not(:disabled) { background:#34d399; box-shadow:0 6px 20px rgba(16,185,129,.3); transform:translateY(-1px); }
-        .btn-save:disabled { opacity:.5; cursor:not-allowed; }
-        .btn-cancel { padding:10px 20px; border-radius:10px; background:rgba(30,41,59,.8); border:1px solid rgba(71,85,105,.5); color:#94a3b8; font-weight:600; font-size:13px; font-family:inherit; cursor:pointer; display:inline-flex; align-items:center; gap:6px; transition:background .2s,color .2s; }
-        .btn-cancel:hover { background:rgba(30,41,59,1); color:#cbd5e1; }
-        .btn-danger { padding:10px 20px; border-radius:10px; background:rgba(239,68,68,.1); border:1px solid rgba(239,68,68,.3); color:#fca5a5; font-weight:600; font-size:13px; font-family:inherit; cursor:pointer; display:inline-flex; align-items:center; gap:6px; transition:background .2s,border-color .2s; }
-        .btn-danger:hover { background:rgba(239,68,68,.18); border-color:rgba(239,68,68,.5); }
-        .edit-panel { margin-top:16px; padding:18px; border-radius:14px; background:rgba(15,23,42,.9); border:1px solid rgba(16,185,129,.2); animation:panelIn .25s cubic-bezier(.22,.68,0,1.2); }
-        @keyframes panelIn { from{opacity:0;transform:translateY(-8px) scale(.98)} to{opacity:1;transform:translateY(0) scale(1)} }
-        .toast-enter { animation:toastIn .35s cubic-bezier(.22,.68,0,1.2) both; }
-        @keyframes toastIn { from{opacity:0;transform:translateY(-12px) scale(.95)} to{opacity:1;transform:translateY(0) scale(1)} }
-        .avatar-ring { background:conic-gradient(#10b981,#06b6d4,#10b981); padding:3px; border-radius:50%; }
-        .avatar-inner { background:#060910; border-radius:50%; padding:3px; }
-        .grid-bg { background-image:linear-gradient(rgba(16,185,129,.025) 1px,transparent 1px),linear-gradient(90deg,rgba(16,185,129,.025) 1px,transparent 1px); background-size:48px 48px; }
-        .orb { position:absolute; border-radius:50%; pointer-events:none; filter:blur(90px); }
+        @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Sora:wght@300;400;600;800&display=swap');
+        .grid-bg {
+          background-image:
+            linear-gradient(rgba(16,185,129,0.04) 1px, transparent 1px),
+            linear-gradient(90deg, rgba(16,185,129,0.04) 1px, transparent 1px);
+          background-size: 60px 60px;
+        }
+        @keyframes panelIn {
+          from { opacity:0; transform:translateY(-6px) scale(.98) }
+          to   { opacity:1; transform:translateY(0) scale(1) }
+        }
+        @keyframes toastIn {
+          from { opacity:0; transform:translateY(-10px) scale(.96) }
+          to   { opacity:1; transform:translateY(0) scale(1) }
+        }
       `}</style>
 
-      {/* ── Background ─────────────────────────────────────── */}
-      <div className="fixed inset-0 grid-bg pointer-events-none" />
-      <div className="orb fixed w-[600px] h-[600px] top-[-200px] right-[-100px]"
-        style={{ background: 'radial-gradient(circle, rgba(16,185,129,0.08) 0%, transparent 70%)' }} />
-      <div className="orb fixed w-[400px] h-[400px] bottom-[-100px] left-[-100px]"
-        style={{ background: 'radial-gradient(circle, rgba(6,182,212,0.07) 0%, transparent 70%)' }} />
+      {/* ── Background layers ── */}
+      <div className="fixed inset-0 pointer-events-none z-0">
+        <div className="absolute inset-0 grid-bg" />
+        <div className="absolute top-0 right-0 w-[600px] h-[600px] rounded-full"
+          style={{ background: 'radial-gradient(circle, rgba(16,185,129,0.10) 0%, transparent 70%)', filter: 'blur(80px)' }} />
+        <div className="absolute bottom-0 left-0 w-[400px] h-[400px] rounded-full"
+          style={{ background: 'radial-gradient(circle, rgba(6,182,212,0.07) 0%, transparent 70%)', filter: 'blur(80px)' }} />
+      </div>
 
-      {/* ── Toast ──────────────────────────────────────────── */}
+      {/* ── Toast ── */}
       {toast && (
-        <div className="fixed top-6 left-1/2 -translate-x-1/2 z-50 toast-enter" style={{ minWidth: 300, maxWidth: 420 }}>
-          <div className={`flex items-start gap-3 px-5 py-4 rounded-2xl border text-sm font-medium shadow-2xl ${
-            toast.type === 'success' ? 'bg-emerald-950 border-emerald-500/40 text-emerald-300' :
-            toast.type === 'info'    ? 'bg-blue-950 border-blue-500/40 text-blue-300' :
-                                       'bg-red-950 border-red-500/40 text-red-300'
-          }`}>
-            {toast.type === 'success' ? <CheckCircle className="w-4 h-4 mt-0.5 flex-shrink-0 text-emerald-400" /> :
-             toast.type === 'info'    ? <AlertCircle className="w-4 h-4 mt-0.5 flex-shrink-0 text-blue-400"    /> :
-                                        <AlertCircle className="w-4 h-4 mt-0.5 flex-shrink-0 text-red-400"     />}
+        <div className="fixed top-6 left-1/2 -translate-x-1/2 z-50"
+          style={{ minWidth: 300, maxWidth: 420, animation: 'toastIn .3s cubic-bezier(.22,.68,0,1.2) both' }}>
+          <div className="flex items-start gap-3 px-5 py-4 rounded-2xl border text-sm font-medium shadow-2xl"
+            style={{
+              background: toast.type === 'success' ? 'rgba(5,46,22,0.95)'  :
+                          toast.type === 'info'    ? 'rgba(7,34,62,0.95)'  : 'rgba(60,10,10,0.95)',
+              borderColor: toast.type === 'success' ? 'rgba(16,185,129,0.4)' :
+                           toast.type === 'info'    ? 'rgba(59,130,246,0.4)' : 'rgba(239,68,68,0.4)',
+              color: toast.type === 'success' ? '#6ee7b7' : toast.type === 'info' ? '#93c5fd' : '#fca5a5',
+            }}>
+            {toast.type === 'success'
+              ? <CheckCircle className="w-4 h-4 mt-0.5 flex-shrink-0" style={{ color: '#34d399' }} />
+              : <AlertCircle className="w-4 h-4 mt-0.5 flex-shrink-0"
+                  style={{ color: toast.type === 'info' ? '#60a5fa' : '#f87171' }} />}
             {toast.message}
           </div>
         </div>
       )}
 
-      {/* ── Page content ───────────────────────────────────── */}
-      <div className="relative z-10 max-w-2xl mx-auto px-4 py-10">
+      <div className="relative z-10 max-w-2xl mx-auto px-4 sm:px-6 lg:px-8 space-y-5">
 
-        {/* Top nav */}
-        <div className={`flex items-center justify-between mb-10 page-appear ${mounted ? 'show' : ''}`}>
-          <div className="flex items-center gap-3">
+        {/* ── Header bar ── */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 py-4 sm:py-6 border-b -mx-4 sm:-mx-6 lg:-mx-8 px-4 sm:px-6 lg:px-8"
+          style={{ borderColor: 'rgba(100,116,139,0.3)', background: 'rgba(30,41,59,0.3)' }}>
+          <div className="flex items-center gap-2 min-w-0">
             <button type="button" onClick={() => router.back()}
-              className="md:hidden p-1.5 -ml-1 text-slate-400 hover:text-slate-100 transition-colors touch-manipulation flex-shrink-0" aria-label="Go back">
+              className="md:hidden p-1.5 -ml-1 flex-shrink-0 text-slate-400 transition-colors">
               <ArrowLeft className="w-6 h-6" />
             </button>
-            <div className="w-8 h-8 rounded-xl bg-emerald-500/20 border border-emerald-500/40 flex items-center justify-center">
-              <Leaf style={{ width: 16, height: 16 }} className="text-emerald-400" />
+            <div className="min-w-0">
+              <div className="flex items-center gap-2 text-sm mb-1 text-slate-400">
+                <Leaf className="w-4 h-4 text-emerald-500 flex-shrink-0" />
+                <span>Farm Dashboard</span>
+                <ChevronRight className="w-3 h-3 flex-shrink-0" />
+                <span className="text-sky-400">Profile</span>
+              </div>
+              <h1 className="text-3xl font-black tracking-tight text-slate-100" style={{ letterSpacing: '-0.02em' }}>
+                My Profile
+              </h1>
+              <p className="text-sm mt-1 text-slate-400">Manage your account details and security</p>
             </div>
-            <span className="font-bold text-lg tracking-tight text-slate-100">
-              smart<span className="text-emerald-400">farm</span>
-            </span>
           </div>
-          <button onClick={handleSignOut} className="btn-danger" type="button">
-            <LogOut style={{ width: 14, height: 14 }} /> Sign Out
+          <button onClick={handleSignOut}
+            className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold transition-all flex-shrink-0"
+            style={{ background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.25)', color: '#fca5a5' }}
+            onMouseEnter={e => {
+              (e.currentTarget as HTMLButtonElement).style.background = 'rgba(239,68,68,0.15)';
+              (e.currentTarget as HTMLButtonElement).style.borderColor = 'rgba(239,68,68,0.45)';
+            }}
+            onMouseLeave={e => {
+              (e.currentTarget as HTMLButtonElement).style.background = 'rgba(239,68,68,0.08)';
+              (e.currentTarget as HTMLButtonElement).style.borderColor = 'rgba(239,68,68,0.25)';
+            }}>
+            <LogOut style={{ width: 15, height: 15 }} /> Sign Out
           </button>
         </div>
 
-        {/* ── Hero avatar card ──────────────────────────────── */}
-        <Card className={`mb-6 page-appear stagger-1 ${mounted ? 'show' : ''}`}>
-          <div className="flex flex-col sm:flex-row items-center sm:items-start gap-6">
-
+        {/* ── Hero avatar card ── */}
+        <div className="rounded-2xl border backdrop-blur-sm overflow-hidden"
+          style={{
+            background: 'rgba(30,41,59,0.6)', borderColor: 'rgba(71,85,105,0.4)',
+            borderLeftWidth: 3, borderLeftStyle: 'solid', borderLeftColor: '#10b981',
+          }}>
+          <div className="p-6 flex flex-col sm:flex-row items-center sm:items-start gap-6">
             {/* Avatar */}
             <div className="relative flex-shrink-0">
-              <div className="avatar-ring">
-                <div className="avatar-inner">
+              <div className="p-0.5 rounded-full"
+                style={{ background: 'conic-gradient(#10b981, #06b6d4, #10b981)' }}>
+                <div className="p-0.5 rounded-full" style={{ background: '#1a2332' }}>
                   {user.photoURL ? (
                     <img src={user.photoURL} alt="Profile" className="w-20 h-20 rounded-full object-cover" />
                   ) : (
                     <div className="w-20 h-20 rounded-full flex items-center justify-center text-2xl font-extrabold"
-                      style={{ background: 'linear-gradient(135deg, rgba(16,185,129,0.3), rgba(6,182,212,0.3))', color: '#34d399' }}>
+                      style={{ background: 'linear-gradient(135deg, rgba(16,185,129,0.25), rgba(6,182,212,0.25))', color: '#34d399' }}>
                       {initials}
                     </div>
                   )}
                 </div>
               </div>
-              <span className="absolute bottom-1 right-1 w-3.5 h-3.5 rounded-full bg-emerald-400 border-2" style={{ borderColor: '#060910' }} />
+              <span className="absolute bottom-1 right-1 w-3.5 h-3.5 rounded-full border-2"
+                style={{ background: '#10b981', borderColor: '#1a2332' }} />
             </div>
 
             {/* Name + meta */}
-            <div className="flex-1 text-center sm:text-left">
-              <h1 className="text-2xl font-extrabold text-slate-100 mb-1" style={{ letterSpacing: '-0.02em' }}>
+            <div className="flex-1 text-center sm:text-left min-w-0">
+              <h2 className="text-2xl font-extrabold text-slate-100 mb-1" style={{ letterSpacing: '-0.02em' }}>
                 {user.displayName || 'smartfarm User'}
-              </h1>
-              <p className="text-slate-400 text-sm mb-3" style={{ fontFamily: 'DM Sans, sans-serif' }}>
-                {user.email}
-              </p>
-
-              {/* ── Badges row: provider + role + verified ── */}
+              </h2>
+              <p className="text-slate-400 text-sm mb-4">{user.email}</p>
               <div className="flex flex-wrap gap-2 justify-center sm:justify-start">
-                {user.providerData.map(p => (
-                  <ProviderBadge key={p.providerId} providerId={p.providerId} />
-                ))}
-
-                {/* Role badge — live from Firestore */}
+                {user.providerData.map(p => <ProviderBadge key={p.providerId} providerId={p.providerId} />)}
                 {!roleLoading && <RoleBadge role={role} />}
-
                 {!user.emailVerified && isEmailProvider && (
                   <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold"
                     style={{ background: 'rgba(245,158,11,0.12)', border: '1px solid rgba(245,158,11,0.3)', color: '#fcd34d' }}>
-                    <AlertCircle style={{ width: 11, height: 11 }} /> Email unverified
+                    <AlertCircle style={{ width: 11, height: 11 }} /> Unverified
                   </span>
                 )}
                 {user.emailVerified && (
@@ -426,163 +487,146 @@ export default function ProfilePage() {
               </div>
             </div>
 
-            {/* Stats */}
-            <div className="flex sm:flex-col gap-4 sm:gap-2 text-center sm:text-right flex-shrink-0">
-              <div>
-                <p className="text-xs text-slate-500 mb-0.5" style={{ fontFamily: 'DM Sans, sans-serif' }}>Member since</p>
-                <p className="text-sm font-semibold text-emerald-400">{joinDate}</p>
-              </div>
+            {/* Member since */}
+            <div className="flex-shrink-0 px-4 py-3 rounded-xl text-center"
+              style={{ background: 'rgba(16,185,129,0.08)', border: '1px solid rgba(16,185,129,0.15)' }}>
+              <p className="text-xs text-slate-500 mb-1">Member since</p>
+              <p className="text-sm font-bold text-emerald-400">{joinDate}</p>
             </div>
           </div>
-        </Card>
+        </div>
 
-        {/* ── Profile info ──────────────────────────────────── */}
-        <Card className={`mb-6 page-appear stagger-2 ${mounted ? 'show' : ''}`}>
-          <h2 className="text-sm font-bold text-slate-400 uppercase tracking-widest mb-4" style={{ fontFamily: 'DM Sans, sans-serif' }}>
-            Profile Information
-          </h2>
+        {/* ── Profile Information ── */}
+        <SectionCard
+          title="Profile Information" accentColor="#10b981"
+          titleIcon={<UserIcon style={{ width: 14, height: 14, color: '#10b981' }} />}>
 
-          {/* Name row */}
-          <InfoRow icon={<UserIcon style={{ width: 14, height: 14 }} className="text-emerald-400" />}
+          {/* Name */}
+          <InfoRow icon={<UserIcon style={{ width: 14, height: 14, color: '#34d399' }} />}
             label="Full Name" value={user.displayName} placeholder="Not set" editable onEdit={() => openEdit('name')} />
           {editingField === 'name' && (
-            <div className="edit-panel">
-              <p className="text-xs font-semibold text-slate-400 mb-3 uppercase tracking-wide" style={{ fontFamily: 'DM Sans, sans-serif' }}>Edit Full Name</p>
-              <div className="relative mb-4">
-                <UserIcon className="absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none text-slate-500" style={{ width: 15, height: 15 }} />
-                <input type="text" className="input-field" placeholder="Your full name" value={fieldValue} onChange={e => setFieldValue(e.target.value)} autoFocus />
+            <EditPanel>
+              <p className="text-xs font-semibold uppercase tracking-wide mb-3" style={{ color: '#475569' }}>Edit Full Name</p>
+              <div className="mb-4">
+                <InputField placeholder="Your full name" value={fieldValue} onChange={setFieldValue}
+                  icon={<UserIcon style={{ width: 14, height: 14 }} />} autoFocus />
               </div>
               <div className="flex gap-2">
-                <button className="btn-save" onClick={handleSave} disabled={saving}>
-                  {saving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Check style={{ width: 14, height: 14 }} />} Save
-                </button>
-                <button className="btn-cancel" onClick={cancelEdit} type="button"><X style={{ width: 14, height: 14 }} /> Cancel</button>
+                <SaveButton onClick={handleSave} disabled={saving}>
+                  {saving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Check style={{ width: 14, height: 14 }} />}
+                  Save
+                </SaveButton>
+                <CancelButton onClick={() => setEditingField(null)} />
               </div>
-            </div>
+            </EditPanel>
           )}
 
-          {/* Email row */}
-          <InfoRow icon={<Mail style={{ width: 14, height: 14 }} className="text-emerald-400" />}
+          {/* Email */}
+          <InfoRow icon={<Mail style={{ width: 14, height: 14, color: '#34d399' }} />}
             label="Email Address" value={user.email} editable={isEmailProvider} onEdit={() => openEdit('email')} />
           {editingField === 'email' && (
-            <div className="edit-panel">
-              <p className="text-xs font-semibold text-slate-400 mb-3 uppercase tracking-wide" style={{ fontFamily: 'DM Sans, sans-serif' }}>Edit Email Address</p>
+            <EditPanel>
+              <p className="text-xs font-semibold uppercase tracking-wide mb-3" style={{ color: '#475569' }}>Edit Email Address</p>
               <div className="space-y-3 mb-4">
-                <div className="relative">
-                  <Mail className="absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none text-slate-500" style={{ width: 15, height: 15 }} />
-                  <input type="email" className="input-field" placeholder="New email address" value={fieldValue} onChange={e => setFieldValue(e.target.value)} autoFocus />
-                </div>
-                <div className="relative">
-                  <Lock className="absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none text-slate-500" style={{ width: 15, height: 15 }} />
-                  <input type={showPw ? 'text' : 'password'} className="input-field" placeholder="Current password to confirm"
-                    value={currentPassword} onChange={e => setCurrentPassword(e.target.value)} style={{ paddingRight: 44 }} />
-                  <button type="button" onClick={() => setShowPw(v => !v)} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300 transition-colors" tabIndex={-1}>
-                    {showPw ? <EyeOff style={{ width: 15, height: 15 }} /> : <Eye style={{ width: 15, height: 15 }} />}
-                  </button>
-                </div>
+                <InputField type="email" placeholder="New email address" value={fieldValue} onChange={setFieldValue}
+                  icon={<Mail style={{ width: 14, height: 14 }} />} autoFocus />
+                <InputField type={showPw ? 'text' : 'password'} placeholder="Current password to confirm"
+                  value={currentPassword} onChange={setCurrentPassword}
+                  icon={<Lock style={{ width: 14, height: 14 }} />}
+                  rightSlot={<EyeToggle show={showPw} onToggle={() => setShowPw(v => !v)} />} />
               </div>
               <div className="flex gap-2">
-                <button className="btn-save" onClick={handleSave} disabled={saving}>
-                  {saving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Check style={{ width: 14, height: 14 }} />} Save
-                </button>
-                <button className="btn-cancel" onClick={cancelEdit} type="button"><X style={{ width: 14, height: 14 }} /> Cancel</button>
+                <SaveButton onClick={handleSave} disabled={saving}>
+                  {saving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Check style={{ width: 14, height: 14 }} />}
+                  Save
+                </SaveButton>
+                <CancelButton onClick={() => setEditingField(null)} />
               </div>
-            </div>
+            </EditPanel>
           )}
 
-          {/* Role row (read-only) */}
-          <div className="flex items-center gap-3 py-3.5" style={{ borderBottom: '1px solid rgba(51,65,85,0.4)' }}>
+          {/* Role (read-only) */}
+          <div className="flex items-center gap-3 py-3.5" style={{ borderBottom: '1px solid rgba(71,85,105,0.25)' }}>
             <div className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0"
               style={{ background: 'rgba(16,185,129,0.1)', border: '1px solid rgba(16,185,129,0.2)' }}>
-              {role === 'admin'    ? <ShieldCheck  style={{ width: 14, height: 14 }} className="text-purple-400"  /> :
-               role === 'gardener' ? <Sprout       style={{ width: 14, height: 14 }} className="text-emerald-400" /> :
-                                     <UserCircle2  style={{ width: 14, height: 14 }} className="text-slate-400"   />}
+              {role === 'admin'    ? <ShieldCheck  style={{ width: 14, height: 14, color: '#d8b4fe' }} /> :
+               role === 'gardener' ? <Sprout       style={{ width: 14, height: 14, color: '#34d399' }} /> :
+                                     <UserCircle2  style={{ width: 14, height: 14, color: '#94a3b8' }} />}
             </div>
             <div>
-              <p className="text-xs text-slate-500 mb-0.5" style={{ fontFamily: 'DM Sans, sans-serif' }}>Account Role</p>
-              <div className="flex items-center gap-2">
+              <p className="text-xs text-slate-500 mb-1">Account Role</p>
+              <div className="flex items-center gap-2 flex-wrap">
                 {roleLoading
                   ? <span className="text-sm text-slate-500 italic">Loading…</span>
-                  : <RoleBadge role={role} />
-                }
+                  : <RoleBadge role={role} />}
                 {role === 'user' && !roleLoading && (
-                  <span className="text-xs text-slate-600" style={{ fontFamily: 'DM Sans, sans-serif' }}>
-                    · Contact admin to request Gardener access
-                  </span>
+                  <span className="text-xs" style={{ color: '#475569' }}>· Contact admin for Gardener access</span>
                 )}
               </div>
             </div>
           </div>
 
-          {/* Joined row */}
+          {/* Joined */}
           <div className="flex items-center gap-3 py-3.5">
             <div className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0"
               style={{ background: 'rgba(16,185,129,0.1)', border: '1px solid rgba(16,185,129,0.2)' }}>
-              <Calendar style={{ width: 14, height: 14 }} className="text-emerald-400" />
+              <Calendar style={{ width: 14, height: 14, color: '#34d399' }} />
             </div>
             <div>
-              <p className="text-xs text-slate-500 mb-0.5" style={{ fontFamily: 'DM Sans, sans-serif' }}>Joined</p>
+              <p className="text-xs text-slate-500 mb-0.5">Joined</p>
               <p className="text-sm font-medium text-slate-200">{joinDate}</p>
             </div>
           </div>
-        </Card>
+        </SectionCard>
 
-        {/* ── Security ──────────────────────────────────────── */}
-        <Card className={`mb-6 page-appear stagger-3 ${mounted ? 'show' : ''}`}>
-          <h2 className="text-sm font-bold text-slate-400 uppercase tracking-widest mb-4" style={{ fontFamily: 'DM Sans, sans-serif' }}>
-            Security
-          </h2>
+        {/* ── Security ── */}
+        <SectionCard
+          title="Security" accentColor="#a855f7"
+          titleIcon={<Shield style={{ width: 14, height: 14, color: '#a855f7' }} />}>
 
           {isEmailProvider ? (
             <>
-              <InfoRow icon={<Lock style={{ width: 14, height: 14 }} className="text-emerald-400" />}
-                label="Password" value="••••••••••" editable onEdit={() => openEdit('password')} />
+              <InfoRow icon={<Lock style={{ width: 14, height: 14, color: '#34d399' }} />}
+                label="Password" value="••••••••••" editable onEdit={() => openEdit('password')}
+                noBorder={!(!user.emailVerified)} />
               {editingField === 'password' && (
-                <div className="edit-panel">
-                  <p className="text-xs font-semibold text-slate-400 mb-3 uppercase tracking-wide" style={{ fontFamily: 'DM Sans, sans-serif' }}>Change Password</p>
+                <EditPanel>
+                  <p className="text-xs font-semibold uppercase tracking-wide mb-3" style={{ color: '#475569' }}>Change Password</p>
                   <div className="space-y-3 mb-4">
-                    <div className="relative">
-                      <Lock className="absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none text-slate-500" style={{ width: 15, height: 15 }} />
-                      <input type={showPw ? 'text' : 'password'} className="input-field" placeholder="Current password"
-                        value={currentPassword} onChange={e => setCurrentPassword(e.target.value)} autoFocus style={{ paddingRight: 44 }} />
-                      <button type="button" onClick={() => setShowPw(v => !v)} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300 transition-colors" tabIndex={-1}>
-                        {showPw ? <EyeOff style={{ width: 15, height: 15 }} /> : <Eye style={{ width: 15, height: 15 }} />}
-                      </button>
-                    </div>
-                    <div className="relative">
-                      <Lock className="absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none text-slate-500" style={{ width: 15, height: 15 }} />
-                      <input type={showNewPw ? 'text' : 'password'} className="input-field" placeholder="New password (min. 6 chars)"
-                        value={newPassword} onChange={e => setNewPassword(e.target.value)} style={{ paddingRight: 44 }} />
-                      <button type="button" onClick={() => setShowNewPw(v => !v)} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300 transition-colors" tabIndex={-1}>
-                        {showNewPw ? <EyeOff style={{ width: 15, height: 15 }} /> : <Eye style={{ width: 15, height: 15 }} />}
-                      </button>
-                    </div>
-                    <div className="relative">
-                      <Lock className="absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none text-slate-500" style={{ width: 15, height: 15 }} />
-                      <input type={showConfirmPw ? 'text' : 'password'} className="input-field" placeholder="Confirm new password"
-                        value={confirmPassword} onChange={e => setConfirmPassword(e.target.value)} style={{ paddingRight: 44 }} />
-                      <button type="button" onClick={() => setShowConfirmPw(v => !v)} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300 transition-colors" tabIndex={-1}>
-                        {showConfirmPw ? <EyeOff style={{ width: 15, height: 15 }} /> : <Eye style={{ width: 15, height: 15 }} />}
-                      </button>
-                    </div>
+                    <InputField type={showPw ? 'text' : 'password'} placeholder="Current password"
+                      value={currentPassword} onChange={setCurrentPassword}
+                      icon={<Lock style={{ width: 14, height: 14 }} />}
+                      rightSlot={<EyeToggle show={showPw} onToggle={() => setShowPw(v => !v)} />} autoFocus />
+                    <InputField type={showNewPw ? 'text' : 'password'} placeholder="New password (min. 6 chars)"
+                      value={newPassword} onChange={setNewPassword}
+                      icon={<Lock style={{ width: 14, height: 14 }} />}
+                      rightSlot={<EyeToggle show={showNewPw} onToggle={() => setShowNewPw(v => !v)} />} />
+                    <InputField type={showConfirmPw ? 'text' : 'password'} placeholder="Confirm new password"
+                      value={confirmPassword} onChange={setConfirmPassword}
+                      icon={<Lock style={{ width: 14, height: 14 }} />}
+                      rightSlot={<EyeToggle show={showConfirmPw} onToggle={() => setShowConfirmPw(v => !v)} />} />
                   </div>
                   <div className="flex gap-2">
-                    <button className="btn-save" onClick={handleSave} disabled={saving}>
-                      {saving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Check style={{ width: 14, height: 14 }} />} Update Password
-                    </button>
-                    <button className="btn-cancel" onClick={cancelEdit} type="button"><X style={{ width: 14, height: 14 }} /> Cancel</button>
+                    <SaveButton onClick={handleSave} disabled={saving}>
+                      {saving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Check style={{ width: 14, height: 14 }} />}
+                      Update Password
+                    </SaveButton>
+                    <CancelButton onClick={() => setEditingField(null)} />
                   </div>
-                </div>
+                </EditPanel>
               )}
               {!user.emailVerified && (
                 <div className="mt-4 flex items-center justify-between py-3 px-4 rounded-xl"
                   style={{ background: 'rgba(245,158,11,0.08)', border: '1px solid rgba(245,158,11,0.2)' }}>
                   <div className="flex items-center gap-3">
                     <AlertCircle style={{ width: 16, height: 16, color: '#fcd34d' }} />
-                    <p className="text-sm text-amber-300" style={{ fontFamily: 'DM Sans, sans-serif' }}>Your email is not verified</p>
+                    <p className="text-sm" style={{ color: '#fcd34d' }}>Your email is not verified</p>
                   </div>
                   <button onClick={handleSendVerification} type="button"
-                    className="text-xs font-semibold text-amber-400 hover:text-amber-300 transition-colors whitespace-nowrap ml-4">
+                    className="text-xs font-semibold whitespace-nowrap ml-4 transition-colors"
+                    style={{ color: '#f59e0b' }}
+                    onMouseEnter={e => (e.currentTarget.style.color = '#fcd34d')}
+                    onMouseLeave={e => (e.currentTarget.style.color = '#f59e0b')}>
                     Send link →
                   </button>
                 </div>
@@ -591,39 +635,51 @@ export default function ProfilePage() {
           ) : (
             <div className="flex items-center gap-3 py-3 px-4 rounded-xl"
               style={{ background: 'rgba(16,185,129,0.07)', border: '1px solid rgba(16,185,129,0.15)' }}>
-              <Shield style={{ width: 16, height: 16 }} className="text-emerald-400 flex-shrink-0" />
-              <p className="text-sm text-slate-400" style={{ fontFamily: 'DM Sans, sans-serif' }}>
-                Password is managed by <span className="text-emerald-400 font-semibold">Google</span>. Sign in with Google to change it.
+              <Shield style={{ width: 16, height: 16, color: '#34d399' }} className="flex-shrink-0" />
+              <p className="text-sm text-slate-400">
+                Password is managed by <span style={{ color: '#34d399', fontWeight: 600 }}>Google</span>. Sign in with Google to change it.
               </p>
             </div>
           )}
 
-          <div className="flex items-center gap-3 mt-4 py-3.5" style={{ borderTop: '1px solid rgba(51,65,85,0.4)' }}>
+          {/* Last sign-in */}
+          <div className="flex items-center gap-3 mt-4 py-3.5" style={{ borderTop: '1px solid rgba(71,85,105,0.25)' }}>
             <div className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0"
-              style={{ background: 'rgba(16,185,129,0.1)', border: '1px solid rgba(16,185,129,0.2)' }}>
-              <Globe style={{ width: 14, height: 14 }} className="text-emerald-400" />
+              style={{ background: 'rgba(168,85,247,0.1)', border: '1px solid rgba(168,85,247,0.2)' }}>
+              <Globe style={{ width: 14, height: 14, color: '#a855f7' }} />
             </div>
             <div>
-              <p className="text-xs text-slate-500 mb-0.5" style={{ fontFamily: 'DM Sans, sans-serif' }}>Last sign-in</p>
+              <p className="text-xs text-slate-500 mb-0.5">Last sign-in</p>
               <p className="text-sm font-medium text-slate-200">
                 {user.metadata.lastSignInTime
-                  ? new Date(user.metadata.lastSignInTime).toLocaleString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' })
+                  ? new Date(user.metadata.lastSignInTime).toLocaleString('en-US', {
+                      month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit',
+                    })
                   : 'Unknown'}
               </p>
             </div>
           </div>
-        </Card>
+        </SectionCard>
 
-        {/* ── Sign out ──────────────────────────────────────── */}
-        <div className={`page-appear stagger-4 ${mounted ? 'show' : ''}`}>
-          <button onClick={handleSignOut} type="button"
-            className="btn-danger w-full flex items-center justify-center gap-2 py-3.5 rounded-2xl text-sm"
-            style={{ background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.25)' }}>
-            <LogOut style={{ width: 15, height: 15 }} /> Sign Out of smartfarm
-          </button>
-          <p className="text-center text-xs text-slate-600 mt-4" style={{ fontFamily: 'DM Sans, sans-serif' }}>
-            smartfarm · Protected by Firebase Auth · {new Date().getFullYear()}
-          </p>
+        {/* ── Sign out ── */}
+        <button onClick={handleSignOut} type="button"
+          className="w-full flex items-center justify-center gap-2 py-3.5 rounded-2xl text-sm font-semibold transition-all"
+          style={{ background: 'rgba(239,68,68,0.07)', border: '1px solid rgba(239,68,68,0.22)', color: '#fca5a5' }}
+          onMouseEnter={e => {
+            (e.currentTarget as HTMLButtonElement).style.background = 'rgba(239,68,68,0.13)';
+            (e.currentTarget as HTMLButtonElement).style.borderColor = 'rgba(239,68,68,0.4)';
+          }}
+          onMouseLeave={e => {
+            (e.currentTarget as HTMLButtonElement).style.background = 'rgba(239,68,68,0.07)';
+            (e.currentTarget as HTMLButtonElement).style.borderColor = 'rgba(239,68,68,0.22)';
+          }}>
+          <LogOut style={{ width: 15, height: 15 }} /> Sign Out of smartfarm
+        </button>
+
+        {/* Footer */}
+        <div className="flex items-center justify-between text-xs py-2 pb-8 text-slate-500">
+          <span>smartfarm · Protected by Firebase Auth</span>
+          <span>{new Date().getFullYear()}</span>
         </div>
 
       </div>

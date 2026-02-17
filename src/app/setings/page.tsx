@@ -13,7 +13,6 @@ import {
   Lock, Users, ShieldCheck, WifiOff,
 } from 'lucide-react';
 import { useRole } from '@/hooks/useRole';
-// ← change 1: import the ESP32 status subscriber
 import { subscribeToESP32Status, type ESP32StatusResult } from '@/lib/firebase';
 
 // ---------------------------------------------------------------------------
@@ -110,12 +109,12 @@ function WaterTank({ current, capacity, low }: { current: number; capacity: numb
               <stop offset="100%" stopColor={color} stopOpacity="0.5" />
             </linearGradient>
             <linearGradient id="tankBody" x1="0" y1="0" x2="1" y2="1">
-              <stop offset="0%" stopColor="#1e293b" />
-              <stop offset="100%" stopColor="#0f172a" />
+              <stop offset="0%" stopColor="#475569" />
+              <stop offset="100%" stopColor="#334155" />
             </linearGradient>
           </defs>
           <rect x="8" y="8" width="96" height="152" rx="12"
-            fill="url(#tankBody)" stroke="#334155" strokeWidth="2" />
+            fill="url(#tankBody)" stroke="#64748b" strokeWidth="2" />
           <g clipPath="url(#tankClip)">
             <rect x="8" y={8 + 152 * (1 - pct / 100)} width="96" height={152 * (pct / 100)} fill="url(#waterFill)" />
             {pct > 2 && (
@@ -131,11 +130,11 @@ function WaterTank({ current, capacity, low }: { current: number; capacity: numb
           </g>
           {[25, 50, 75].map(t => (
             <g key={t}>
-              <line x1="100" y1={8 + 152 * (1 - t / 100)} x2="108" y2={8 + 152 * (1 - t / 100)} stroke="#475569" strokeWidth="1.5" />
-              <text x="80" y={8 + 152 * (1 - t / 100) + 4} fontSize="8" fill="#475569" textAnchor="end">{t}%</text>
+              <line x1="100" y1={8 + 152 * (1 - t / 100)} x2="108" y2={8 + 152 * (1 - t / 100)} stroke="#94a3b8" strokeWidth="1.5" />
+              <text x="80" y={8 + 152 * (1 - t / 100) + 4} fontSize="8" fill="#94a3b8" textAnchor="end">{t}%</text>
             </g>
           ))}
-          <rect x="44" y="0" width="24" height="12" rx="4" fill="#334155" stroke="#475569" strokeWidth="1" />
+          <rect x="44" y="0" width="24" height="12" rx="4" fill="#64748b" stroke="#94a3b8" strokeWidth="1" />
           {isLow && (
             <rect x="8" y={8 + 152 * (1 - low / 100)} width="96" height="2" fill="#ef4444" opacity="0.5">
               <animate attributeName="opacity" values="0.5;1;0.5" dur="1.5s" repeatCount="indefinite" />
@@ -150,9 +149,9 @@ function WaterTank({ current, capacity, low }: { current: number; capacity: numb
         </div>
       </div>
       <div className="text-center">
-        <p className="text-xs text-slate-500">Available</p>
+        <p className="text-xs text-slate-400">Available</p>
         <p className="font-bold text-slate-200 tabular-nums">
-          {current.toFixed(0)}<span className="text-slate-500 font-normal text-xs"> / {capacity} L</span>
+          {current.toFixed(0)}<span className="text-slate-400 font-normal text-xs"> / {capacity} L</span>
         </p>
       </div>
       {isLow && (
@@ -188,7 +187,7 @@ function Toggle({
       className="relative flex-shrink-0 rounded-full focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 disabled:cursor-not-allowed"
       style={{
         width: dims.w, height: dims.h,
-        background: checked ? (readOnly ? '#4b5563' : color) : '#334155',
+        background: checked ? (readOnly ? '#64748b' : color) : '#3a4556',
         boxShadow: checked && !readOnly ? `0 0 12px ${color}55` : 'none',
         opacity: readOnly ? 0.55 : disabled ? 0.4 : 1,
         transition: 'background 0.3s, box-shadow 0.3s',
@@ -224,18 +223,18 @@ function SliderRow({
         <span className="font-bold tabular-nums" style={{ color }}>{value}{unit}</span>
       </div>
       <div className="relative h-6 flex items-center">
-        <div className="w-full h-1.5 bg-slate-800 rounded-full overflow-hidden">
+        <div className="w-full h-1.5 rounded-full overflow-hidden" style={{ background: '#3a4556' }}>
           <div className="h-full rounded-full transition-all duration-150"
-            style={{ width: `${((value - min) / (max - min)) * 100}%`, background: readOnly ? '#4b5563' : color }} />
+            style={{ width: `${((value - min) / (max - min)) * 100}%`, background: readOnly ? '#64748b' : color }} />
         </div>
         <input type="range" min={min} max={max} step={step} value={value}
           onChange={e => !readOnly && onChange(Number(e.target.value))}
           disabled={readOnly}
           className="absolute inset-0 w-full opacity-0 cursor-pointer disabled:cursor-not-allowed" />
         <div className="absolute w-4 h-4 rounded-full bg-white shadow-lg border-2 pointer-events-none transition-all duration-150"
-          style={{ left: `calc(${((value - min) / (max - min)) * 100}% - 8px)`, borderColor: readOnly ? '#4b5563' : color }} />
+          style={{ left: `calc(${((value - min) / (max - min)) * 100}% - 8px)`, borderColor: readOnly ? '#64748b' : color }} />
       </div>
-      <div className="flex justify-between text-[10px] text-slate-600">
+      <div className="flex justify-between text-[10px] text-slate-400">
         <span>{min}{unit}</span><span>{max}{unit}</span>
       </div>
     </div>
@@ -252,10 +251,19 @@ function SettingCard({
   children: React.ReactNode; accent?: string; badge?: React.ReactNode;
 }) {
   return (
-    <div className="rounded-2xl border border-slate-700/60 bg-slate-900/80 backdrop-blur-sm overflow-hidden">
+    <div className="rounded-2xl border backdrop-blur-sm overflow-hidden"
+      style={{ 
+        borderColor: 'rgba(71, 85, 105, 0.4)', 
+        background: 'rgba(30, 41, 59, 0.6)' 
+      }}>
       <div
-        className="flex items-center justify-between px-5 py-4 border-b border-slate-700/50"
-        style={{ borderLeftWidth: 3, borderLeftStyle: 'solid', borderLeftColor: accent }}
+        className="flex items-center justify-between px-5 py-4 border-b"
+        style={{ 
+          borderLeftWidth: 3, 
+          borderLeftStyle: 'solid', 
+          borderLeftColor: accent,
+          borderBottomColor: 'rgba(71, 85, 105, 0.3)'
+        }}
       >
         <div className="flex items-center gap-3">
           <div className="w-8 h-8 rounded-lg flex items-center justify-center"
@@ -264,7 +272,7 @@ function SettingCard({
           </div>
           <div>
             <h3 className="font-bold text-sm text-slate-100">{title}</h3>
-            {subtitle && <p className="text-[11px] text-slate-500 mt-0.5">{subtitle}</p>}
+            {subtitle && <p className="text-[11px] text-slate-400 mt-0.5">{subtitle}</p>}
           </div>
         </div>
         {badge}
@@ -284,7 +292,7 @@ function SettingRow({ label, sublabel, children }: {
     <div className="flex items-center justify-between gap-4">
       <div className="flex-1 min-w-0">
         <p className="text-sm font-medium text-slate-200 truncate">{label}</p>
-        {sublabel && <p className="text-xs text-slate-500 mt-0.5">{sublabel}</p>}
+        {sublabel && <p className="text-xs text-slate-400 mt-0.5">{sublabel}</p>}
       </div>
       <div className="flex-shrink-0">{children}</div>
     </div>
@@ -301,7 +309,7 @@ function ReadOnlyBanner() {
       <Lock className="w-4 h-4 text-amber-400 flex-shrink-0" />
       <div className="flex-1 min-w-0">
         <p className="text-sm font-semibold text-amber-300">View-only mode</p>
-        <p className="text-xs text-slate-500 mt-0.5">
+        <p className="text-xs text-slate-400 mt-0.5">
           Your account has the <span className="text-amber-400 font-medium">User</span> role.
           Contact an admin to be upgraded to <span className="text-emerald-400 font-medium">Gardener</span> to make changes.
         </p>
@@ -326,7 +334,6 @@ export default function SettingsPage() {
   const isReadOnly = !roleLoading && role === 'user';
   const isAdmin    = !roleLoading && role === 'admin';
 
-  // ← change 2: subscribe to live ESP32 status
   const [esp32Status, setEsp32Status] = useState<ESP32StatusResult>({
     status: 'no_connection',
     lastSync: 'Connecting...',
@@ -443,13 +450,13 @@ Give up to 4 tailored irrigation tips plus optimal watering time.`;
   // ── Static skeleton ──────────────────────────────────────────────────────
   if (!mounted) {
     return (
-      <div className="min-h-screen bg-slate-950 text-slate-100 font-sans">
+      <div className="min-h-screen text-slate-100 font-sans" style={{ background: '#1a2332' }}>
         <div className="max-w-[1200px] mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-4">
-          <div className="h-10 w-52 bg-slate-800 rounded-xl animate-pulse" />
-          <div className="h-4 w-80 bg-slate-800 rounded-lg animate-pulse" />
+          <div className="h-10 w-52 bg-slate-700 rounded-xl animate-pulse" />
+          <div className="h-4 w-80 bg-slate-700 rounded-lg animate-pulse" />
           <div className="mt-6 grid grid-cols-1 lg:grid-cols-3 gap-5">
             {[...Array(4)].map((_, i) => (
-              <div key={i} className={cn('rounded-2xl bg-slate-900 border border-slate-800 h-56 animate-pulse', i < 2 ? 'lg:col-span-2' : '')} />
+              <div key={i} className={cn('rounded-2xl bg-slate-700 border border-slate-600 h-56 animate-pulse', i < 2 ? 'lg:col-span-2' : '')} />
             ))}
           </div>
         </div>
@@ -457,7 +464,6 @@ Give up to 4 tailored irrigation tips plus optimal watering time.`;
     );
   }
 
-  // ← change 3: derive display values from live esp32Status
   const esp32StatusConfig = {
     online:        { label: 'Online',        dotColor: '#10b981', textColor: '#6ee7b7', Icon: CheckCircle },
     offline:       { label: 'Offline',       dotColor: '#f59e0b', textColor: '#fcd34d', Icon: WifiOff    },
@@ -467,19 +473,17 @@ Give up to 4 tailored irrigation tips plus optimal watering time.`;
   return (
     <div
       className="min-h-screen font-sans"
-      style={{
-        background: isDark
-          ? 'linear-gradient(135deg,#020617 0%,#0f172a 50%,#020617 100%)'
-          : 'linear-gradient(135deg,#f1f5f9 0%,#ffffff 50%,#ecfdf5 100%)',
-        color: isDark ? '#f1f5f9' : '#0f172a',
+      style={{ 
+        background: '#1a2332',
+        color: '#f1f5f9' 
       }}
     >
-      {/* Ambient blobs */}
+      {/* Subtle ambient blobs - much more subdued */}
       <div className="fixed inset-0 pointer-events-none overflow-hidden z-0">
         <div className="absolute top-0 right-0 w-96 h-96 rounded-full blur-3xl"
-          style={{ background: 'rgba(16,185,129,0.06)' }} />
+          style={{ background: 'rgba(16,185,129,0.02)' }} />
         <div className="absolute bottom-0 left-0 w-80 h-80 rounded-full blur-3xl"
-          style={{ background: 'rgba(59,130,246,0.05)' }} />
+          style={{ background: 'rgba(59,130,246,0.015)' }} />
       </div>
 
       <div className="relative z-10 max-w-[1200px] mx-auto px-4 sm:px-6 lg:px-8 space-y-6">
@@ -488,25 +492,25 @@ Give up to 4 tailored irrigation tips plus optimal watering time.`;
         <div
           className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 py-4 sm:py-6 border-b min-h-[4rem] -mx-4 sm:-mx-6 lg:-mx-8 px-4 sm:px-6 lg:px-8"
           style={{
-            borderColor: isDark ? 'rgba(51,65,85,0.6)' : 'rgba(226,232,240,0.8)',
-            background:  isDark ? 'rgba(15,23,42,0.4)' : 'rgba(255,255,255,0.5)',
+            borderColor: 'rgba(100,116,139,0.3)',
+            background: 'rgba(30,41,59,0.3)',
           }}
         >
           <div className="flex items-center gap-2 min-w-0">
             <button type="button" onClick={() => router.back()}
-              className="md:hidden p-1.5 -ml-1 flex-shrink-0 transition-colors touch-manipulation"
-              style={{ color: isDark ? '#94a3b8' : '#64748b' }} aria-label="Go back">
+              className="md:hidden p-1.5 -ml-1 flex-shrink-0 transition-colors touch-manipulation text-slate-400"
+              aria-label="Go back">
               <ArrowLeft className="w-6 h-6" />
             </button>
             <div className="min-w-0">
-              <div className="flex items-center gap-2 text-sm mb-1" style={{ color: isDark ? '#64748b' : '#94a3b8' }}>
+              <div className="flex items-center gap-2 text-sm mb-1 text-slate-400">
                 <Leaf className="w-4 h-4 text-emerald-500 flex-shrink-0" />
                 <span>Farm Dashboard</span>
                 <ChevronRight className="w-3 h-3 flex-shrink-0" />
                 <span className="text-emerald-500">Settings</span>
               </div>
-              <h1 className="text-3xl font-black tracking-tight">Farm Settings</h1>
-              <p className="text-sm mt-1" style={{ color: isDark ? '#94a3b8' : '#64748b' }}>
+              <h1 className="text-3xl font-black tracking-tight text-slate-100">Farm Settings</h1>
+              <p className="text-sm mt-1 text-slate-400">
                 Control irrigation, alerts, system preferences and display
               </p>
             </div>
@@ -534,9 +538,9 @@ Give up to 4 tailored irrigation tips plus optimal watering time.`;
               disabled={isReadOnly}
               className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold transition-all disabled:opacity-40 disabled:cursor-not-allowed"
               style={{
-                background: isDark ? '#1e293b' : '#ffffff',
-                border: `1px solid ${isDark ? '#334155' : '#e2e8f0'}`,
-                color: isDark ? '#cbd5e1' : '#475569',
+                background: '#3a4556',
+                border: '1px solid #4a5568',
+                color: '#cbd5e1',
               }}>
               <RotateCcw className="w-4 h-4" /> Reset
             </button>
@@ -570,7 +574,7 @@ Give up to 4 tailored irrigation tips plus optimal watering time.`;
               badge={
                 <div className="flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold"
                   style={{
-                    background: wateringOn ? 'rgba(56,189,248,0.15)' : settings.irrigationActive ? 'rgba(16,185,129,0.15)' : 'rgba(51,65,85,0.6)',
+                    background: wateringOn ? 'rgba(56,189,248,0.15)' : settings.irrigationActive ? 'rgba(16,185,129,0.15)' : 'rgba(71,85,105,0.6)',
                     color: wateringOn ? '#7dd3fc' : settings.irrigationActive ? '#6ee7b7' : '#94a3b8',
                   }}>
                   <Droplets className="w-3 h-3" />
@@ -582,9 +586,9 @@ Give up to 4 tailored irrigation tips plus optimal watering time.`;
               <div className="relative overflow-hidden rounded-2xl p-5 transition-all duration-500"
                 style={{
                   background: wateringOn
-                    ? 'linear-gradient(135deg,rgba(12,74,110,0.6),rgba(15,23,42,0.9))'
-                    : isDark ? 'rgba(30,41,59,0.6)' : 'rgba(241,245,249,0.8)',
-                  border: `1px solid ${wateringOn ? 'rgba(56,189,248,0.4)' : isDark ? 'rgba(51,65,85,0.5)' : '#e2e8f0'}`,
+                    ? 'linear-gradient(135deg,rgba(12,74,110,0.7),rgba(30,41,59,0.9))'
+                    : 'rgba(30,41,59,0.6)',
+                  border: `1px solid ${wateringOn ? 'rgba(56,189,248,0.4)' : 'rgba(71,85,105,0.4)'}`,
                 }}>
                 {wateringOn && (
                   <div className="absolute inset-0 pointer-events-none flex items-center justify-center">
@@ -597,11 +601,11 @@ Give up to 4 tailored irrigation tips plus optimal watering time.`;
                 <div className="relative flex items-center justify-between gap-4">
                   <div>
                     <p className="text-base font-black text-slate-100">Water Plants Now</p>
-                    <p className="text-xs mt-0.5" style={{ color: wateringOn ? '#7dd3fc' : '#64748b' }}>
+                    <p className="text-xs mt-0.5" style={{ color: wateringOn ? '#7dd3fc' : '#94a3b8' }}>
                       {wateringOn ? `Irrigating · ${fmt(waterTimer)} remaining` : `Manual trigger · ${settings.wateringDuration} min cycle`}
                     </p>
                     {wateringOn && (
-                      <div className="mt-2 h-1.5 w-48 bg-slate-700 rounded-full overflow-hidden">
+                      <div className="mt-2 h-1.5 w-48 rounded-full overflow-hidden" style={{ background: '#3a4556' }}>
                         <div className="h-full rounded-full bg-sky-400 transition-all duration-1000"
                           style={{ width: `${100 - (waterTimer / (settings.wateringDuration * 60)) * 100}%` }} />
                       </div>
@@ -628,9 +632,9 @@ Give up to 4 tailored irrigation tips plus optimal watering time.`;
                       disabled={isReadOnly}
                       className="py-2.5 px-3 rounded-xl text-sm font-semibold capitalize transition-all disabled:cursor-not-allowed"
                       style={{
-                        background: settings.irrigationMode === mode ? (isReadOnly ? '#374151' : '#0284c7') : isDark ? '#1e293b' : '#f8fafc',
-                        border: `1px solid ${settings.irrigationMode === mode ? (isReadOnly ? '#4b5563' : '#0ea5e9') : isDark ? '#334155' : '#e2e8f0'}`,
-                        color: settings.irrigationMode === mode ? '#ffffff' : isDark ? '#94a3b8' : '#64748b',
+                        background: settings.irrigationMode === mode ? (isReadOnly ? '#4b5563' : '#0284c7') : '#3a4556',
+                        border: `1px solid ${settings.irrigationMode === mode ? (isReadOnly ? '#64748b' : '#0ea5e9') : '#4a5568'}`,
+                        color: settings.irrigationMode === mode ? '#ffffff' : '#94a3b8',
                         opacity: isReadOnly ? 0.65 : 1,
                         boxShadow: settings.irrigationMode === mode && !isReadOnly ? '0 4px 12px rgba(14,165,233,0.25)' : 'none',
                       }}>
@@ -654,9 +658,9 @@ Give up to 4 tailored irrigation tips plus optimal watering time.`;
                     disabled={isReadOnly}
                     className="px-4 py-2.5 rounded-xl text-sm font-mono outline-none transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                     style={{
-                      background: isDark ? '#1e293b' : '#ffffff',
-                      border: `1px solid ${isDark ? '#334155' : '#cbd5e1'}`,
-                      color: isDark ? '#e2e8f0' : '#1e293b',
+                      background: '#3a4556',
+                      border: '1px solid #4a5568',
+                      color: '#e2e8f0',
                     }} />
                   {aiOptTime && (
                     <p className="text-xs text-emerald-400 flex items-center gap-1.5">
@@ -698,9 +702,9 @@ Give up to 4 tailored irrigation tips plus optimal watering time.`;
                       disabled={isReadOnly}
                       className="px-4 py-2 rounded-xl text-sm font-semibold capitalize transition-all disabled:cursor-not-allowed"
                       style={{
-                        background: settings.alertLevel === level ? (isReadOnly ? '#374151' : '#d97706') : isDark ? '#1e293b' : '#f8fafc',
-                        border: `1px solid ${settings.alertLevel === level ? (isReadOnly ? '#4b5563' : '#f59e0b') : isDark ? '#334155' : '#e2e8f0'}`,
-                        color: settings.alertLevel === level ? '#fff' : isDark ? '#94a3b8' : '#64748b',
+                        background: settings.alertLevel === level ? (isReadOnly ? '#4b5563' : '#d97706') : '#3a4556',
+                        border: `1px solid ${settings.alertLevel === level ? (isReadOnly ? '#64748b' : '#f59e0b') : '#4a5568'}`,
+                        color: settings.alertLevel === level ? '#fff' : '#94a3b8',
                         opacity: isReadOnly ? 0.65 : 1,
                       }}>
                       {level === 'all' ? 'All Alerts' : level === 'critical' ? 'Critical Only' : 'Muted'}
@@ -716,7 +720,7 @@ Give up to 4 tailored irrigation tips plus optimal watering time.`;
               </SettingRow>
               <SettingRow label="Sound Alerts" sublabel="In-app audio notifications">
                 <div className="flex items-center gap-2">
-                  {settings.soundEnabled ? <Volume2 className="w-4 h-4 text-amber-400" /> : <VolumeX className="w-4 h-4 text-slate-500" />}
+                  {settings.soundEnabled ? <Volume2 className="w-4 h-4 text-amber-400" /> : <VolumeX className="w-4 h-4 text-slate-400" />}
                   <Toggle checked={settings.soundEnabled} onChange={v => set('soundEnabled', v)} color="#f59e0b" readOnly={isReadOnly} />
                 </div>
               </SettingRow>
@@ -750,9 +754,9 @@ Give up to 4 tailored irrigation tips plus optimal watering time.`;
                     disabled={isReadOnly}
                     className="py-2 rounded-xl text-xs font-bold transition-all hover:scale-[1.03] active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:scale-100"
                     style={{
-                      background: isDark ? '#1e293b' : '#f8fafc',
-                      border: `1px solid ${isDark ? '#334155' : '#e2e8f0'}`,
-                      color: isDark ? '#cbd5e1' : '#475569',
+                      background: '#3a4556',
+                      border: '1px solid #4a5568',
+                      color: '#cbd5e1',
                     }}>
                     +{pct}%
                   </button>
@@ -764,7 +768,7 @@ Give up to 4 tailored irrigation tips plus optimal watering time.`;
                 min={5} max={40} step={5} unit="%" onChange={v => set('lowWaterThreshold', v)} color="#f87171" readOnly={isReadOnly} />
               {aiWeeklyEst > 0 && (
                 <div className="flex items-start gap-2 p-3 rounded-xl text-xs"
-                  style={{ background: 'rgba(56,189,248,0.05)', border: '1px solid rgba(56,189,248,0.2)' }}>
+                  style={{ background: 'rgba(56,189,248,0.07)', border: '1px solid rgba(56,189,248,0.2)' }}>
                   <Gauge className="w-4 h-4 text-blue-400 flex-shrink-0 mt-0.5" />
                   <div>
                     <p className="text-blue-300 font-semibold mb-0.5">Weekly Estimate</p>
@@ -779,13 +783,13 @@ Give up to 4 tailored irrigation tips plus optimal watering time.`;
               subtitle="Visual appearance for all pages" accent="#fbbf24">
               <div className="relative rounded-2xl overflow-hidden p-4 transition-all duration-500"
                 style={{
-                  background: isDark ? 'linear-gradient(135deg,#1e293b,#0f172a)' : 'linear-gradient(135deg,#fef3c7,#e0f2fe)',
-                  border: `1px solid ${isDark ? '#334155' : '#fde68a'}`,
+                  background: isDark ? 'linear-gradient(135deg,#334155,#1e293b)' : 'linear-gradient(135deg,#fef3c7,#e0f2fe)',
+                  border: `1px solid ${isDark ? '#475569' : '#fde68a'}`,
                 }}>
                 <div className="absolute inset-0 pointer-events-none overflow-hidden">
                   {isDark ? (
                     [[12,8],[24,20],[36,12],[56,24],[68,10],[80,18]].map(([x,y], i) => (
-                      <div key={i} className="absolute w-1 h-1 bg-white rounded-full opacity-40"
+                      <div key={i} className="absolute w-1 h-1 bg-white rounded-full opacity-30"
                         style={{ left: `${x}%`, top: `${y}%` }} />
                     ))
                   ) : (
@@ -795,12 +799,12 @@ Give up to 4 tailored irrigation tips plus optimal watering time.`;
                 <div className="relative flex items-center justify-between gap-4">
                   <div className="flex items-center gap-3">
                     <div className="w-10 h-10 rounded-full flex items-center justify-center transition-all duration-500"
-                      style={{ background: isDark ? '#334155' : '#fef9c3' }}>
+                      style={{ background: isDark ? '#475569' : '#fef9c3' }}>
                       {isDark ? <Moon className="w-5 h-5 text-blue-300" /> : <Sun className="w-5 h-5 text-amber-500" />}
                     </div>
                     <div>
-                      <p className="font-bold text-sm">{isDark ? 'Dark Mode' : 'Light Mode'}</p>
-                      <p className="text-xs mt-0.5" style={{ color: isDark ? '#64748b' : '#92400e' }}>Applies to all pages</p>
+                      <p className="font-bold text-sm text-slate-100">{isDark ? 'Dark Mode' : 'Light Mode'}</p>
+                      <p className="text-xs mt-0.5 text-slate-400">Applies to all pages</p>
                     </div>
                   </div>
                   <Toggle checked={!isDark} onChange={v => setTheme(v ? 'light' : 'dark')}
@@ -809,7 +813,7 @@ Give up to 4 tailored irrigation tips plus optimal watering time.`;
               </div>
 
               <div className="space-y-2">
-                <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Theme Preset</p>
+                <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Theme Preset</p>
                 <div className="grid grid-cols-2 gap-2">
                   {[
                     { label: 'Forest',  from: '#052e16', to: '#14532d', accent: '#10b981' },
@@ -833,7 +837,7 @@ Give up to 4 tailored irrigation tips plus optimal watering time.`;
               subtitle="Personalized advice from Groq AI" accent="#a78bfa"
               badge={
                 <button onClick={fetchAITips} disabled={aiLoading}
-                  className="p-1.5 rounded-lg text-slate-400 hover:bg-slate-700 hover:text-slate-200 transition-colors disabled:opacity-40">
+                  className="p-1.5 rounded-lg text-slate-400 hover:bg-slate-600 hover:text-slate-200 transition-colors disabled:opacity-40">
                   <RefreshCw className={cn('w-4 h-4', aiLoading ? 'animate-spin' : '')} />
                 </button>
               }>
@@ -862,7 +866,7 @@ Give up to 4 tailored irrigation tips plus optimal watering time.`;
               )}
             </SettingCard>
 
-            {/* ← change 3: Device Info card now uses live esp32Status */}
+            {/* Device Info */}
             <SettingCard icon={Radio} title="Device Info" subtitle="ESP32 sensor node status" accent="#34d399"
               badge={
                 <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold"
@@ -882,7 +886,7 @@ Give up to 4 tailored irrigation tips plus optimal watering time.`;
                 { label: 'Last Seen', value: esp32Status.lastSync,      Icon: CheckCircle     },
               ].map((row, idx, arr) => (
                 <div key={row.label} className="flex items-center justify-between py-2"
-                  style={{ borderBottom: idx < arr.length - 1 ? `1px solid ${isDark ? '#1e293b' : '#f1f5f9'}` : 'none' }}>
+                  style={{ borderBottom: idx < arr.length - 1 ? '1px solid #2a3441' : 'none' }}>
                   <div className="flex items-center gap-2 text-xs text-slate-400">
                     <row.Icon className="w-3.5 h-3.5" />{row.label}
                   </div>
@@ -898,8 +902,7 @@ Give up to 4 tailored irrigation tips plus optimal watering time.`;
         </div>
 
         {/* Footer */}
-        <div className="flex items-center justify-between text-xs py-2"
-          style={{ color: isDark ? '#334155' : '#94a3b8' }}>
+        <div className="flex items-center justify-between text-xs py-2 text-slate-500">
           <div className="flex items-center gap-1.5">
             <Info className="w-3.5 h-3.5 flex-shrink-0" />
             {isReadOnly

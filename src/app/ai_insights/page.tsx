@@ -269,7 +269,8 @@ function InsightCard({ insight, index }: { insight: Insight; index: number }) {
             )}>
               {insight.priority}
             </span>
-            <span className="inline-flex items-center gap-1 text-xs text-slate-400 bg-slate-800 px-2 py-0.5 rounded-full border border-slate-700">
+            <span className="inline-flex items-center gap-1 text-xs text-slate-400 px-2 py-0.5 rounded-full border"
+              style={{ background: '#2a3441', borderColor: '#3a4556' }}>
               {categoryIcon[insight.category] ?? <Info className="w-3 h-3" />}
               {insight.category}
             </span>
@@ -292,12 +293,14 @@ function InsightCard({ insight, index }: { insight: Insight; index: number }) {
 
       {/* Expanded Body */}
       {expanded && (
-        <div className="px-4 pb-4 space-y-3 border-t border-slate-700/50 pt-3">
+        <div className="px-4 pb-4 space-y-3 pt-3"
+          style={{ borderTop: '1px solid rgba(71, 85, 105, 0.3)' }}>
           <p className="text-sm text-slate-300 leading-relaxed">
             {insight.detail}
           </p>
 
-          <div className="bg-slate-900/60 rounded-xl p-3 border border-slate-700/50">
+          <div className="rounded-xl p-3 border"
+            style={{ background: 'rgba(30, 41, 59, 0.6)', borderColor: 'rgba(71, 85, 105, 0.3)' }}>
             <p className="text-xs font-semibold text-emerald-400 uppercase tracking-wider mb-1.5 flex items-center gap-1">
               <Zap className="w-3 h-3" /> Recommended Action
             </p>
@@ -311,7 +314,7 @@ function InsightCard({ insight, index }: { insight: Insight; index: number }) {
             </div>
             <div className="flex items-center gap-1.5">
               <span className="text-xs text-slate-500">Confidence</span>
-              <div className="w-24 h-1.5 bg-slate-700 rounded-full overflow-hidden">
+              <div className="w-24 h-1.5 rounded-full overflow-hidden" style={{ background: '#3a4556' }}>
                 <div
                   className="h-full bg-emerald-500 rounded-full transition-all duration-700"
                   style={{ width: `${insight.confidence}%` }}
@@ -574,7 +577,7 @@ Give concise, actionable advice. Use bullet points sparingly. Be friendly and pr
   // ══════════════════════════════════════════════════════════════════════════════
 
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100 font-sans">
+    <div className="min-h-screen text-slate-100 font-sans" style={{ background: '#1a2332' }}>
 
       {/* Top Gradient Strip */}
       <div className="h-1 w-full bg-gradient-to-r from-emerald-500 via-teal-400 to-cyan-500" />
@@ -583,7 +586,11 @@ Give concise, actionable advice. Use bullet points sparingly. Be friendly and pr
       {/* PAGE HEADER */}
       {/* ════════════════════════════════════════════════════════════════════════ */}
 
-      <div className="px-4 sm:px-6 lg:px-8 pt-6 pb-4 border-b border-slate-800 bg-slate-900/50 backdrop-blur-md sticky top-0 z-30">
+      <div className="px-4 sm:px-6 lg:px-8 pt-6 pb-4 border-b sticky top-0 z-30 backdrop-blur-md"
+        style={{ 
+          borderColor: 'rgba(71, 85, 105, 0.4)', 
+          background: 'rgba(30, 41, 59, 0.5)' 
+        }}>
         <div className="max-w-6xl mx-auto flex items-center justify-between gap-4 flex-wrap">
           {/* Mobile return icon — part of header, visible only on small screens */}
           <button
@@ -657,7 +664,8 @@ Give concise, actionable advice. Use bullet points sparingly. Be friendly and pr
         </div>
 
         {/* Tab Navigation */}
-        <div className="max-w-6xl mx-auto mt-4 flex gap-1 bg-slate-800/60 rounded-xl p-1 w-fit">
+        <div className="max-w-6xl mx-auto mt-4 flex gap-1 rounded-xl p-1 w-fit"
+          style={{ background: 'rgba(30, 41, 59, 0.6)' }}>
           {(['insights', 'chat'] as const).map(tab => (
             <button
               key={tab}
@@ -665,9 +673,10 @@ Give concise, actionable advice. Use bullet points sparingly. Be friendly and pr
               className={cn(
                 'px-4 py-2 rounded-lg text-sm font-semibold transition-all capitalize',
                 activeTab === tab
-                  ? 'bg-slate-700 text-slate-100 shadow'
+                  ? 'text-slate-100 shadow'
                   : 'text-slate-400 hover:text-slate-200'
               )}
+              style={activeTab === tab ? { background: '#3a4556' } : {}}
             >
               {tab === 'insights' ? (
                 <span className="flex items-center gap-2">
@@ -726,7 +735,8 @@ Give concise, actionable advice. Use bullet points sparingly. Be friendly and pr
             </div>
 
             {/* Status Bar */}
-            <div className="flex items-center justify-between text-xs text-slate-500 bg-slate-800/40 rounded-xl px-4 py-2.5 border border-slate-700/40">
+            <div className="flex items-center justify-between text-xs text-slate-500 rounded-xl px-4 py-2.5 border"
+              style={{ background: 'rgba(30, 41, 59, 0.4)', borderColor: 'rgba(71, 85, 105, 0.4)' }}>
               <span className="flex items-center gap-2">
                 <span className={cn(
                   "w-2 h-2 rounded-full", 
@@ -778,7 +788,8 @@ Give concise, actionable advice. Use bullet points sparingly. Be friendly and pr
             )}
 
             {/* Current Soil Snapshot */}
-            <div className="bg-slate-800/60 border border-slate-700/60 rounded-2xl p-4 sm:p-6">
+            <div className="border rounded-2xl p-4 sm:p-6"
+              style={{ background: 'rgba(30, 41, 59, 0.6)', borderColor: 'rgba(71, 85, 105, 0.4)' }}>
               <h3 className="text-sm font-semibold text-slate-300 mb-4 flex items-center gap-2">
                 <BarChart2 className="w-4 h-4 text-emerald-400" />
                 Current Soil Snapshot
@@ -795,7 +806,8 @@ Give concise, actionable advice. Use bullet points sparingly. Be friendly and pr
                 ].map(m => (
                   <div 
                     key={m.label} 
-                    className="bg-slate-900/60 rounded-xl p-3 border border-slate-700/40"
+                    className="rounded-xl p-3 border"
+                    style={{ background: 'rgba(30, 41, 59, 0.6)', borderColor: 'rgba(71, 85, 105, 0.4)' }}
                   >
                     <p className="text-xs text-slate-400 mb-1">{m.label}</p>
                     <p className="text-lg font-bold text-slate-100">
@@ -804,7 +816,7 @@ Give concise, actionable advice. Use bullet points sparingly. Be friendly and pr
                         {m.unit}
                       </span>
                     </p>
-                    <div className="mt-2 h-1.5 bg-slate-700 rounded-full overflow-hidden">
+                    <div className="mt-2 h-1.5 rounded-full overflow-hidden" style={{ background: '#3a4556' }}>
                       <div 
                         className="h-full rounded-full transition-all duration-700" 
                         style={{ 
@@ -851,8 +863,12 @@ Give concise, actionable advice. Use bullet points sparingly. Be friendly and pr
                     'max-w-[80%] rounded-2xl px-4 py-3 text-sm leading-relaxed',
                     msg.role === 'user'
                       ? 'bg-emerald-600 text-white rounded-tr-sm'
-                      : 'bg-slate-800 border border-slate-700 text-slate-200 rounded-tl-sm'
-                  )}>
+                      : 'border text-slate-200 rounded-tl-sm'
+                  )}
+                  style={msg.role === 'assistant' ? { 
+                    background: 'rgba(30, 41, 59, 0.8)', 
+                    borderColor: 'rgba(71, 85, 105, 0.4)' 
+                  } : {}}>
                     {msg.content.split('\n').map((line, i) => (
                       <span key={i}>
                         {line}
@@ -868,7 +884,8 @@ Give concise, actionable advice. Use bullet points sparingly. Be friendly and pr
                   </div>
 
                   {msg.role === 'user' && (
-                    <div className="w-8 h-8 rounded-xl bg-slate-700 border border-slate-600 flex items-center justify-center flex-shrink-0 mt-1 text-xs font-bold text-slate-300">
+                    <div className="w-8 h-8 rounded-xl border flex items-center justify-center flex-shrink-0 mt-1 text-xs font-bold text-slate-300"
+                      style={{ background: '#3a4556', borderColor: '#4a5568' }}>
                       DM
                     </div>
                   )}
@@ -880,7 +897,8 @@ Give concise, actionable advice. Use bullet points sparingly. Be friendly and pr
                   <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center flex-shrink-0">
                     <Bot className="w-4 h-4 text-white" />
                   </div>
-                  <div className="bg-slate-800 border border-slate-700 rounded-2xl rounded-tl-sm px-4 py-3 flex items-center gap-2">
+                  <div className="border rounded-2xl rounded-tl-sm px-4 py-3 flex items-center gap-2"
+                    style={{ background: 'rgba(30, 41, 59, 0.8)', borderColor: 'rgba(71, 85, 105, 0.4)' }}>
                     <Loader2 className="w-4 h-4 text-emerald-400 animate-spin" />
                     <span className="text-sm text-slate-400">AI is thinking…</span>
                   </div>
@@ -891,14 +909,31 @@ Give concise, actionable advice. Use bullet points sparingly. Be friendly and pr
             </div>
 
             {/* Input Section - Sticky on mobile */}
-            <div className="md:relative fixed md:static bottom-0 left-0 right-0 bg-slate-950/95 backdrop-blur-md border-t border-slate-800 md:border-t-0 md:bg-transparent md:backdrop-blur-none z-40 px-4 sm:px-0 -mx-4 sm:mx-0 pt-3 pb-3 md:pt-0 md:pb-0">
+            <div className="md:relative fixed md:static bottom-0 left-0 right-0 backdrop-blur-md border-t md:border-t-0 md:bg-transparent md:backdrop-blur-none z-40 px-4 sm:px-0 -mx-4 sm:mx-0 pt-3 pb-3 md:pt-0 md:pb-0"
+              style={{ 
+                background: 'rgba(26, 35, 50, 0.95)', 
+                borderColor: 'rgba(71, 85, 105, 0.4)' 
+              }}>
               {/* Quick Prompts */}
               <div className="flex gap-2 flex-wrap mb-3 px-4 sm:px-0">
                 {quickPrompts.map(qp => (
                   <button
                     key={qp.label}
                     onClick={() => setInput(qp.prompt)}
-                    className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-800 hover:bg-slate-700 border border-slate-700 hover:border-emerald-500/40 text-slate-300 hover:text-emerald-300 rounded-xl text-xs font-medium transition-all"
+                    className="flex items-center gap-1.5 px-3 py-1.5 border rounded-xl text-xs font-medium transition-all"
+                    style={{
+                      background: '#2a3441',
+                      borderColor: '#3a4556',
+                      color: '#cbd5e1'
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.borderColor = 'rgba(16,185,129,0.4)';
+                      e.currentTarget.style.color = '#6ee7b7';
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.borderColor = '#3a4556';
+                      e.currentTarget.style.color = '#cbd5e1';
+                    }}
                   >
                     {qp.icon}
                     {qp.label}
@@ -907,7 +942,8 @@ Give concise, actionable advice. Use bullet points sparingly. Be friendly and pr
               </div>
 
               {/* Input Bar */}
-              <div className="flex gap-2 bg-slate-800/80 border border-slate-700 rounded-2xl p-2 backdrop-blur-sm mx-4 sm:mx-0">
+              <div className="flex gap-2 border rounded-2xl p-2 backdrop-blur-sm mx-4 sm:mx-0"
+                style={{ background: 'rgba(30, 41, 59, 0.8)', borderColor: 'rgba(71, 85, 105, 0.4)' }}>
                 <textarea
                   rows={1}
                   value={input}

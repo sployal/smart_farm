@@ -371,7 +371,8 @@ function MetricPill({
   color: string;
 }) {
   return (
-    <div className="flex items-center justify-between bg-slate-800/60 border border-slate-700/50 rounded-xl px-4 py-3 gap-3 hover:border-slate-600 transition-all group">
+    <div className="flex items-center justify-between border rounded-xl px-4 py-3 gap-3 hover:border-slate-600 transition-all group"
+      style={{ background: 'rgba(30,41,59,0.6)', borderColor: 'rgba(71,85,105,0.3)' }}>
       <div className="flex items-center gap-3">
         <div
           className="w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0"
@@ -542,7 +543,7 @@ Produce a JSON plant-health report.`.trim();
   };
 
   return (
-    <div className={cn("min-h-screen bg-gradient-to-br text-slate-100 font-sans", meta.bg)}>
+    <div className="min-h-screen text-slate-100 font-sans" style={{ background: '#1a2332' }}>
 
       {/* ── Background ambient blobs ── */}
       <div className="fixed inset-0 overflow-hidden pointer-events-none z-0">
@@ -585,10 +586,23 @@ Produce a JSON plant-health report.`.trim();
             onClick={fetchAIReport}
             disabled={aiLoading}
             className={cn(
-              "flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold transition-all",
-              "border border-slate-700 bg-slate-800 hover:bg-slate-700 hover:border-slate-600",
+              "flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold transition-all border",
               "disabled:opacity-50 disabled:cursor-not-allowed"
             )}
+            style={{ 
+              background: 'rgba(30,41,59,0.6)', 
+              borderColor: 'rgba(71,85,105,0.4)' 
+            }}
+            onMouseEnter={(e) => {
+              if (!aiLoading) {
+                e.currentTarget.style.background = 'rgba(30,41,59,0.8)';
+                e.currentTarget.style.borderColor = 'rgba(71,85,105,0.6)';
+              }
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.background = 'rgba(30,41,59,0.6)';
+              e.currentTarget.style.borderColor = 'rgba(71,85,105,0.4)';
+            }}
           >
             <RefreshCw className={cn("w-4 h-4", aiLoading && "animate-spin")} />
             {aiLoading ? 'Analyzing…' : 'Refresh AI Report'}
@@ -599,8 +613,10 @@ Produce a JSON plant-health report.`.trim();
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
 
           {/* Plant visual card */}
-          <div className="bg-slate-900/70 border border-slate-800 rounded-3xl overflow-hidden backdrop-blur-sm">
-            <div className="p-4 border-b border-slate-800 flex items-center justify-between">
+          <div className="border rounded-3xl overflow-hidden backdrop-blur-sm"
+            style={{ background: 'rgba(30,41,59,0.7)', borderColor: 'rgba(71,85,105,0.4)' }}>
+            <div className="p-4 border-b flex items-center justify-between"
+              style={{ borderColor: 'rgba(71,85,105,0.4)' }}>
               <div className="flex items-center gap-2">
                 <Leaf className="w-4 h-4" style={{ color: meta.color }} />
                 <span className="font-semibold text-sm">Live Plant Monitor</span>
@@ -630,7 +646,7 @@ Produce a JSON plant-health report.`.trim();
                 <span>Soil Moisture</span>
                 <span className="font-semibold text-slate-200">{sensorData.moisture.toFixed(1)}%</span>
               </div>
-              <div className="h-2 bg-slate-800 rounded-full overflow-hidden">
+              <div className="h-2 rounded-full overflow-hidden" style={{ background: '#3a4556' }}>
                 <div
                   className="h-full rounded-full transition-all duration-1000"
                   style={{
@@ -644,7 +660,7 @@ Produce a JSON plant-health report.`.trim();
                 <span>Temperature</span>
                 <span className="font-semibold text-slate-200">{sensorData.temperature.toFixed(1)}°C</span>
               </div>
-              <div className="h-2 bg-slate-800 rounded-full overflow-hidden">
+              <div className="h-2 rounded-full overflow-hidden" style={{ background: '#3a4556' }}>
                 <div
                   className="h-full rounded-full transition-all duration-1000"
                   style={{
@@ -657,8 +673,10 @@ Produce a JSON plant-health report.`.trim();
           </div>
 
           {/* AI Report card */}
-          <div className="lg:col-span-2 bg-slate-900/70 border border-slate-800 rounded-3xl overflow-hidden backdrop-blur-sm flex flex-col">
-            <div className="p-4 border-b border-slate-800 flex items-center justify-between">
+          <div className="lg:col-span-2 border rounded-3xl overflow-hidden backdrop-blur-sm flex flex-col"
+            style={{ background: 'rgba(30,41,59,0.7)', borderColor: 'rgba(71,85,105,0.4)' }}>
+            <div className="p-4 border-b flex items-center justify-between"
+              style={{ borderColor: 'rgba(71,85,105,0.4)' }}>
               <div className="flex items-center gap-2">
                 <Brain className="w-4 h-4 text-violet-400" />
                 <span className="font-semibold text-sm">AI Crop Diagnosis</span>
@@ -745,7 +763,8 @@ Produce a JSON plant-health report.`.trim();
                   </div>
 
                   {/* Forecast */}
-                  <div className="flex items-start gap-3 p-4 bg-slate-800/60 rounded-xl border border-slate-700/50">
+                  <div className="flex items-start gap-3 p-4 rounded-xl border"
+                    style={{ background: 'rgba(30,41,59,0.6)', borderColor: 'rgba(71,85,105,0.3)' }}>
                     <TrendingUp className="w-5 h-5 text-emerald-400 flex-shrink-0 mt-0.5" />
                     <div>
                       <p className="text-xs font-semibold text-emerald-400 mb-0.5">Yield Forecast</p>
@@ -774,7 +793,8 @@ Produce a JSON plant-health report.`.trim();
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
 
           {/* Radar */}
-          <div className="bg-slate-900/70 border border-slate-800 rounded-3xl p-5 backdrop-blur-sm">
+          <div className="border rounded-3xl p-5 backdrop-blur-sm"
+            style={{ background: 'rgba(30,41,59,0.7)', borderColor: 'rgba(71,85,105,0.4)' }}>
             <div className="flex items-center gap-2 mb-4">
               <BarChart3 className="w-4 h-4" style={{ color: meta.color }} />
               <h3 className="font-semibold text-sm">Nutrient & Condition Profile</h3>
@@ -802,7 +822,8 @@ Produce a JSON plant-health report.`.trim();
           </div>
 
           {/* Growth timeline */}
-          <div className="bg-slate-900/70 border border-slate-800 rounded-3xl p-5 backdrop-blur-sm">
+          <div className="border rounded-3xl p-5 backdrop-blur-sm"
+            style={{ background: 'rgba(30,41,59,0.7)', borderColor: 'rgba(71,85,105,0.4)' }}>
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center gap-2">
                 <TrendingUp className="w-4 h-4 text-emerald-400" />
@@ -846,7 +867,8 @@ Produce a JSON plant-health report.`.trim();
         </div>
 
         {/* ── Condition checklist ── */}
-        <div className="bg-slate-900/70 border border-slate-800 rounded-3xl p-5 backdrop-blur-sm">
+        <div className="border rounded-3xl p-5 backdrop-blur-sm"
+          style={{ background: 'rgba(30,41,59,0.7)', borderColor: 'rgba(71,85,105,0.4)' }}>
           <div className="flex items-center gap-2 mb-5">
             <CheckCircle className="w-4 h-4 text-emerald-400" />
             <h3 className="font-semibold text-sm">Optimal Conditions Checklist</h3>
