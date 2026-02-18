@@ -68,6 +68,56 @@ export const startRealtimeUpdates = (callback: (data: any) => void) => {
   return unsubscribe;
 };
 
+// ─── Historical Data Helper ───────────────────────────────────────────────────
+
+export type HistoricalDataPoint = {
+  timestamp: number;     // Unix timestamp in seconds
+  temperature: number;
+  humidity: number;
+  soilMoisture: number;
+};
+
+/**
+ * Fetches historical sensor data from Firebase for a given time range.
+ * ESP32 writes to /sensorData/history/{unixTimestamp} with this structure:
+ * { temperature, humidity, soilMoisture, timestamp }
+ * 
+ * @param hoursBack How many hours of history to fetch (e.g., 6, 24, 168 for 7 days)
+ * @returns Array of historical data points, sorted by timestamp (oldest first)
+ */
+export const fetchHistoricalData = async (hoursBack: number): Promise<HistoricalDataPoint[]> => {
+  try {
+    const historyRef = ref(database, "sensorData/history");
+    const snapshot = await get(historyRef);
+    
+    if (!snapshot.exists()) {
+      console.log("No historical data found");
+      return [];
+    }
+
+    const historyData = snapshot.val();
+    const nowSeconds = Math.floor(Date.now() / 1000);
+    const cutoffSeconds = nowSeconds - (hoursBack * 3600);
+    
+    // Convert to array and filter by time range
+    const dataPoints: HistoricalDataPoint[] = Object.entries(historyData)
+      .map(([key, value]: [string, any]) => ({
+        timestamp: parseInt(key, 10),
+        temperature: parseFloat(value.temperature) || 0,
+        humidity: parseFloat(value.humidity) || 0,
+        soilMoisture: parseFloat(value.soilMoisture) || 0,
+      }))
+      .filter(point => point.timestamp >= cutoffSeconds)
+      .sort((a, b) => a.timestamp - b.timestamp);
+    
+    console.log(`Fetched ${dataPoints.length} historical data points for last ${hoursBack}h`);
+    return dataPoints;
+  } catch (error) {
+    console.error("Error fetching historical data:", error);
+    return [];
+  }
+};
+
 // ─── ESP32 Status Helper ──────────────────────────────────────────────────────
 
 /**

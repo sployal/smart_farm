@@ -53,7 +53,7 @@ import {
 import clsx, { type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
 import { format, subHours } from 'date-fns';
-import { startRealtimeUpdates, fetchSensorData, auth } from '@/lib/firebase';
+import { startRealtimeUpdates, fetchSensorData, fetchHistoricalData, auth, type HistoricalDataPoint } from '@/lib/firebase';
 import { onAuthStateChanged, type User as AuthUser } from 'firebase/auth';
 
 // Groq API Configuration
@@ -144,20 +144,22 @@ const generateRandomData = (count: number, min: number, max: number) => {
   return Array.from({ length: count }, () => Math.floor(Math.random() * (max - min + 1)) + min);
 };
 
-const generateTimeLabels = (hours: number) => {
-  return Array.from({ length: hours }, (_, i) => {
-    const date = subHours(new Date(), hours - 1 - i);
-    return format(date, 'HH:mm');
-  });
-};
+/**
+ * Process historical Firebase data into chart format
+ */
+const processHistoricalForChart = (
+  historyData: HistoricalDataPoint[],
+  timeRange: '24h' | '7d' | '30d'
+) => {
+  if (historyData.length === 0) {
+    return [];
+  }
 
-const generateChartData = (points: number) => {
-  const labels = generateTimeLabels(points);
-  return labels.map((time, i) => ({
-    time,
-    moisture: 40 + Math.random() * 30,
-    temperature: 20 + Math.random() * 10,
-    humidity: 50 + Math.random() * 35,
+  return historyData.map(item => ({
+    time: format(new Date(item.timestamp * 1000), timeRange === '24h' ? 'HH:mm' : 'MMM d'),
+    moisture: +item.soilMoisture.toFixed(2),
+    temperature: +item.temperature.toFixed(2),
+    humidity: +item.humidity.toFixed(2),
   }));
 };
 
@@ -324,7 +326,8 @@ export default function SmartFarmDashboard() {
   const [isConnected, setIsConnected] = useState(false);
   const [lastSync, setLastSync] = useState('Never');
   const [timeRange, setTimeRange] = useState<'24h' | '7d' | '30d'>('24h');
-  const [chartData, setChartData] = useState(generateChartData(24));
+  const [chartData, setChartData] = useState<Array<{time: string; moisture: number; temperature: number; humidity: number}>>([]);
+  const [isLoadingChart, setIsLoadingChart] = useState(true);
   const [selectedMetric, setSelectedMetric] = useState<'moisture' | 'temperature' | 'humidity'>('temperature');
   const [showAlert, setShowAlert] = useState(true);
   const [chatOpen, setChatOpen] = useState(false);
@@ -379,16 +382,38 @@ export default function SmartFarmDashboard() {
 
   // Update chart when time range changes
   useEffect(() => {
-    const points = timeRange === '24h' ? 24 : timeRange === '7d' ? 7 : 30;
-    const labels = generateTimeLabels(points);
-    const data = labels.map((time, i) => ({
-      time,
-      moisture: sensorData.moisture + (Math.random() - 0.5) * 5,
-      temperature: sensorData.temperature + (Math.random() - 0.5) * 2,
-      humidity: sensorData.humidity + (Math.random() - 0.5) * 3,
-    }));
-    setChartData(data);
-  }, [timeRange, sensorData]);
+    const loadChartData = async () => {
+      setIsLoadingChart(true);
+      
+      // Map time range to hours
+      const hoursMap: Record<'24h' | '7d' | '30d', number> = {
+        '24h': 24,
+        '7d': 168,
+        '30d': 720,
+      };
+      
+      const hoursBack = hoursMap[timeRange];
+      const historyData = await fetchHistoricalData(hoursBack);
+      
+      if (historyData.length > 0) {
+        const processedData = processHistoricalForChart(historyData, timeRange);
+        setChartData(processedData);
+      } else {
+        // Fallback to current values if no history
+        console.log('No historical data, using current values');
+        setChartData([{
+          time: format(new Date(), 'HH:mm'),
+          moisture: sensorData.moisture,
+          temperature: sensorData.temperature,
+          humidity: sensorData.humidity,
+        }]);
+      }
+      
+      setIsLoadingChart(false);
+    };
+
+    loadChartData();
+  }, [timeRange]); // Only reload when time range changes, not on every sensor update
 
   // Scroll chat to bottom
   useEffect(() => {
@@ -724,7 +749,17 @@ Give concise, actionable advice. Be friendly and professional.
               </div>
 
               <div className="h-[300px] w-full min-w-0 min-h-0">
-                <div className="w-full h-full min-w-0 min-h-0">
+                {isLoadingChart ? (
+                  <div className="w-full h-full flex items-center justify-center">
+                    <RefreshCw className="w-6 h-6 animate-spin text-slate-400" />
+                    <span className="ml-3 text-slate-400">Loading chart data...</span>
+                  </div>
+                ) : chartData.length === 0 ? (
+                  <div className="w-full h-full flex items-center justify-center">
+                    <span className="text-slate-400">No historical data available</span>
+                  </div>
+                ) : (
+                  <div className="w-full h-full min-w-0 min-h-0">
                 <ResponsiveContainer width="100%" height={300}>
                   <AreaChart data={chartData}>
                     <defs>
@@ -799,6 +834,7 @@ Give concise, actionable advice. Be friendly and professional.
                   </AreaChart>
                 </ResponsiveContainer>
                 </div>
+                )}
               </div>
 
               {/* Metric Selector Buttons */}

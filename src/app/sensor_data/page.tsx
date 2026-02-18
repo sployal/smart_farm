@@ -14,7 +14,7 @@ import {
 import { format, subHours } from 'date-fns';
 import clsx, { type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
-import { startRealtimeUpdates, fetchSensorData } from '@/lib/firebase';
+import { startRealtimeUpdates, fetchSensorData, fetchHistoricalData, type HistoricalDataPoint } from '@/lib/firebase';
 
 function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -94,23 +94,37 @@ const SENSOR_BASES = [
   },
 ];
 
-// ─── Data generation ──────────────────────────────────────────────────────────
+// ─── Data processing ──────────────────────────────────────────────────────────
 
-function buildData(key: SensorKey, range: TimeRange, base: number): DataPoint[] {
-  const pts = range === '6h' ? 24 : range === '24h' ? 48 : range === '7d' ? 84 : 120;
-  const now = new Date();
-  const drifts: Record<SensorKey, (i: number, t: number) => number> = {
-    temperature: (i, t) => Math.sin((i / t) * Math.PI * 2) * 3,
-    humidity:    (i, t) => -Math.sin((i / t) * Math.PI) * 8,
-    moisture:    (i, t) => -((i / t) * 12),
-    ph:          (i, t) => Math.cos((i / t) * Math.PI) * 0.25,
+/**
+ * Converts historical Firebase data into chart-ready format for a specific sensor
+ */
+function processHistoricalData(
+  historyData: HistoricalDataPoint[], 
+  key: SensorKey, 
+  range: TimeRange
+): DataPoint[] {
+  if (historyData.length === 0) {
+    return [];
+  }
+
+  // Map sensor keys to the property names in the historical data
+  const keyMap: Record<SensorKey, keyof HistoricalDataPoint> = {
+    temperature: 'temperature',
+    humidity: 'humidity',
+    moisture: 'soilMoisture',
+    ph: 'temperature', // fallback - pH not in ESP32 data
   };
-  const variance = key === 'ph' ? 0.25 : 4.5;
-  return Array.from({ length: pts }, (_, i) => {
-    const date = subHours(now, pts - 1 - i);
-    const value = +(base + drifts[key](i, pts) + (Math.random() - 0.5) * variance * 2).toFixed(2);
-    return { time: format(date, pts <= 48 ? 'HH:mm' : 'MMM d'), value };
-  });
+
+  const dataKey = keyMap[key];
+  
+  // Convert to DataPoint format
+  const points: DataPoint[] = historyData.map(item => ({
+    time: format(new Date(item.timestamp * 1000), range === '6h' || range === '24h' ? 'HH:mm' : 'MMM d'),
+    value: key === 'ph' ? 6.5 : +(item[dataKey] || 0).toFixed(2) // pH is not tracked by ESP32, use default
+  }));
+
+  return points;
 }
 
 // ─── Analysis ─────────────────────────────────────────────────────────────────
@@ -203,14 +217,57 @@ const ChartTooltip = ({ active, payload, label, color, unit }: any) => {
 function SensorSection({ cfg, range }: { cfg: SensorConfig; range: TimeRange }) {
   const [data, setData] = useState<DataPoint[]>([]);
   const [analysis, setAnalysis] = useState<Analysis | null>(null);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const chartData = buildData(cfg.key, range, cfg.currentValue);
-    setData(chartData);
-    setAnalysis(analyze(cfg, chartData));
-  }, [cfg, range]);
+    const loadData = async () => {
+      setLoading(true);
+      
+      // Determine hours to fetch based on range
+      const hoursMap: Record<TimeRange, number> = {
+        '6h': 6,
+        '24h': 24,
+        '7d': 168,
+        '30d': 720,
+      };
+      
+      const hoursBack = hoursMap[range];
+      const historyData = await fetchHistoricalData(hoursBack);
+      const chartData = processHistoricalData(historyData, cfg.key, range);
+      
+      // If no historical data, use current value as single point
+      if (chartData.length === 0) {
+        console.log(`No historical data for ${cfg.key}, using current value`);
+        setData([{
+          time: format(new Date(), 'HH:mm'),
+          value: cfg.currentValue
+        }]);
+      } else {
+        setData(chartData);
+      }
+      
+      // Run analysis on the data
+      const analysisData = chartData.length > 0 ? chartData : [{
+        time: format(new Date(), 'HH:mm'),
+        value: cfg.currentValue
+      }];
+      setAnalysis(analyze(cfg, analysisData));
+      setLoading(false);
+    };
 
-  if (!analysis) return null;
+    loadData();
+  }, [cfg.key, cfg.currentValue, range]);
+
+  if (!analysis || loading) {
+    return (
+      <div className="py-14">
+        <div className="flex items-center justify-center">
+          <RefreshCw className="w-6 h-6 animate-spin text-slate-400" />
+          <span className="ml-3 text-slate-400">Loading {cfg.label} data...</span>
+        </div>
+      </div>
+    );
+  }
 
   const Icon = cfg.icon;
 
@@ -417,8 +474,8 @@ export default function SensorDataPage() {
 
   const [liveValues, setLiveValues] = useState<Record<SensorKey, number>>({
     temperature: 0,
-    humidity:    65,
-    moisture:    58,
+    humidity:    0,
+    moisture:    0,
     ph:          6.5,
   });
 
