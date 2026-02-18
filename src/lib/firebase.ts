@@ -96,10 +96,18 @@ export const subscribeToESP32Status = (
     if (unixSeconds === null) return "Never";
     const nowSeconds = Math.floor(Date.now() / 1000);
     const diffSeconds = nowSeconds - unixSeconds;
-    if (diffSeconds < 5)  return "Just now";
-    if (diffSeconds < 60) return `${diffSeconds}s ago`;
-    if (diffSeconds < 3600) return `${Math.floor(diffSeconds / 60)}m ago`;
-    return `${Math.floor(diffSeconds / 3600)}h ago`;
+    if (diffSeconds < 5)   return "Just now";
+    if (diffSeconds < 60)  return `${diffSeconds}s ago`;
+    const diffMinutes = Math.floor(diffSeconds / 60);
+    if (diffMinutes < 60)  return `${diffMinutes}m ago`;
+    const diffHours = Math.floor(diffMinutes / 60);
+    if (diffHours < 24)    return `${diffHours}h ago`;
+    const diffDays = Math.floor(diffHours / 24);
+    if (diffDays < 7)      return `${diffDays}d ago`;
+    const diffWeeks = Math.floor(diffDays / 7);
+    if (diffWeeks < 4)     return `${diffWeeks}w ago`;
+    const diffMonths = Math.floor(diffDays / 30);
+    return `${diffMonths}mo ago`;
   };
 
   // Helper: derives the combined status and emits it via callback
@@ -121,7 +129,7 @@ export const subscribeToESP32Status = (
 
     callback({
       status:   isStale ? "offline" : "online",
-      lastSync: isStale ? `${diffSeconds}s ago` : formatLastSync(lastTimestamp),
+      lastSync: formatLastSync(lastTimestamp), // ✅ always routes through formatLastSync
     });
   };
 
