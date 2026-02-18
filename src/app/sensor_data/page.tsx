@@ -341,7 +341,7 @@ function SensorSection({ cfg, range }: { cfg: SensorConfig; range: TimeRange }) 
       {/* ── Chart ── */}
       <div className="w-full h-[280px] sm:h-[340px]">
         <ResponsiveContainer width="100%" height="100%">
-          <AreaChart data={data} margin={{ top: 8, right: 4, left: -22, bottom: 0 }}>
+          <AreaChart data={data} margin={{ top: 8, right: 4, left: -22, bottom: 0 }} isAnimationActive={false}>
             <defs>
               <linearGradient id={`g-${cfg.key}`} x1="0" y1="0" x2="0" y2="1">
                 <stop offset="0%"   stopColor={cfg.color} stopOpacity={0.25} />
@@ -390,6 +390,7 @@ function SensorSection({ cfg, range }: { cfg: SensorConfig; range: TimeRange }) 
               strokeWidth={2.5}
               fill={`url(#g-${cfg.key})`}
               dot={false}
+              isAnimationActive={false}
               activeDot={{ r: 6, fill: cfg.color, stroke: '#334155', strokeWidth: 3 }}
             />
           </AreaChart>
