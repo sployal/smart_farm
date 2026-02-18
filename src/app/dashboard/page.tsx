@@ -101,6 +101,53 @@ type Message = {
   content: string;
 };
 
+// --- Sensor Status Calculation ---
+
+type SensorStatus = {
+  status: 'optimal' | 'good' | 'warning';
+  statusText: string;
+};
+
+/**
+ * Calculate sensor status based on current value and optimal/critical ranges
+ */
+function calculateSensorStatus(
+  value: number,
+  optimalMin: number,
+  optimalMax: number,
+  criticalMin: number,
+  criticalMax: number
+): SensorStatus {
+  // Check if in optimal range
+  if (value >= optimalMin && value <= optimalMax) {
+    return { status: 'optimal', statusText: 'Optimal Range' };
+  }
+  
+  // Check if in critical range
+  if (value < criticalMin || value > criticalMax) {
+    return { status: 'warning', statusText: 'Critical' };
+  }
+  
+  // Otherwise it's in the warning zone (between optimal and critical)
+  if (value < optimalMin) {
+    return { status: 'good', statusText: 'Below Optimal' };
+  } else {
+    return { status: 'good', statusText: 'Above Optimal' };
+  }
+}
+
+// Sensor thresholds (matching sensor_data page)
+const SENSOR_THRESHOLDS = {
+  temperature: { optimalMin: 18, optimalMax: 28, criticalMin: 10, criticalMax: 38 },
+  humidity: { optimalMin: 55, optimalMax: 80, criticalMin: 30, criticalMax: 95 },
+  moisture: { optimalMin: 40, optimalMax: 70, criticalMin: 20, criticalMax: 85 },
+  ph: { optimalMin: 6.0, optimalMax: 7.0, criticalMin: 4.5, criticalMax: 8.5 },
+  // NPK thresholds for tomatoes (mg/kg)
+  nitrogen: { optimalMin: 50, optimalMax: 150, criticalMin: 20, criticalMax: 250 },
+  phosphorus: { optimalMin: 30, optimalMax: 80, criticalMin: 10, criticalMax: 150 },
+  potassium: { optimalMin: 150, optimalMax: 300, criticalMin: 80, criticalMax: 500 },
+};
+
 // --- Groq AI Functions ---
 
 async function callGroqAI(prompt: string, systemContext: string): Promise<string> {
@@ -613,8 +660,20 @@ Give concise, actionable advice. Be friendly and professional.
                 icon={Thermometer}
                 trend="down"
                 trendValue="-2°C"
-                status="optimal"
-                statusText="Optimal Range"
+                status={calculateSensorStatus(
+                  sensorData.temperature,
+                  SENSOR_THRESHOLDS.temperature.optimalMin,
+                  SENSOR_THRESHOLDS.temperature.optimalMax,
+                  SENSOR_THRESHOLDS.temperature.criticalMin,
+                  SENSOR_THRESHOLDS.temperature.criticalMax
+                ).status}
+                statusText={calculateSensorStatus(
+                  sensorData.temperature,
+                  SENSOR_THRESHOLDS.temperature.optimalMin,
+                  SENSOR_THRESHOLDS.temperature.optimalMax,
+                  SENSOR_THRESHOLDS.temperature.criticalMin,
+                  SENSOR_THRESHOLDS.temperature.criticalMax
+                ).statusText}
                 colorClass="text-amber-500"
               >
                 <MiniChart color="#f59e0b" data={miniChartData} />
@@ -629,8 +688,20 @@ Give concise, actionable advice. Be friendly and professional.
                 icon={Waves}
                 trend="stable"
                 trendValue="0%"
-                status="good"
-                statusText="Good"
+                status={calculateSensorStatus(
+                  sensorData.humidity,
+                  SENSOR_THRESHOLDS.humidity.optimalMin,
+                  SENSOR_THRESHOLDS.humidity.optimalMax,
+                  SENSOR_THRESHOLDS.humidity.criticalMin,
+                  SENSOR_THRESHOLDS.humidity.criticalMax
+                ).status}
+                statusText={calculateSensorStatus(
+                  sensorData.humidity,
+                  SENSOR_THRESHOLDS.humidity.optimalMin,
+                  SENSOR_THRESHOLDS.humidity.optimalMax,
+                  SENSOR_THRESHOLDS.humidity.criticalMin,
+                  SENSOR_THRESHOLDS.humidity.criticalMax
+                ).statusText}
                 colorClass="text-cyan-500"
               >
                 <MiniChart color="#06b6d4" data={miniChartData} />
@@ -645,8 +716,20 @@ Give concise, actionable advice. Be friendly and professional.
                 icon={Droplets}
                 trend="up"
                 trendValue="+5%"
-                status="optimal"
-                statusText="Optimal Range"
+                status={calculateSensorStatus(
+                  sensorData.moisture,
+                  SENSOR_THRESHOLDS.moisture.optimalMin,
+                  SENSOR_THRESHOLDS.moisture.optimalMax,
+                  SENSOR_THRESHOLDS.moisture.criticalMin,
+                  SENSOR_THRESHOLDS.moisture.criticalMax
+                ).status}
+                statusText={calculateSensorStatus(
+                  sensorData.moisture,
+                  SENSOR_THRESHOLDS.moisture.optimalMin,
+                  SENSOR_THRESHOLDS.moisture.optimalMax,
+                  SENSOR_THRESHOLDS.moisture.criticalMin,
+                  SENSOR_THRESHOLDS.moisture.criticalMax
+                ).statusText}
                 colorClass="text-blue-500"
               >
                 <MiniChart color="#3b82f6" data={miniChartData} />
@@ -676,9 +759,41 @@ Give concise, actionable advice. Be friendly and professional.
                     <td className="py-3 px-2 sm:px-4 text-slate-300 font-semibold">{sensorData.ph.toFixed(1)}</td>
                     <td className="py-3 px-2 sm:px-4 text-slate-400">pH</td>
                     <td className="py-3 px-2 sm:px-4">
-                      <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium bg-violet-500/10 text-violet-400 whitespace-nowrap">
-                        <Info className="w-3 h-3 flex-shrink-0" />
-                        Acidic
+                      <span className={cn(
+                        "inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium whitespace-nowrap",
+                        (() => {
+                          const phStatus = calculateSensorStatus(
+                            sensorData.ph,
+                            SENSOR_THRESHOLDS.ph.optimalMin,
+                            SENSOR_THRESHOLDS.ph.optimalMax,
+                            SENSOR_THRESHOLDS.ph.criticalMin,
+                            SENSOR_THRESHOLDS.ph.criticalMax
+                          );
+                          if (phStatus.status === 'optimal') {
+                            return 'bg-emerald-500/10 text-emerald-400';
+                          } else if (phStatus.status === 'warning') {
+                            return 'bg-red-500/10 text-red-400';
+                          } else {
+                            return 'bg-amber-500/10 text-amber-400';
+                          }
+                        })()
+                      )}>
+                        {(() => {
+                          const phStatus = calculateSensorStatus(
+                            sensorData.ph,
+                            SENSOR_THRESHOLDS.ph.optimalMin,
+                            SENSOR_THRESHOLDS.ph.optimalMax,
+                            SENSOR_THRESHOLDS.ph.criticalMin,
+                            SENSOR_THRESHOLDS.ph.criticalMax
+                          );
+                          if (phStatus.status === 'optimal') {
+                            return <><CheckCircle className="w-3 h-3 flex-shrink-0" /> Optimal</>;
+                          } else if (sensorData.ph < SENSOR_THRESHOLDS.ph.optimalMin) {
+                            return <><AlertTriangle className="w-3 h-3 flex-shrink-0" /> Acidic</>;
+                          } else {
+                            return <><AlertTriangle className="w-3 h-3 flex-shrink-0" /> Alkaline</>;
+                          }
+                        })()}
                       </span>
                     </td>
                   </tr>
@@ -687,9 +802,41 @@ Give concise, actionable advice. Be friendly and professional.
                     <td className="py-3 px-2 sm:px-4 text-slate-300 font-semibold">{sensorData.nitrogen}</td>
                     <td className="py-3 px-2 sm:px-4 text-slate-400">mg/kg</td>
                     <td className="py-3 px-2 sm:px-4">
-                      <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium bg-red-500/10 text-red-400 whitespace-nowrap">
-                        <AlertTriangle className="w-3 h-3 flex-shrink-0" />
-                        Low
+                      <span className={cn(
+                        "inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium whitespace-nowrap",
+                        (() => {
+                          const nStatus = calculateSensorStatus(
+                            sensorData.nitrogen,
+                            SENSOR_THRESHOLDS.nitrogen.optimalMin,
+                            SENSOR_THRESHOLDS.nitrogen.optimalMax,
+                            SENSOR_THRESHOLDS.nitrogen.criticalMin,
+                            SENSOR_THRESHOLDS.nitrogen.criticalMax
+                          );
+                          if (nStatus.status === 'optimal') {
+                            return 'bg-emerald-500/10 text-emerald-400';
+                          } else if (nStatus.status === 'warning') {
+                            return 'bg-red-500/10 text-red-400';
+                          } else {
+                            return 'bg-amber-500/10 text-amber-400';
+                          }
+                        })()
+                      )}>
+                        {(() => {
+                          const nStatus = calculateSensorStatus(
+                            sensorData.nitrogen,
+                            SENSOR_THRESHOLDS.nitrogen.optimalMin,
+                            SENSOR_THRESHOLDS.nitrogen.optimalMax,
+                            SENSOR_THRESHOLDS.nitrogen.criticalMin,
+                            SENSOR_THRESHOLDS.nitrogen.criticalMax
+                          );
+                          if (nStatus.status === 'optimal') {
+                            return <><CheckCircle className="w-3 h-3 flex-shrink-0" /> Optimal</>;
+                          } else if (sensorData.nitrogen < SENSOR_THRESHOLDS.nitrogen.optimalMin) {
+                            return <><AlertTriangle className="w-3 h-3 flex-shrink-0" /> Low</>;
+                          } else {
+                            return <><AlertTriangle className="w-3 h-3 flex-shrink-0" /> High</>;
+                          }
+                        })()}
                       </span>
                     </td>
                   </tr>
@@ -698,9 +845,41 @@ Give concise, actionable advice. Be friendly and professional.
                     <td className="py-3 px-2 sm:px-4 text-slate-300 font-semibold">{sensorData.phosphorus}</td>
                     <td className="py-3 px-2 sm:px-4 text-slate-400">mg/kg</td>
                     <td className="py-3 px-2 sm:px-4">
-                      <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium bg-emerald-500/10 text-emerald-400 whitespace-nowrap">
-                        <CheckCircle className="w-3 h-3 flex-shrink-0" />
-                        Good
+                      <span className={cn(
+                        "inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium whitespace-nowrap",
+                        (() => {
+                          const pStatus = calculateSensorStatus(
+                            sensorData.phosphorus,
+                            SENSOR_THRESHOLDS.phosphorus.optimalMin,
+                            SENSOR_THRESHOLDS.phosphorus.optimalMax,
+                            SENSOR_THRESHOLDS.phosphorus.criticalMin,
+                            SENSOR_THRESHOLDS.phosphorus.criticalMax
+                          );
+                          if (pStatus.status === 'optimal') {
+                            return 'bg-emerald-500/10 text-emerald-400';
+                          } else if (pStatus.status === 'warning') {
+                            return 'bg-red-500/10 text-red-400';
+                          } else {
+                            return 'bg-amber-500/10 text-amber-400';
+                          }
+                        })()
+                      )}>
+                        {(() => {
+                          const pStatus = calculateSensorStatus(
+                            sensorData.phosphorus,
+                            SENSOR_THRESHOLDS.phosphorus.optimalMin,
+                            SENSOR_THRESHOLDS.phosphorus.optimalMax,
+                            SENSOR_THRESHOLDS.phosphorus.criticalMin,
+                            SENSOR_THRESHOLDS.phosphorus.criticalMax
+                          );
+                          if (pStatus.status === 'optimal') {
+                            return <><CheckCircle className="w-3 h-3 flex-shrink-0" /> Optimal</>;
+                          } else if (sensorData.phosphorus < SENSOR_THRESHOLDS.phosphorus.optimalMin) {
+                            return <><AlertTriangle className="w-3 h-3 flex-shrink-0" /> Low</>;
+                          } else {
+                            return <><AlertTriangle className="w-3 h-3 flex-shrink-0" /> High</>;
+                          }
+                        })()}
                       </span>
                     </td>
                   </tr>
@@ -709,9 +888,41 @@ Give concise, actionable advice. Be friendly and professional.
                     <td className="py-3 px-2 sm:px-4 text-slate-300 font-semibold">{sensorData.potassium}</td>
                     <td className="py-3 px-2 sm:px-4 text-slate-400">mg/kg</td>
                     <td className="py-3 px-2 sm:px-4">
-                      <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium bg-emerald-500/10 text-emerald-400 whitespace-nowrap">
-                        <CheckCircle className="w-3 h-3 flex-shrink-0" />
-                        High
+                      <span className={cn(
+                        "inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium whitespace-nowrap",
+                        (() => {
+                          const kStatus = calculateSensorStatus(
+                            sensorData.potassium,
+                            SENSOR_THRESHOLDS.potassium.optimalMin,
+                            SENSOR_THRESHOLDS.potassium.optimalMax,
+                            SENSOR_THRESHOLDS.potassium.criticalMin,
+                            SENSOR_THRESHOLDS.potassium.criticalMax
+                          );
+                          if (kStatus.status === 'optimal') {
+                            return 'bg-emerald-500/10 text-emerald-400';
+                          } else if (kStatus.status === 'warning') {
+                            return 'bg-red-500/10 text-red-400';
+                          } else {
+                            return 'bg-amber-500/10 text-amber-400';
+                          }
+                        })()
+                      )}>
+                        {(() => {
+                          const kStatus = calculateSensorStatus(
+                            sensorData.potassium,
+                            SENSOR_THRESHOLDS.potassium.optimalMin,
+                            SENSOR_THRESHOLDS.potassium.optimalMax,
+                            SENSOR_THRESHOLDS.potassium.criticalMin,
+                            SENSOR_THRESHOLDS.potassium.criticalMax
+                          );
+                          if (kStatus.status === 'optimal') {
+                            return <><CheckCircle className="w-3 h-3 flex-shrink-0" /> Optimal</>;
+                          } else if (sensorData.potassium < SENSOR_THRESHOLDS.potassium.optimalMin) {
+                            return <><AlertTriangle className="w-3 h-3 flex-shrink-0" /> Low</>;
+                          } else {
+                            return <><AlertTriangle className="w-3 h-3 flex-shrink-0" /> High</>;
+                          }
+                        })()}
                       </span>
                     </td>
                   </tr>
