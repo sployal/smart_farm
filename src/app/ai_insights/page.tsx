@@ -32,7 +32,10 @@ import {
   ThumbsUp,
   ThumbsDown
 } from 'lucide-react';
-import { startRealtimeUpdates, fetchSensorData } from '@/lib/firebase';
+import { startRealtimeUpdates, fetchSensorData, auth } from '@/lib/firebase';
+import { onAuthStateChanged, type User as AuthUser } from 'firebase/auth';
+import { doc, onSnapshot, collection } from 'firebase/firestore';
+import { db } from '@/lib/firebase';
 
 const AI_API_KEY = process.env.NEXT_PUBLIC_GROQ_API_KEY ?? '';
 const AI_MODEL     = 'llama-3.3-70b-versatile';
@@ -49,6 +52,12 @@ type SensorData = {
   nitrogen: number;
   phosphorus: number;
   potassium: number;
+};
+
+type Plot = {
+  id: string; name: string; cropType: string; variety: string;
+  area: string; plantedDate: string; harvestDate: string;
+  status: 'growing' | 'dormant' | 'harvested'; emoji: string;
 };
 
 type Priority = 'critical' | 'high' | 'medium' | 'low';
@@ -379,7 +388,11 @@ export default function AIInsightsPage() {
   // STATE
   // ────────────────────────────────────────────────────────────────────────────
   
-  // Sensor data (starts at 0 until Firebase loads)
+  const [currentUser, setCurrentUser] = useState<AuthUser | null>(null);
+  const [plots, setPlots] = useState<Plot[]>([]);
+  const [activePlotId, setActivePlotId] = useState('plot-a');
+  
+  // Sensor data (starts at 0 until data loads)
   const [sensor, setSensor] = useState<SensorData>({
     moisture: 0,
     temperature: 0,
@@ -413,9 +426,44 @@ export default function AIInsightsPage() {
   // UI
   const [activeTab, setActiveTab] = useState<'insights' | 'chat'>('insights');
 
+  const plot = plots.find(p => p.id === activePlotId) ?? plots[0];
+
   // ────────────────────────────────────────────────────────────────────────────
   // FIREBASE INTEGRATION
   // ────────────────────────────────────────────────────────────────────────────
+  
+  // Auth
+  useEffect(() => onAuthStateChanged(auth, setCurrentUser), []);
+  
+  // Load plots from database
+  useEffect(() => {
+    return onSnapshot(collection(db, 'plots'), snap => {
+      if (!snap.empty) {
+        const plotData = snap.docs.map(d => d.data() as Plot);
+        setPlots(plotData);
+        if (plotData.length > 0 && !activePlotId) {
+          setActivePlotId(plotData[0].id);
+        }
+      }
+    });
+  }, []);
+  
+  // Load soil metrics for active plot
+  useEffect(() => {
+    if (!activePlotId) return;
+    return onSnapshot(doc(db, 'plots', activePlotId, 'soil_metrics', 'current'), snap => {
+      if (snap.exists()) {
+        const d = snap.data();
+        setSensor(prev => ({
+          ...prev,
+          ph: d.ph ?? prev.ph,
+          nitrogen: d.nitrogen ?? prev.nitrogen,
+          phosphorus: d.phosphorus ?? prev.phosphorus,
+          potassium: d.potassium ?? prev.potassium,
+        }));
+      }
+    });
+  }, [activePlotId]);
 
   useEffect(() => {
     // Fetch initial sensor data
@@ -453,7 +501,7 @@ export default function AIInsightsPage() {
 
   const handleGenerateInsights = useCallback(async () => {
     if (!dataLoaded) {
-      console.log('Waiting for Firebase data before generating insights...');
+      console.log('Waiting for data before generating insights...');
       return;
     }
     
@@ -489,6 +537,7 @@ export default function AIInsightsPage() {
 
   const systemContext = `
 You are an expert AI agronomist assistant for a smart farm in Kenya.
+Active plot: ${plot?.name ?? 'N/A'} — ${plot?.cropType ?? 'N/A'} (${plot?.variety ?? 'N/A'}).
 Current real-time sensor readings:
 - Soil Moisture: ${sensor.moisture}%
 - Temperature: ${sensor.temperature}°C  
@@ -497,7 +546,6 @@ Current real-time sensor readings:
 - Nitrogen (N): ${sensor.nitrogen} mg/kg
 - Phosphorus (P): ${sensor.phosphorus} mg/kg
 - Potassium (K): ${sensor.potassium} mg/kg
-Current crop: Tomatoes (Roma VF variety), Plot A.
 Give concise, actionable advice. Use bullet points sparingly. Be friendly and professional.
   `.trim();
 
@@ -612,7 +660,7 @@ Give concise, actionable advice. Use bullet points sparingly. Be friendly and pr
                 AI Insights
               </h1>
               <p className="text-xs text-slate-400 mt-0.5">
-                AI-powered · Real-time farm analysis
+                {plot ? `${plot.emoji} ${plot.name} — ${plot.cropType} (${plot.variety})` : 'AI-powered · Real-time farm analysis'}
               </p>
             </div>
           </div>
@@ -744,7 +792,7 @@ Give concise, actionable advice. Use bullet points sparingly. Be friendly and pr
                   dataLoaded ? "bg-emerald-500 animate-pulse" : "bg-amber-500"
                 )} />
                 {dataLoaded 
-                  ? "Firebase live · Plot A – Tomatoes" 
+                  ? (plot ? `Live Data · ${plot.name} – ${plot.cropType}` : "Live Data · No plot selected")
                   : "Loading sensor data..."}
               </span>
               {lastRefreshed && (
@@ -769,7 +817,7 @@ Give concise, actionable advice. Use bullet points sparingly. Be friendly and pr
               <div className="flex flex-col items-center justify-center py-20 gap-3 text-center">
                 <Loader2 className="w-10 h-10 text-slate-600 animate-spin" />
                 <p className="text-slate-400">
-                  Loading live sensor data from Firebase...
+                  Loading live sensor data...
                 </p>
               </div>
             ) : insights.length === 0 ? (
@@ -972,7 +1020,7 @@ Give concise, actionable advice. Use bullet points sparingly. Be friendly and pr
               </div>
 
               <p className="text-center text-[11px] text-slate-600 mt-2 px-4 sm:px-0 hidden md:block">
-                AI has access to live sensor data from Firebase · Press Enter to send
+                AI has access to live sensor data · Press Enter to send
               </p>
             </div>
           </div>

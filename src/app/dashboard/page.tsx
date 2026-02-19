@@ -490,7 +490,7 @@ export default function SmartFarmDashboard() {
   const [selectedMetric, setSelectedMetric] = useState<'moisture' | 'temperature' | 'humidity'>('temperature');
   const [messages, setMessages] = useState<Message[]>([{
     id: '1', role: 'ai',
-    content: "Hello! I'm your AI farming assistant powered by LLaMA 3. I can help you analyze crop data, predict yields, suggest irrigation schedules, and diagnose plant health issues. What would you like to know about your farm today?"
+    content: "Hello! I'm your AI farming assistant. I can help you analyze crop data, predict yields, suggest irrigation schedules, and diagnose plant health issues. What would you like to know about your farm today?"
   }]);
   const [inputMessage, setInputMessage] = useState('');
   const [isAITyping, setIsAITyping] = useState(false);
