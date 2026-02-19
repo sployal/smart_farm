@@ -1,7 +1,9 @@
 'use client';
 
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { collection, onSnapshot } from 'firebase/firestore';
+import { db } from '@/lib/firebase';
 import {
   RadarChart, Radar, PolarGrid, PolarAngleAxis, PolarRadiusAxis,
   ResponsiveContainer, AreaChart, Area, XAxis, YAxis, Tooltip, CartesianGrid
@@ -431,8 +433,26 @@ function buildGrowthTimeline(s: SensorData) {
 // ---------------------------------------------------------------------------
 // Main Page
 // ---------------------------------------------------------------------------
+type Plot = {
+  id: string; name: string; cropType: string; variety: string;
+  area: string; plantedDate: string; harvestDate: string;
+};
+
+const DEFAULT_PLOTS: Plot[] = [
+  { id: 'plot-a', name: 'Plot A', cropType: 'Tomatoes', variety: 'Roma VF', area: '0.5 ha', plantedDate: '2025-12-01', harvestDate: '2026-03-01' },
+  { id: 'plot-b', name: 'Plot B', cropType: 'Maize', variety: 'H614D', area: '1.2 ha', plantedDate: '2025-11-15', harvestDate: '2026-02-20' },
+  { id: 'plot-c', name: 'Plot C', cropType: 'Beans', variety: 'Rose Coco', area: '0.8 ha', plantedDate: '2025-12-20', harvestDate: '2026-02-28' },
+];
+
 export default function PlantPerformancePage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const plotIdParam = searchParams?.get('plotId') || 'plot-a';
+
+  // ── Plot state ──
+  const [plots, setPlots] = useState<Plot[]>(DEFAULT_PLOTS);
+  const activePlot = plots.find(p => p.id === plotIdParam) ?? plots[0];
+
   // ── Sensor state (wired to Firebase in real app; mocked here) ──
   const [sensorData, setSensorData] = useState<SensorData>({
     moisture:     62,
@@ -480,7 +500,7 @@ Schema:
 }`.trim();
 
       const prompt = `
-Crop: Roma VF Tomato — Plot A, Kenya highlands.
+Crop: ${activePlot.cropType} ${activePlot.variety} — ${activePlot.name}, Kenya highlands.
 Sensors:
   Moisture: ${sensorData.moisture.toFixed(1)}%
   Temperature: ${sensorData.temperature.toFixed(1)}°C
@@ -501,11 +521,24 @@ Produce a JSON plant-health report.`.trim();
     } finally {
       setAiLoading(false);
     }
-  }, [sensorData]);
+  }, [sensorData, activePlot]);
 
   useEffect(() => {
     fetchAIReport();
     // In production, hook up Firebase real-time updates to setSensorData
+  }, [fetchAIReport]);
+
+  // ── Load plots from Firebase ──
+  useEffect(() => {
+    try {
+      return onSnapshot(collection(db, 'plots'), snap => {
+        if (!snap.empty) {
+          setPlots(snap.docs.map(d => d.data() as Plot));
+        }
+      });
+    } catch {
+      // Firebase not configured — use default plots
+    }
   }, []);
 
   // ── Wire Firebase if available ──
@@ -561,6 +594,14 @@ Produce a JSON plant-health report.`.trim();
           <div className="flex items-center gap-2">
             <button
               type="button"
+              onClick={() => router.push('/dashboard')}
+              className="lg:hidden p-2 rounded-lg hover:bg-slate-800 text-slate-400 transition-colors flex-shrink-0"
+              title="Back to Dashboard"
+            >
+              <ChevronRight className="w-5 h-5 rotate-180" />
+            </button>
+            <button
+              type="button"
               onClick={() => {
                 document.dispatchEvent(new CustomEvent('toggleMobileMenu'));
               }}
@@ -571,15 +612,15 @@ Produce a JSON plant-health report.`.trim();
             <div>
             <div className="flex items-center gap-2 text-slate-500 text-sm mb-1">
               <Sprout className="w-4 h-4" />
-              <span>Farm Dashboard</span>
+              <button onClick={() => router.push('/dashboard')} className="hover:text-slate-400 transition-colors">Farm Dashboard</button>
               <ChevronRight className="w-3 h-3" />
               <span style={{ color: meta.color }}>Plant Performance</span>
             </div>
             <h1 className="text-2xl sm:text-3xl font-black text-slate-100 tracking-tight">
-              Plant Performance
+              {activePlot.name} · {activePlot.cropType}
             </h1>
             <p className="text-slate-400 text-sm mt-1">
-              Roma VF Tomato · Plot A · Real-time diagnostics
+              {activePlot.variety} · {activePlot.area} · Real-time diagnostics
             </p>
             </div>
           </div>

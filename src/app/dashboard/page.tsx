@@ -760,9 +760,9 @@ Give concise, actionable advice. Be friendly and professional.`.trim();
                 <Edit3 className="w-4 h-4" /> Edit Plot
               </button>
               <button
-                onClick={() => setShowChat(true)}
+                onClick={() => router.push('/plant_performance?plotId=' + activePlotId)}
                 className="px-4 py-2.5 rounded-xl bg-emerald-600 text-white font-semibold text-sm hover:bg-emerald-500 transition-colors flex items-center gap-2">
-                <Bot className="w-4 h-4" /> Ask AI
+                <Bot className="w-4 h-4" /> View Performance
               </button>
             </div>
           </div>
