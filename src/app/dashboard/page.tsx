@@ -4,18 +4,18 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import {
   XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
-  AreaChart, Area, BarChart, Bar
+  AreaChart, Area
 } from 'recharts';
 import {
   Menu, Search, RefreshCw, Bell, AlertTriangle, X, Droplets,
-  Thermometer, Waves, FlaskConical, ArrowUp, ArrowDown, Send,
+  Thermometer, Waves, FlaskConical, Send,
   Download, Bot, Lightbulb, TrendingUp, CheckCircle, AlertCircle,
   Info, User, Plus, Edit3, Database, BarChart2, Wind, ArrowUpRight,
-  ArrowDownRight, Check, MessageCircle, Layers, Activity, Sprout
+  ArrowDownRight, Check, Layers, Activity, Sprout
 } from 'lucide-react';
 import clsx, { type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
-import { format, subHours } from 'date-fns';
+import { format } from 'date-fns';
 import {
   startRealtimeUpdates, fetchSensorData, fetchHistoricalData,
   auth, type HistoricalDataPoint
@@ -47,7 +47,10 @@ async function callGroqAI(prompt: string, systemContext: string): Promise<string
       temperature: 0.7, max_tokens: 1024
     })
   });
-  if (!res.ok) { const e = await res.json().catch(() => ({})); throw new Error(e?.error?.message || `AI error ${res.status}`); }
+  if (!res.ok) {
+    const e = await res.json().catch(() => ({}));
+    throw new Error(e?.error?.message || `AI error ${res.status}`);
+  }
   const data = await res.json();
   return data?.choices?.[0]?.message?.content ?? 'No response received.';
 }
@@ -76,6 +79,10 @@ type LogEntry = {
   sensor: string; value: string; status: 'success' | 'warning' | 'info';
 };
 
+type SoilMetrics = {
+  ph: number; nitrogen: number; phosphorus: number; potassium: number;
+};
+
 // ── Constants ─────────────────────────────────────────────────────────────────
 const CROPS = [
   { type: 'Tomatoes',  emoji: '🍅', varieties: ['Roma VF', 'Cherry 100', 'Beef Master', 'Big Boy'] },
@@ -93,7 +100,7 @@ const DEFAULT_PLOTS: Plot[] = [
   { id: 'plot-c', name: 'Plot C', cropType: 'Beans', variety: 'Rose Coco', area: '0.8 ha', plantedDate: '2025-12-20', harvestDate: '2026-02-28', status: 'dormant', emoji: '🫘' },
 ];
 
-// ── Sensor thresholds (from file 1) ──────────────────────────────────────────
+// ── Sensor thresholds ─────────────────────────────────────────────────────────
 const SENSOR_THRESHOLDS = {
   temperature: { optimalMin: 18, optimalMax: 28, criticalMin: 10, criticalMax: 38 },
   humidity:    { optimalMin: 55, optimalMax: 80, criticalMin: 30, criticalMax: 95 },
@@ -114,14 +121,14 @@ function calcStatus(value: number, key: keyof typeof SENSOR_THRESHOLDS): SensorS
 }
 
 function statusLabel(value: number, key: keyof typeof SENSOR_THRESHOLDS): string {
-  const { optimalMin, optimalMax } = SENSOR_THRESHOLDS[key];
+  const { optimalMin } = SENSOR_THRESHOLDS[key];
   const st = calcStatus(value, key);
   if (st === 'optimal') return 'Optimal';
   if (st === 'warning') return 'Critical';
   return value < optimalMin ? 'Below Optimal' : 'Above Optimal';
 }
 
-// ── Chart processing (from file 1) ───────────────────────────────────────────
+// ── Chart processing ──────────────────────────────────────────────────────────
 function processHistoricalForChart(
   historyData: HistoricalDataPoint[],
   timeRange: '24h' | '7d' | '30d'
@@ -195,28 +202,37 @@ function PlotModal({ initial, saving, onSave, onClose }: {
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label className="text-xs font-semibold text-slate-400 uppercase tracking-wider block mb-2">Plot Name *</label>
-              <input className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2.5 text-sm text-slate-200 outline-none focus:border-emerald-500"
-                value={f.name} onChange={e => setF(x => ({ ...x, name: e.target.value }))} placeholder="e.g. Plot A" />
+              <input
+                className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2.5 text-sm text-slate-200 outline-none focus:border-emerald-500"
+                value={f.name} onChange={e => setF(x => ({ ...x, name: e.target.value }))} placeholder="e.g. Plot A"
+              />
             </div>
             <div>
               <label className="text-xs font-semibold text-slate-400 uppercase tracking-wider block mb-2">Area</label>
-              <input className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2.5 text-sm text-slate-200 outline-none focus:border-emerald-500"
-                value={f.area} onChange={e => setF(x => ({ ...x, area: e.target.value }))} placeholder="e.g. 0.5 ha" />
+              <input
+                className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2.5 text-sm text-slate-200 outline-none focus:border-emerald-500"
+                value={f.area} onChange={e => setF(x => ({ ...x, area: e.target.value }))} placeholder="e.g. 0.5 ha"
+              />
             </div>
           </div>
 
           <div>
             <label className="text-xs font-semibold text-slate-400 uppercase tracking-wider block mb-2">Crop Type *</label>
-            <select className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2.5 text-sm text-slate-200 outline-none focus:border-emerald-500"
+            <select
+              className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2.5 text-sm text-slate-200 outline-none focus:border-emerald-500"
               value={f.cropType}
-              onChange={e => { const c = CROPS.find(x => x.type === e.target.value) ?? CROPS[0]; setF(x => ({ ...x, cropType: c.type, variety: c.varieties[0], emoji: c.emoji })); }}>
+              onChange={e => {
+                const c = CROPS.find(x => x.type === e.target.value) ?? CROPS[0];
+                setF(x => ({ ...x, cropType: c.type, variety: c.varieties[0], emoji: c.emoji }));
+              }}>
               {CROPS.map(c => <option key={c.type}>{c.type}</option>)}
             </select>
           </div>
 
           <div>
             <label className="text-xs font-semibold text-slate-400 uppercase tracking-wider block mb-2">Variety</label>
-            <select className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2.5 text-sm text-slate-200 outline-none focus:border-emerald-500"
+            <select
+              className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2.5 text-sm text-slate-200 outline-none focus:border-emerald-500"
               value={f.variety} onChange={e => setF(x => ({ ...x, variety: e.target.value }))}>
               {crop.varieties.map(v => <option key={v}>{v}</option>)}
             </select>
@@ -225,13 +241,19 @@ function PlotModal({ initial, saving, onSave, onClose }: {
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label className="text-xs font-semibold text-slate-400 uppercase tracking-wider block mb-2">Planted</label>
-              <input type="date" className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2.5 text-sm text-slate-200 outline-none focus:border-emerald-500"
-                value={f.plantedDate} onChange={e => setF(x => ({ ...x, plantedDate: e.target.value }))} />
+              <input
+                type="date"
+                className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2.5 text-sm text-slate-200 outline-none focus:border-emerald-500"
+                value={f.plantedDate} onChange={e => setF(x => ({ ...x, plantedDate: e.target.value }))}
+              />
             </div>
             <div>
               <label className="text-xs font-semibold text-slate-400 uppercase tracking-wider block mb-2">Harvest ETA</label>
-              <input type="date" className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2.5 text-sm text-slate-200 outline-none focus:border-emerald-500"
-                value={f.harvestDate} onChange={e => setF(x => ({ ...x, harvestDate: e.target.value }))} />
+              <input
+                type="date"
+                className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2.5 text-sm text-slate-200 outline-none focus:border-emerald-500"
+                value={f.harvestDate} onChange={e => setF(x => ({ ...x, harvestDate: e.target.value }))}
+              />
             </div>
           </div>
 
@@ -240,12 +262,14 @@ function PlotModal({ initial, saving, onSave, onClose }: {
             <div className="flex gap-2">
               {(['growing', 'dormant', 'harvested'] as const).map(s => (
                 <button key={s} onClick={() => setF(x => ({ ...x, status: s }))}
-                  className={cn("flex-1 px-3 py-2.5 rounded-xl text-xs font-semibold capitalize transition-all border-2",
+                  className={cn(
+                    "flex-1 px-3 py-2.5 rounded-xl text-xs font-semibold capitalize transition-all border-2",
                     f.status === s
                       ? s === 'growing' ? 'bg-emerald-500/10 border-emerald-500 text-emerald-400'
                         : s === 'dormant' ? 'bg-amber-500/10 border-amber-500 text-amber-400'
                         : 'bg-slate-500/10 border-slate-500 text-slate-400'
-                      : 'bg-transparent border-slate-700 text-slate-500 hover:border-slate-600')}>
+                      : 'bg-transparent border-slate-700 text-slate-500 hover:border-slate-600'
+                  )}>
                   {s === 'growing' ? '🌱' : s === 'dormant' ? '💤' : '✅'} {s}
                 </button>
               ))}
@@ -254,10 +278,191 @@ function PlotModal({ initial, saving, onSave, onClose }: {
         </div>
 
         <div className="p-5 border-t border-slate-700 flex gap-3">
-          <button onClick={onClose} className="flex-1 px-4 py-2.5 rounded-xl font-medium text-sm bg-transparent border border-slate-700 text-slate-400 hover:bg-slate-700 transition-colors">Cancel</button>
-          <button onClick={() => f.name && f.cropType && onSave(f)} disabled={saving || !f.name}
+          <button onClick={onClose} className="flex-1 px-4 py-2.5 rounded-xl font-medium text-sm bg-transparent border border-slate-700 text-slate-400 hover:bg-slate-700 transition-colors">
+            Cancel
+          </button>
+          <button
+            onClick={() => f.name && f.cropType && onSave(f)}
+            disabled={saving || !f.name}
             className="flex-1 px-4 py-2.5 rounded-xl font-semibold text-sm bg-emerald-600 text-white hover:bg-emerald-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center justify-center gap-2">
             {saving ? '...' : <><Database className="w-4 h-4" /> Save Plot</>}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── Soil Metrics Modal ────────────────────────────────────────────────────────
+function SoilMetricsModal({ initial, saving, onSave, onClose }: {
+  initial: SoilMetrics;
+  saving: boolean;
+  onSave: (vals: SoilMetrics) => void;
+  onClose: () => void;
+}) {
+  const [f, setF] = useState<SoilMetrics>({ ...initial });
+
+  const fields: {
+    key: keyof SoilMetrics;
+    label: string;
+    unit: string;
+    min: number;
+    max: number;
+    step: number;
+    ideal: string;
+    accent: string;
+    description: string;
+    icon: React.ElementType;
+  }[] = [
+    {
+      key: 'ph', label: 'Soil pH', unit: 'pH',
+      min: 0, max: 14, step: 0.1, ideal: '6.0 – 7.0',
+      accent: '#7c3aed', description: 'Measure of soil acidity or alkalinity',
+      icon: FlaskConical,
+    },
+    {
+      key: 'nitrogen', label: 'Nitrogen (N)', unit: 'mg/kg',
+      min: 0, max: 500, step: 1, ideal: '50 – 150',
+      accent: '#16a34a', description: 'Essential for leaf and stem growth',
+      icon: Activity,
+    },
+    {
+      key: 'phosphorus', label: 'Phosphorus (P)', unit: 'mg/kg',
+      min: 0, max: 300, step: 1, ideal: '30 – 80',
+      accent: '#d97706', description: 'Critical for root development',
+      icon: Layers,
+    },
+    {
+      key: 'potassium', label: 'Potassium (K)', unit: 'mg/kg',
+      min: 0, max: 800, step: 1, ideal: '150 – 300',
+      accent: '#0891b2', description: 'Supports overall plant health',
+      icon: Wind,
+    },
+  ];
+
+  return (
+    <div
+      className="fixed inset-0 bg-black/70 backdrop-blur-sm z-[100] flex items-center justify-center p-4"
+      onClick={onClose}
+    >
+      <div
+        className="bg-slate-800 border border-slate-700 rounded-2xl w-full max-w-md shadow-2xl"
+        onClick={e => e.stopPropagation()}
+      >
+        {/* Header */}
+        <div className="p-5 border-b border-slate-700 flex items-center gap-3">
+          <div className="w-10 h-10 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center">
+            <FlaskConical className="w-5 h-5 text-emerald-400" />
+          </div>
+          <div className="flex-1">
+            <h3 className="text-lg font-semibold text-slate-100">Edit Soil Metrics</h3>
+            <p className="text-xs text-slate-400 mt-0.5">Adjust values and save to database</p>
+          </div>
+          <button
+            onClick={onClose}
+            className="p-2 hover:bg-slate-700 rounded-lg text-slate-400 hover:text-slate-200 transition-colors"
+          >
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+
+        {/* Fields */}
+        <div className="p-5 space-y-6 max-h-[60vh] overflow-y-auto">
+          {fields.map(field => {
+            const val = f[field.key];
+            const pct = field.key === 'ph'
+              ? (val / 14) * 100
+              : Math.min(100, (val / field.max) * 100);
+
+            const st = calcStatus(val, field.key as keyof typeof SENSOR_THRESHOLDS);
+
+            return (
+              <div key={field.key} className="space-y-2">
+                {/* Label row */}
+                <div className="flex items-start justify-between">
+                  <div className="flex items-center gap-2">
+                    <div className="w-7 h-7 rounded-lg flex items-center justify-center" style={{ backgroundColor: `${field.accent}20` }}>
+                      <field.icon className="w-3.5 h-3.5" style={{ color: field.accent }} />
+                    </div>
+                    <div>
+                      <div className="text-sm font-semibold text-slate-200">{field.label}</div>
+                      <div className="text-[11px] text-slate-500">{field.description}</div>
+                    </div>
+                  </div>
+                  <div className="text-right flex-shrink-0 ml-2">
+                    <div className="text-lg font-bold leading-none" style={{ color: field.accent }}>
+                      {field.key === 'ph' ? val.toFixed(1) : val}
+                      <span className="text-xs font-normal text-slate-400 ml-1">{field.unit}</span>
+                    </div>
+                    <span className={cn(
+                      "inline-block mt-1 px-2 py-0.5 rounded-full text-[10px] font-bold",
+                      st === 'optimal' && "bg-emerald-500/10 text-emerald-400",
+                      st === 'good'    && "bg-amber-500/10 text-amber-400",
+                      st === 'warning' && "bg-red-500/10 text-red-400",
+                    )}>
+                      {statusLabel(val, field.key as keyof typeof SENSOR_THRESHOLDS)}
+                    </span>
+                  </div>
+                </div>
+
+                {/* Slider */}
+                <div className="relative">
+                  <input
+                    type="range"
+                    min={field.min}
+                    max={field.max}
+                    step={field.step}
+                    value={val}
+                    onChange={e => setF(prev => ({ ...prev, [field.key]: parseFloat(e.target.value) }))}
+                    className="w-full h-2 rounded-full appearance-none cursor-pointer"
+                    style={{
+                      background: `linear-gradient(to right, ${field.accent} ${pct}%, #334155 ${pct}%)`,
+                    }}
+                  />
+                </div>
+
+                {/* Number input + ideal */}
+                <div className="flex items-center justify-between gap-3">
+                  <span className="text-[11px] text-slate-500">
+                    Ideal: <span className="text-slate-400 font-medium">{field.ideal} {field.unit}</span>
+                  </span>
+                  <input
+                    type="number"
+                    min={field.min}
+                    max={field.max}
+                    step={field.step}
+                    value={field.key === 'ph' ? val.toFixed(1) : val}
+                    onChange={e => {
+                      const v = parseFloat(e.target.value);
+                      if (!isNaN(v) && v >= field.min && v <= field.max) {
+                        setF(prev => ({ ...prev, [field.key]: v }));
+                      }
+                    }}
+                    className="w-24 bg-slate-900 border border-slate-700 rounded-lg px-2 py-1.5 text-xs text-slate-200 text-right outline-none focus:border-emerald-500 [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+                  />
+                </div>
+              </div>
+            );
+          })}
+        </div>
+
+        {/* Footer */}
+        <div className="p-5 border-t border-slate-700 flex gap-3">
+          <button
+            onClick={onClose}
+            className="flex-1 px-4 py-2.5 rounded-xl font-medium text-sm bg-transparent border border-slate-700 text-slate-400 hover:bg-slate-700 transition-colors"
+          >
+            Cancel
+          </button>
+          <button
+            onClick={() => onSave(f)}
+            disabled={saving}
+            className="flex-1 px-4 py-2.5 rounded-xl font-semibold text-sm bg-emerald-600 text-white hover:bg-emerald-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center justify-center gap-2"
+          >
+            {saving
+              ? <><RefreshCw className="w-4 h-4 animate-spin" /> Saving...</>
+              : <><Database className="w-4 h-4" /> Save Metrics</>
+            }
           </button>
         </div>
       </div>
@@ -280,7 +485,6 @@ export default function SmartFarmDashboard() {
   const [isConnected, setIsConnected] = useState(false);
   const [lastSync, setLastSync] = useState('Never');
   const [timeRange, setTimeRange] = useState<'24h' | '7d' | '30d'>('24h');
-  // Chart data from real Firebase historical data (file 1 approach)
   const [chartData, setChartData] = useState<Array<{ time: string; moisture: number; temperature: number; humidity: number }>>([]);
   const [isLoadingChart, setIsLoadingChart] = useState(true);
   const [selectedMetric, setSelectedMetric] = useState<'moisture' | 'temperature' | 'humidity'>('temperature');
@@ -295,9 +499,9 @@ export default function SmartFarmDashboard() {
   const [showModal, setShowModal] = useState(false);
   const [saving, setSaving] = useState(false);
   const [soilSaving, setSoilSaving] = useState(false);
+  const [showSoilModal, setShowSoilModal] = useState(false);
   const chatEndRef = useRef<HTMLDivElement>(null);
 
-  // Random mini-chart data (decorative sparklines)
   const miniChartData = Array.from({ length: 10 }, () => Math.floor(Math.random() * 40 + 40));
 
   const plot = plots.find(p => p.id === activePlotId) ?? plots[0];
@@ -331,7 +535,7 @@ export default function SmartFarmDashboard() {
     });
   }, [activePlotId]);
 
-  // ── Real-time sensor data (file 1 approach) ─────────────────────────────────
+  // ── Real-time sensor data ───────────────────────────────────────────────────
   useEffect(() => {
     fetchSensorData().then(data => {
       setSensorData(prev => ({
@@ -355,7 +559,7 @@ export default function SmartFarmDashboard() {
     });
   }, []);
 
-  // ── Historical chart data from Firebase (file 1 approach) ──────────────────
+  // ── Historical chart data ───────────────────────────────────────────────────
   useEffect(() => {
     const loadChartData = async () => {
       setIsLoadingChart(true);
@@ -375,7 +579,7 @@ export default function SmartFarmDashboard() {
       setIsLoadingChart(false);
     };
     loadChartData();
-  }, [timeRange]); // Only on time range change, same as file 1
+  }, [timeRange]);
 
   // ── Chat scroll ─────────────────────────────────────────────────────────────
   useEffect(() => { chatEndRef.current?.scrollIntoView({ behavior: 'smooth' }); }, [messages]);
@@ -422,7 +626,20 @@ Give concise, actionable advice. Be friendly and professional.`.trim();
     } finally { setSaving(false); setShowModal(false); }
   };
 
-  // ── Insights (dynamic values from sensor data) ──────────────────────────────
+  // ── Save soil metrics ───────────────────────────────────────────────────────
+  const saveSoilMetrics = async (vals: SoilMetrics) => {
+    setSoilSaving(true);
+    try {
+      // Optimistically update UI immediately
+      setSensorData(prev => ({ ...prev, ...vals }));
+      await fbSaveSoil(activePlotId, vals);
+      setShowSoilModal(false);
+    } finally {
+      setSoilSaving(false);
+    }
+  };
+
+  // ── Insights ────────────────────────────────────────────────────────────────
   const insights: Insight[] = [
     {
       id: '1', priority: 'high', title: 'Nitrogen Deficiency Alert',
@@ -441,11 +658,11 @@ Give concise, actionable advice. Be friendly and professional.`.trim();
     }
   ];
 
-  const logs = [
-    { id: '1', time: '10:42 AM', event: 'Data Sync', sensor: 'ESP32-Node1', value: 'Batch: 24 readings', status: 'success' as const },
-    { id: '2', time: '10:38 AM', event: 'Threshold Alert', sensor: 'Soil Moisture', value: '23% → 19%', status: 'warning' as const },
-    { id: '3', time: '10:35 AM', event: 'AI Analysis', sensor: 'AI System', value: '3 insights generated', status: 'success' as const },
-    { id: '4', time: '10:30 AM', event: 'Offline Mode', sensor: 'Connectivity', value: 'WiFi disconnected', status: 'info' as const },
+  const logs: LogEntry[] = [
+    { id: '1', time: '10:42 AM', event: 'Data Sync', sensor: 'ESP32-Node1', value: 'Batch: 24 readings', status: 'success' },
+    { id: '2', time: '10:38 AM', event: 'Threshold Alert', sensor: 'Soil Moisture', value: '23% → 19%', status: 'warning' },
+    { id: '3', time: '10:35 AM', event: 'AI Analysis', sensor: 'AI System', value: '3 insights generated', status: 'success' },
+    { id: '4', time: '10:30 AM', event: 'Offline Mode', sensor: 'Connectivity', value: 'WiFi disconnected', status: 'info' },
   ];
 
   // ══════════════════════════════════════════════════════════════════════════
@@ -453,7 +670,7 @@ Give concise, actionable advice. Be friendly and professional.`.trim();
   // ══════════════════════════════════════════════════════════════════════════
   return (
     <div className="text-slate-100 font-sans min-h-screen" style={{ background: '#1a2332' }}>
-      {/* Subtle ambient blobs - much more subdued */}
+      {/* Ambient blobs */}
       <div className="fixed inset-0 pointer-events-none overflow-hidden z-0">
         <div className="absolute top-0 right-0 w-96 h-96 rounded-full blur-3xl"
           style={{ background: 'rgba(16,185,129,0.02)' }} />
@@ -463,8 +680,10 @@ Give concise, actionable advice. Be friendly and professional.`.trim();
 
       {/* ── Header ─────────────────────────────────────────────────────────── */}
       <header className="relative z-40 sticky top-0 h-16 bg-slate-900/80 backdrop-blur-md border-b border-slate-800 flex items-center justify-between px-4 md:px-6 lg:px-8 gap-4">
-        <button onClick={() => document.dispatchEvent(new CustomEvent('toggleMobileMenu'))}
-          className="lg:hidden p-2 rounded-lg hover:bg-slate-800 text-slate-400 transition-colors">
+        <button
+          onClick={() => document.dispatchEvent(new CustomEvent('toggleMobileMenu'))}
+          className="lg:hidden p-2 rounded-lg hover:bg-slate-800 text-slate-400 transition-colors"
+        >
           <Menu className="w-5 h-5" />
         </button>
 
@@ -479,14 +698,17 @@ Give concise, actionable advice. Be friendly and professional.`.trim();
           <div className="hidden md:flex gap-2 overflow-x-auto">
             {plots.slice(0, 3).map(p => (
               <button key={p.id} onClick={() => setActivePlotId(p.id)}
-                className={cn("flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-medium transition-all whitespace-nowrap border",
+                className={cn(
+                  "flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-medium transition-all whitespace-nowrap border",
                   activePlotId === p.id
                     ? "bg-emerald-500 border-emerald-500 text-white"
-                    : "bg-slate-800 border-slate-700 text-slate-400 hover:border-emerald-500")}>
+                    : "bg-slate-800 border-slate-700 text-slate-400 hover:border-emerald-500"
+                )}>
                 <span>{p.emoji}</span><span>{p.name}</span>
               </button>
             ))}
-            <button onClick={() => { setEditPlot(null); setShowModal(true); }}
+            <button
+              onClick={() => { setEditPlot(null); setShowModal(true); }}
               className="flex items-center gap-1 px-3 py-1.5 rounded-full text-xs font-medium bg-slate-800 border border-dashed border-slate-700 text-slate-400 hover:border-emerald-500 whitespace-nowrap">
               <Plus className="w-3 h-3" /> Add
             </button>
@@ -501,7 +723,8 @@ Give concise, actionable advice. Be friendly and professional.`.trim();
             <span className="absolute top-0 right-0 w-4 h-4 bg-red-500 text-[10px] font-bold text-white rounded-full flex items-center justify-center border-2 border-slate-900">3</span>
           </button>
 
-          <button onClick={() => router.push('/my_account')}
+          <button
+            onClick={() => router.push('/my_account')}
             className="flex items-center gap-2 pl-3 border-l border-slate-800 rounded-lg hover:bg-slate-800/50 transition-colors">
             <div className="w-8 h-8 rounded-full bg-emerald-600 flex items-center justify-center text-sm font-bold text-white">
               {currentUser?.photoURL
@@ -531,11 +754,13 @@ Give concise, actionable advice. Be friendly and professional.`.trim();
               </p>
             </div>
             <div className="flex gap-2">
-              <button onClick={() => { setEditPlot(plot ?? null); setShowModal(true); }}
+              <button
+                onClick={() => { setEditPlot(plot ?? null); setShowModal(true); }}
                 className="px-4 py-2.5 rounded-xl bg-slate-800 border border-slate-700 text-slate-300 font-medium text-sm hover:bg-slate-700 transition-colors flex items-center gap-2">
                 <Edit3 className="w-4 h-4" /> Edit Plot
               </button>
-              <button onClick={() => setShowChat(true)}
+              <button
+                onClick={() => setShowChat(true)}
                 className="px-4 py-2.5 rounded-xl bg-emerald-600 text-white font-semibold text-sm hover:bg-emerald-500 transition-colors flex items-center gap-2">
                 <Bot className="w-4 h-4" /> Ask AI
               </button>
@@ -551,8 +776,10 @@ Give concise, actionable advice. Be friendly and professional.`.trim();
               </div>
               <div className="flex-1 min-w-[200px]">
                 <div className="w-full h-2 bg-slate-700 rounded-full overflow-hidden">
-                  <div className="h-full bg-gradient-to-r from-emerald-600 to-emerald-400 rounded-full transition-all duration-1000"
-                    style={{ width: `${growth}%` }} />
+                  <div
+                    className="h-full bg-gradient-to-r from-emerald-600 to-emerald-400 rounded-full transition-all duration-1000"
+                    style={{ width: `${growth}%` }}
+                  />
                 </div>
                 <div className="flex justify-between text-xs text-slate-400 mt-2">
                   <span>{plot.plantedDate}</span>
@@ -566,10 +793,12 @@ Give concise, actionable advice. Be friendly and professional.`.trim();
                     🗓 {remaining} days left
                   </span>
                 )}
-                <span className={cn("px-3 py-1 rounded-full text-xs font-semibold border capitalize",
+                <span className={cn(
+                  "px-3 py-1 rounded-full text-xs font-semibold border capitalize",
                   plot.status === 'growing' && "bg-emerald-500/10 text-emerald-400 border-emerald-500/20",
                   plot.status === 'dormant' && "bg-amber-500/10 text-amber-400 border-amber-500/20",
-                  plot.status === 'harvested' && "bg-slate-500/10 text-slate-400 border-slate-500/20")}>
+                  plot.status === 'harvested' && "bg-slate-500/10 text-slate-400 border-slate-500/20"
+                )}>
                   {plot.status === 'growing' ? '🌱' : plot.status === 'dormant' ? '💤' : '✅'} {plot.status}
                 </span>
                 <span className="px-3 py-1 bg-amber-500/10 text-amber-400 border border-amber-500/20 rounded-full text-xs font-semibold flex items-center gap-1">
@@ -580,7 +809,7 @@ Give concise, actionable advice. Be friendly and professional.`.trim();
           )}
         </div>
 
-        {/* SECTION 2: SENSOR CARDS — UI from file 2, status from file 1 thresholds */}
+        {/* SECTION 2: SENSOR CARDS */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {[
             {
@@ -602,17 +831,21 @@ Give concise, actionable advice. Be friendly and professional.`.trim();
             const st = calcStatus(parseFloat(s.value), s.key);
             const stLabel = statusLabel(parseFloat(s.value), s.key);
             return (
-              <div key={s.key}
+              <div
+                key={s.key}
                 className="bg-slate-800 border border-slate-700 rounded-2xl p-5 hover:-translate-y-1 hover:shadow-xl hover:shadow-black/40 transition-all duration-300 cursor-pointer group"
-                onClick={() => setSelectedMetric(s.key)}>
+                onClick={() => setSelectedMetric(s.key)}
+              >
                 <div className="flex justify-between items-start mb-4">
                   <div className="w-12 h-12 rounded-xl flex items-center justify-center" style={{ backgroundColor: s.pale }}>
                     <s.icon className="w-6 h-6" style={{ color: s.accent }} />
                   </div>
-                  <span className={cn("flex items-center gap-1 px-3 py-1 rounded-full text-xs font-semibold border",
+                  <span className={cn(
+                    "flex items-center gap-1 px-3 py-1 rounded-full text-xs font-semibold border",
                     st === 'optimal' && "bg-emerald-500/10 text-emerald-400 border-emerald-500/20",
-                    st === 'good' && "bg-amber-500/10 text-amber-400 border-amber-500/20",
-                    st === 'warning' && "bg-red-500/10 text-red-400 border-red-500/20")}>
+                    st === 'good'    && "bg-amber-500/10 text-amber-400 border-amber-500/20",
+                    st === 'warning' && "bg-red-500/10 text-red-400 border-red-500/20"
+                  )}>
                     {st === 'optimal' ? <Check className="w-3 h-3" /> : <AlertTriangle className="w-3 h-3" />}
                     {stLabel}
                   </span>
@@ -636,26 +869,21 @@ Give concise, actionable advice. Be friendly and professional.`.trim();
         {/* SECTION 3: SOIL METRICS + AI INSIGHTS */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
 
-          {/* Soil Quality Metrics (file 2 UI + file 1 threshold status) */}
+          {/* Soil Quality Metrics */}
           <div className="lg:col-span-2 bg-slate-800 border border-slate-700 rounded-2xl p-6">
             <div className="flex items-center justify-between mb-6">
               <div>
                 <h3 className="text-lg font-semibold text-slate-100">Soil Quality Metrics</h3>
                 <p className="text-xs text-slate-400 mt-1">{plot?.name} · Sync: {lastSync || '—'}</p>
               </div>
+
+              {/* ── EDIT METRICS BUTTON (replaces Save Metrics) ── */}
               <button
-                onClick={async () => {
-                  setSoilSaving(true);
-                  await fbSaveSoil(activePlotId, {
-                    ph: sensorData.ph, nitrogen: sensorData.nitrogen,
-                    phosphorus: sensorData.phosphorus, potassium: sensorData.potassium
-                  });
-                  setSoilSaving(false);
-                }}
-                disabled={soilSaving}
-                className="flex items-center gap-2 px-4 py-2 rounded-xl bg-slate-900 border border-slate-700 text-slate-300 font-medium text-xs hover:bg-slate-700 transition-colors disabled:opacity-50">
-                {soilSaving ? <RefreshCw className="w-3 h-3 animate-spin" /> : <Database className="w-3 h-3" />}
-                Save Metrics
+                onClick={() => setShowSoilModal(true)}
+                className="flex items-center gap-2 px-4 py-2 rounded-xl bg-slate-900 border border-slate-700 text-slate-300 font-medium text-xs hover:bg-slate-700 hover:border-emerald-500/50 transition-all"
+              >
+                <Edit3 className="w-3 h-3" />
+                Edit Metrics
               </button>
             </div>
 
@@ -696,15 +924,19 @@ Give concise, actionable advice. Be friendly and professional.`.trim();
                       </span>
                     </div>
                     <div className="w-full h-1.5 bg-slate-700 rounded-full overflow-hidden">
-                      <div className="h-full rounded-full transition-all duration-500"
-                        style={{ width: `${row.pct}%`, backgroundColor: row.accent, opacity: 0.7 }} />
+                      <div
+                        className="h-full rounded-full transition-all duration-500"
+                        style={{ width: `${row.pct}%`, backgroundColor: row.accent, opacity: 0.7 }}
+                      />
                     </div>
                   </div>
                   <div className="flex flex-col items-end gap-1 min-w-[90px]">
-                    <span className={cn("px-2 py-0.5 rounded-full text-[10px] font-bold border",
+                    <span className={cn(
+                      "px-2 py-0.5 rounded-full text-[10px] font-bold border",
                       st === 'optimal' && "bg-emerald-500/10 text-emerald-400 border-emerald-500/20",
-                      st === 'good' && "bg-amber-500/10 text-amber-400 border-amber-500/20",
-                      st === 'warning' && "bg-red-500/10 text-red-400 border-red-500/20")}>
+                      st === 'good'    && "bg-amber-500/10 text-amber-400 border-amber-500/20",
+                      st === 'warning' && "bg-red-500/10 text-red-400 border-red-500/20"
+                    )}>
                       {stLabel}
                     </span>
                     <span className="text-[10px] text-slate-500">Ideal: {row.ideal}</span>
@@ -725,17 +957,21 @@ Give concise, actionable advice. Be friendly and professional.`.trim();
             <div className="flex-1 p-4 space-y-3 overflow-y-auto max-h-[320px]">
               {insights.map(insight => (
                 <div key={insight.id}
-                  className={cn("flex gap-3 p-3 rounded-xl border-l-4 transition-all hover:translate-x-1 cursor-pointer",
-                    insight.priority === 'high' && "bg-red-500/5 border-red-500",
+                  className={cn(
+                    "flex gap-3 p-3 rounded-xl border-l-4 transition-all hover:translate-x-1 cursor-pointer",
+                    insight.priority === 'high'   && "bg-red-500/5 border-red-500",
                     insight.priority === 'medium' && "bg-amber-500/5 border-amber-500",
-                    insight.priority === 'low' && "bg-cyan-500/5 border-cyan-500")}>
-                  <div className={cn("w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0",
-                    insight.priority === 'high' && "bg-red-500/10 text-red-400",
+                    insight.priority === 'low'    && "bg-cyan-500/5 border-cyan-500"
+                  )}>
+                  <div className={cn(
+                    "w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0",
+                    insight.priority === 'high'   && "bg-red-500/10 text-red-400",
                     insight.priority === 'medium' && "bg-amber-500/10 text-amber-400",
-                    insight.priority === 'low' && "bg-cyan-500/10 text-cyan-400")}>
-                    {insight.priority === 'high' ? <AlertCircle className="w-5 h-5" /> :
-                      insight.priority === 'medium' ? <Lightbulb className="w-5 h-5" /> :
-                        <TrendingUp className="w-5 h-5" />}
+                    insight.priority === 'low'    && "bg-cyan-500/10 text-cyan-400"
+                  )}>
+                    {insight.priority === 'high'   ? <AlertCircle className="w-5 h-5" /> :
+                     insight.priority === 'medium' ? <Lightbulb className="w-5 h-5" /> :
+                                                     <TrendingUp className="w-5 h-5" />}
                   </div>
                   <div>
                     <strong className="block text-sm font-semibold text-slate-200 mb-1">{insight.title}</strong>
@@ -747,10 +983,15 @@ Give concise, actionable advice. Be friendly and professional.`.trim();
             </div>
 
             <div className="p-4 border-t border-slate-700 bg-slate-900/50 flex gap-2">
-              <input type="text" placeholder="Ask AI about your crops..."
+              <input
+                type="text"
+                placeholder="Ask AI about your crops..."
                 className="flex-1 bg-slate-950 border border-slate-700 rounded-xl px-4 py-2.5 text-sm text-slate-200 placeholder:text-slate-600 focus:outline-none focus:border-emerald-500/50"
-                onClick={() => setShowChat(true)} readOnly />
-              <button onClick={() => setShowChat(true)}
+                onClick={() => setShowChat(true)}
+                readOnly
+              />
+              <button
+                onClick={() => setShowChat(true)}
                 className="w-10 h-10 bg-emerald-600 hover:bg-emerald-500 rounded-xl flex items-center justify-center text-white transition-all hover:scale-105 active:scale-95">
                 <Send className="w-4 h-4" />
               </button>
@@ -758,15 +999,17 @@ Give concise, actionable advice. Be friendly and professional.`.trim();
           </div>
         </div>
 
-        {/* SECTION 4: ANALYTICS CHART — Real Firebase historical data (file 1) */}
+        {/* SECTION 4: ANALYTICS CHART */}
         <div className="bg-slate-800 border border-slate-700 rounded-2xl p-6">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
             <h3 className="text-lg font-semibold text-slate-100">Environmental Trends</h3>
             <div className="flex items-center gap-2 flex-wrap">
               {(['24h', '7d', '30d'] as const).map(range => (
                 <button key={range} onClick={() => setTimeRange(range)}
-                  className={cn("px-3 py-1.5 rounded-lg text-sm font-medium transition-all",
-                    timeRange === range ? "bg-emerald-500 text-white" : "bg-slate-700 text-slate-400 hover:bg-slate-600")}>
+                  className={cn(
+                    "px-3 py-1.5 rounded-lg text-sm font-medium transition-all",
+                    timeRange === range ? "bg-emerald-500 text-white" : "bg-slate-700 text-slate-400 hover:bg-slate-600"
+                  )}>
                   {range.toUpperCase()}
                 </button>
               ))}
@@ -799,10 +1042,15 @@ Give concise, actionable advice. Be friendly and professional.`.trim();
                   <XAxis dataKey="time" stroke="#64748b" tick={{ fill: '#64748b', fontSize: 12 }} tickLine={false} axisLine={false} />
                   <YAxis stroke="#64748b" tick={{ fill: '#64748b', fontSize: 12 }} tickLine={false} axisLine={false} />
                   <Tooltip contentStyle={{ backgroundColor: '#1e293b', border: '1px solid #334155', borderRadius: '8px', color: '#f1f5f9' }} />
-                  {/* Render the selected metric from real Firebase data */}
-                  <Area type="monotone" dataKey={selectedMetric}
+                  <Area
+                    type="monotone"
+                    dataKey={selectedMetric}
                     name={selectedMetric.charAt(0).toUpperCase() + selectedMetric.slice(1)}
-                    stroke={chartColor} fillOpacity={1} fill={`url(#color${selectedMetric})`} strokeWidth={2} />
+                    stroke={chartColor}
+                    fillOpacity={1}
+                    fill={`url(#color${selectedMetric})`}
+                    strokeWidth={2}
+                  />
                 </AreaChart>
               </ResponsiveContainer>
             )}
@@ -813,12 +1061,16 @@ Give concise, actionable advice. Be friendly and professional.`.trim();
             <span className="text-sm font-medium text-slate-400">View:</span>
             {[
               { key: 'temperature' as const, label: 'Temperature', icon: Thermometer, color: '#f97316' },
-              { key: 'humidity' as const, label: 'Humidity', icon: Waves, color: '#0891b2' },
-              { key: 'moisture' as const, label: 'Moisture', icon: Droplets, color: '#2563eb' }
+              { key: 'humidity'    as const, label: 'Humidity',    icon: Waves,       color: '#0891b2' },
+              { key: 'moisture'   as const, label: 'Moisture',     icon: Droplets,    color: '#2563eb' }
             ].map(m => (
               <button key={m.key} onClick={() => setSelectedMetric(m.key)}
-                className={cn("flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-all border",
-                  selectedMetric === m.key ? "border-transparent text-white" : "bg-slate-700 border-slate-700 text-slate-400 hover:bg-slate-600")}
+                className={cn(
+                  "flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-all border",
+                  selectedMetric === m.key
+                    ? "border-transparent text-white"
+                    : "bg-slate-700 border-slate-700 text-slate-400 hover:bg-slate-600"
+                )}
                 style={selectedMetric === m.key ? { backgroundColor: m.color } : {}}>
                 <m.icon className="w-4 h-4" /><span>{m.label}</span>
               </button>
@@ -830,7 +1082,8 @@ Give concise, actionable advice. Be friendly and professional.`.trim();
         <div>
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-lg font-semibold text-slate-100">All Plots</h3>
-            <button onClick={() => { setEditPlot(null); setShowModal(true); }}
+            <button
+              onClick={() => { setEditPlot(null); setShowModal(true); }}
               className="flex items-center gap-2 px-4 py-2 rounded-xl bg-emerald-600 text-white font-semibold text-sm hover:bg-emerald-500 transition-colors">
               <Plus className="w-4 h-4" /> Add New Plot
             </button>
@@ -838,13 +1091,15 @@ Give concise, actionable advice. Be friendly and professional.`.trim();
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {plots.map(p => {
-              const g = p.plantedDate && p.harvestDate ? growthPct(p.plantedDate, p.harvestDate) : 0;
+              const g  = p.plantedDate && p.harvestDate ? growthPct(p.plantedDate, p.harvestDate) : 0;
               const dl = p.harvestDate ? daysLeft(p.harvestDate) : null;
               return (
                 <div key={p.id}
                   onClick={() => { setActivePlotId(p.id); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
-                  className={cn("bg-slate-800 border rounded-2xl p-5 cursor-pointer transition-all hover:-translate-y-1 hover:shadow-xl",
-                    activePlotId === p.id ? "border-emerald-500 border-2" : "border-slate-700")}>
+                  className={cn(
+                    "bg-slate-800 border rounded-2xl p-5 cursor-pointer transition-all hover:-translate-y-1 hover:shadow-xl",
+                    activePlotId === p.id ? "border-emerald-500 border-2" : "border-slate-700"
+                  )}>
                   <div className="flex items-start justify-between mb-4">
                     <div className="flex items-center gap-3">
                       <span className="text-3xl">{p.emoji}</span>
@@ -854,13 +1109,16 @@ Give concise, actionable advice. Be friendly and professional.`.trim();
                       </div>
                     </div>
                     <div className="flex gap-2">
-                      <span className={cn("px-2 py-0.5 rounded-full text-[10px] font-bold capitalize",
-                        p.status === 'growing' && "bg-emerald-500/10 text-emerald-400",
-                        p.status === 'dormant' && "bg-amber-500/10 text-amber-400",
-                        p.status === 'harvested' && "bg-slate-500/10 text-slate-400")}>
+                      <span className={cn(
+                        "px-2 py-0.5 rounded-full text-[10px] font-bold capitalize",
+                        p.status === 'growing'  && "bg-emerald-500/10 text-emerald-400",
+                        p.status === 'dormant'  && "bg-amber-500/10 text-amber-400",
+                        p.status === 'harvested'&& "bg-slate-500/10 text-slate-400"
+                      )}>
                         {p.status}
                       </span>
-                      <button onClick={e => { e.stopPropagation(); setEditPlot(p); setShowModal(true); }}
+                      <button
+                        onClick={e => { e.stopPropagation(); setEditPlot(p); setShowModal(true); }}
                         className="p-1 hover:bg-slate-700 rounded text-slate-400">
                         <Edit3 className="w-3 h-3" />
                       </button>
@@ -869,10 +1127,10 @@ Give concise, actionable advice. Be friendly and professional.`.trim();
 
                   <div className="grid grid-cols-2 gap-2 mb-4">
                     {[
-                      { label: 'Area', value: p.area || '—' },
-                      { label: 'Days left', value: dl !== null ? `${dl}d` : '—' },
-                      { label: 'Planted', value: p.plantedDate || '—' },
-                      { label: 'Harvest', value: p.harvestDate || '—' }
+                      { label: 'Area',     value: p.area || '—' },
+                      { label: 'Days left',value: dl !== null ? `${dl}d` : '—' },
+                      { label: 'Planted',  value: p.plantedDate || '—' },
+                      { label: 'Harvest',  value: p.harvestDate || '—' }
                     ].map(m => (
                       <div key={m.label} className="bg-slate-900 rounded-lg p-2">
                         <div className="text-[10px] text-slate-500 uppercase">{m.label}</div>
@@ -888,8 +1146,10 @@ Give concise, actionable advice. Be friendly and professional.`.trim();
                         <span className="text-emerald-400 font-bold">{g}%</span>
                       </div>
                       <div className="w-full h-1.5 bg-slate-700 rounded-full overflow-hidden">
-                        <div className="h-full bg-gradient-to-r from-emerald-600 to-emerald-400 rounded-full transition-all"
-                          style={{ width: `${g}%` }} />
+                        <div
+                          className="h-full bg-gradient-to-r from-emerald-600 to-emerald-400 rounded-full transition-all"
+                          style={{ width: `${g}%` }}
+                        />
                       </div>
                     </>
                   )}
@@ -902,7 +1162,8 @@ Give concise, actionable advice. Be friendly and professional.`.trim();
             })}
 
             {/* Add new plot card */}
-            <div onClick={() => { setEditPlot(null); setShowModal(true); }}
+            <div
+              onClick={() => { setEditPlot(null); setShowModal(true); }}
               className="bg-transparent border-2 border-dashed border-slate-700 rounded-2xl p-5 flex flex-col items-center justify-center gap-3 min-h-[200px] cursor-pointer hover:border-emerald-500 hover:bg-emerald-500/5 transition-all">
               <div className="w-12 h-12 rounded-xl bg-emerald-500/10 border-2 border-dashed border-emerald-500/30 flex items-center justify-center">
                 <Plus className="w-6 h-6 text-emerald-500" />
@@ -933,14 +1194,18 @@ Give concise, actionable advice. Be friendly and professional.`.trim();
                     <td className="py-3 px-4 text-slate-400">{log.sensor}</td>
                     <td className="py-3 px-4 text-slate-300">{log.value}</td>
                     <td className="py-3 px-4">
-                      <span className={cn("inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium",
+                      <span className={cn(
+                        "inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium",
                         log.status === 'success' && "bg-emerald-500/10 text-emerald-400",
                         log.status === 'warning' && "bg-amber-500/10 text-amber-400",
-                        log.status === 'info' && "bg-cyan-500/10 text-cyan-400")}>
+                        log.status === 'info'    && "bg-cyan-500/10 text-cyan-400"
+                      )}>
                         {log.status === 'success' && <CheckCircle className="w-3 h-3" />}
                         {log.status === 'warning' && <AlertTriangle className="w-3 h-3" />}
-                        {log.status === 'info' && <Info className="w-3 h-3" />}
-                        <span className="hidden sm:inline capitalize">{log.status === 'info' ? 'Stored Local' : log.status}</span>
+                        {log.status === 'info'    && <Info className="w-3 h-3" />}
+                        <span className="hidden sm:inline capitalize">
+                          {log.status === 'info' ? 'Stored Local' : log.status}
+                        </span>
                       </span>
                     </td>
                   </tr>
@@ -952,21 +1217,49 @@ Give concise, actionable advice. Be friendly and professional.`.trim();
       </div>
 
       {/* ── MODALS ─────────────────────────────────────────────────────────── */}
+
+      {/* Plot Modal */}
       {showModal && (
-        <PlotModal initial={editPlot} saving={saving} onSave={savePlot} onClose={() => setShowModal(false)} />
+        <PlotModal
+          initial={editPlot}
+          saving={saving}
+          onSave={savePlot}
+          onClose={() => setShowModal(false)}
+        />
+      )}
+
+      {/* Soil Metrics Edit Modal */}
+      {showSoilModal && (
+        <SoilMetricsModal
+          initial={{
+            ph: sensorData.ph,
+            nitrogen: sensorData.nitrogen,
+            phosphorus: sensorData.phosphorus,
+            potassium: sensorData.potassium,
+          }}
+          saving={soilSaving}
+          onSave={saveSoilMetrics}
+          onClose={() => setShowSoilModal(false)}
+        />
       )}
 
       {/* AI Chat Modal */}
       {showChat && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm"
-          onClick={() => setShowChat(false)}>
-          <div className="bg-slate-800 border border-slate-700 rounded-2xl w-full max-w-lg max-h-[600px] flex flex-col shadow-2xl"
-            onClick={e => e.stopPropagation()}>
+        <div
+          className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm"
+          onClick={() => setShowChat(false)}
+        >
+          <div
+            className="bg-slate-800 border border-slate-700 rounded-2xl w-full max-w-lg max-h-[600px] flex flex-col shadow-2xl"
+            onClick={e => e.stopPropagation()}
+          >
             <div className="flex items-center justify-between p-4 border-b border-slate-700">
               <h3 className="flex items-center gap-2 text-lg font-semibold text-slate-100">
                 <Bot className="w-5 h-5 text-emerald-500" /> AI Assistant
               </h3>
-              <button onClick={() => setShowChat(false)} className="p-1 hover:bg-slate-700 rounded-lg text-slate-400 hover:text-slate-200 transition-colors">
+              <button
+                onClick={() => setShowChat(false)}
+                className="p-1 hover:bg-slate-700 rounded-lg text-slate-400 hover:text-slate-200 transition-colors">
                 <X className="w-5 h-5" />
               </button>
             </div>
@@ -985,12 +1278,18 @@ Give concise, actionable advice. Be friendly and professional.`.trim();
               {messages.map(msg => (
                 <div key={msg.id}
                   className={cn("flex gap-3 max-w-[85%]", msg.role === 'user' ? "ml-auto flex-row-reverse" : "")}>
-                  <div className={cn("w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0",
-                    msg.role === 'ai' ? "bg-emerald-600 text-white" : "bg-slate-700 text-slate-300")}>
+                  <div className={cn(
+                    "w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0",
+                    msg.role === 'ai' ? "bg-emerald-600 text-white" : "bg-slate-700 text-slate-300"
+                  )}>
                     {msg.role === 'ai' ? <Bot className="w-5 h-5" /> : <User className="w-5 h-5" />}
                   </div>
-                  <div className={cn("p-3 rounded-2xl text-sm leading-relaxed",
-                    msg.role === 'ai' ? "bg-slate-700 text-slate-200 rounded-tl-sm" : "bg-emerald-600 text-white rounded-tr-sm")}>
+                  <div className={cn(
+                    "p-3 rounded-2xl text-sm leading-relaxed",
+                    msg.role === 'ai'
+                      ? "bg-slate-700 text-slate-200 rounded-tl-sm"
+                      : "bg-emerald-600 text-white rounded-tr-sm"
+                  )}>
                     {msg.content}
                   </div>
                 </div>
@@ -1016,11 +1315,18 @@ Give concise, actionable advice. Be friendly and professional.`.trim();
 
             <div className="p-4 border-t border-slate-700 bg-slate-900/50">
               <div className="flex gap-2">
-                <input type="text" value={inputMessage} onChange={e => setInputMessage(e.target.value)}
+                <input
+                  type="text"
+                  value={inputMessage}
+                  onChange={e => setInputMessage(e.target.value)}
                   onKeyPress={e => e.key === 'Enter' && handleSendMessage()}
-                  placeholder="Type your question..." disabled={isAITyping}
-                  className="flex-1 bg-slate-950 border border-slate-700 rounded-xl px-4 py-3 text-sm text-slate-200 placeholder:text-slate-600 focus:outline-none focus:border-emerald-500/50 disabled:opacity-50" />
-                <button onClick={handleSendMessage} disabled={isAITyping || !inputMessage.trim()}
+                  placeholder="Type your question..."
+                  disabled={isAITyping}
+                  className="flex-1 bg-slate-950 border border-slate-700 rounded-xl px-4 py-3 text-sm text-slate-200 placeholder:text-slate-600 focus:outline-none focus:border-emerald-500/50 disabled:opacity-50"
+                />
+                <button
+                  onClick={handleSendMessage}
+                  disabled={isAITyping || !inputMessage.trim()}
                   className="w-11 h-11 bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 disabled:cursor-not-allowed rounded-xl flex items-center justify-center text-white transition-all hover:scale-105 active:scale-95">
                   <Send className="w-4 h-4" />
                 </button>
