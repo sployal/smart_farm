@@ -10,7 +10,7 @@ import {
   Leaf, Droplets, Thermometer, Waves, FlaskConical,
   Sprout, Brain, TrendingUp, AlertTriangle, CheckCircle,
   Zap, Sun, Wind, RefreshCw, ChevronRight, Activity,
-  BarChart3, Info, ArrowUp, ArrowDown, Minus, ArrowLeft
+  BarChart3, Info, ArrowUp, ArrowDown, Minus, Menu
 } from 'lucide-react';
 
 // ---------------------------------------------------------------------------
@@ -561,11 +561,12 @@ Produce a JSON plant-health report.`.trim();
           <div className="flex items-center gap-2">
             <button
               type="button"
-              onClick={() => router.back()}
-              className="md:hidden p-1.5 -ml-1 text-slate-400 hover:text-slate-100 transition-colors touch-manipulation flex-shrink-0"
-              aria-label="Go back"
+              onClick={() => {
+                document.dispatchEvent(new CustomEvent('toggleMobileMenu'));
+              }}
+              className="lg:hidden p-2 rounded-lg hover:bg-slate-800 text-slate-400 transition-colors flex-shrink-0"
             >
-              <ArrowLeft className="w-6 h-6" />
+              <Menu className="w-5 h-5" />
             </button>
             <div>
             <div className="flex items-center gap-2 text-slate-500 text-sm mb-1">

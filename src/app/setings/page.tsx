@@ -10,7 +10,7 @@ import {
   Eye, EyeOff, Save, RotateCcw,
   BatteryCharging, Radio, MapPin, Activity,
   Gauge, Info, Sliders, ArrowLeft,
-  Lock, Users, ShieldCheck, WifiOff,
+  Lock, Users, ShieldCheck, WifiOff, Menu,
 } from 'lucide-react';
 import { useRole } from '@/hooks/useRole';
 import { subscribeToESP32Status, type ESP32StatusResult } from '@/lib/firebase';
@@ -497,10 +497,13 @@ Give up to 4 tailored irrigation tips plus optimal watering time.`;
           }}
         >
           <div className="flex items-center gap-2 min-w-0">
-            <button type="button" onClick={() => router.back()}
-              className="md:hidden p-1.5 -ml-1 flex-shrink-0 transition-colors touch-manipulation text-slate-400"
-              aria-label="Go back">
-              <ArrowLeft className="w-6 h-6" />
+          <button type="button"
+            onClick={() => {
+              document.dispatchEvent(new CustomEvent('toggleMobileMenu'));
+            }}
+            className="lg:hidden p-2 rounded-lg hover:bg-slate-800 text-slate-400 transition-colors flex-shrink-0"
+          >
+            <Menu className="w-5 h-5" />
             </button>
             <div className="min-w-0">
               <div className="flex items-center gap-2 text-sm mb-1 text-slate-400">

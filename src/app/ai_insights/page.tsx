@@ -21,7 +21,7 @@ import {
   AlertCircle,
   Info,
   ArrowUpRight,
-  ArrowLeft,
+  Menu,
   BarChart2,
   CloudRain,
   Sun,
@@ -592,14 +592,15 @@ Give concise, actionable advice. Use bullet points sparingly. Be friendly and pr
           background: 'rgba(30, 41, 59, 0.5)' 
         }}>
         <div className="max-w-6xl mx-auto flex items-center justify-between gap-4 flex-wrap">
-          {/* Mobile return icon — part of header, visible only on small screens */}
+          {/* Mobile hamburger menu icon — part of header, visible only on small screens */}
           <button
             type="button"
-            onClick={() => router.back()}
-            className="md:hidden p-1.5 -ml-1 text-slate-400 hover:text-slate-100 transition-colors touch-manipulation order-first"
-            aria-label="Go back"
+            onClick={() => {
+              document.dispatchEvent(new CustomEvent('toggleMobileMenu'));
+            }}
+            className="lg:hidden p-2 rounded-lg hover:bg-slate-800 text-slate-400 transition-colors order-first"
           >
-            <ArrowLeft className="w-6 h-6" />
+            <Menu className="w-5 h-5" />
           </button>
           {/* Logo & Title */}
           <div className="flex items-center gap-3">

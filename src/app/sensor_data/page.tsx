@@ -9,7 +9,7 @@ import {
 import {
   Thermometer, Droplets, Waves, FlaskConical,
   CheckCircle, AlertTriangle, Zap, RefreshCw,
-  ArrowUpRight, ArrowDownRight, Minus, Target, Eye, ArrowLeft
+  ArrowUpRight, ArrowDownRight, Minus, Target, Eye, Menu
 } from 'lucide-react';
 import { format, subHours } from 'date-fns';
 import clsx, { type ClassValue } from 'clsx';
@@ -525,12 +525,12 @@ export default function SensorDataPage() {
       <div className="sticky top-0 z-30 h-14 bg-slate-700/90 backdrop-blur-md border-b border-slate-600 flex items-center justify-between px-6 md:px-10 gap-4">
         <div className="flex items-center gap-3">
           <button
-            type="button"
-            onClick={() => router.back()}
-            className="md:hidden p-1.5 -ml-1 text-slate-400 hover:text-slate-100 transition-colors touch-manipulation flex-shrink-0"
-            aria-label="Go back"
+            onClick={() => {
+              document.dispatchEvent(new CustomEvent('toggleMobileMenu'));
+            }}
+            className="lg:hidden p-2 rounded-lg hover:bg-slate-800 text-slate-400 transition-colors flex-shrink-0"
           >
-            <ArrowLeft className="w-6 h-6" />
+            <Menu className="w-5 h-5" />
           </button>
           <span className={cn(
             'w-2 h-2 rounded-full animate-pulse',
