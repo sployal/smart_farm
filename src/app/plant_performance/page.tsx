@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { collection, onSnapshot } from 'firebase/firestore';
+import { collection, onSnapshot, doc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import {
   RadarChart, Radar, PolarGrid, PolarAngleAxis, PolarRadiusAxis,
@@ -540,6 +540,26 @@ Produce a JSON plant-health report.`.trim();
       // Firebase not configured — use default plots
     }
   }, []);
+
+  // ── Firebase soil metrics listener ─────────────────────────────────────
+  useEffect(() => {
+    try {
+      return onSnapshot(doc(db, 'plots', plotIdParam, 'soil_metrics', 'current'), snap => {
+        if (snap.exists()) {
+          const d = snap.data();
+          setSensorData(prev => ({
+            ...prev,
+            ph: d.ph ?? prev.ph,
+            nitrogen: d.nitrogen ?? prev.nitrogen,
+            phosphorus: d.phosphorus ?? prev.phosphorus,
+            potassium: d.potassium ?? prev.potassium,
+          }));
+        }
+      });
+    } catch {
+      // Firebase not configured — use default values
+    }
+  }, [plotIdParam]);
 
   // ── Wire Firebase if available ──
   useEffect(() => {
