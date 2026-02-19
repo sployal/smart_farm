@@ -733,9 +733,6 @@ Give up to 4 tailored irrigation tips plus optimal watering time.`;
                 min={10} max={300} step={10} unit="s" onChange={v => set('syncInterval', v)} color="#10b981" readOnly={isReadOnly} />
               <SliderRow label="Data Retention Period" value={settings.dataRetention}
                 min={7} max={365} step={7} unit=" days" onChange={v => set('dataRetention', v)} color="#10b981" readOnly={isReadOnly} />
-              <SettingRow label="Offline Mode" sublabel="Store readings locally when disconnected">
-                <Toggle checked={settings.offlineMode} onChange={v => set('offlineMode', v)} color="#10b981" readOnly={isReadOnly} />
-              </SettingRow>
             </SettingCard>
           </div>
 
