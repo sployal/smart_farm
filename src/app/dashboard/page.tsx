@@ -113,6 +113,8 @@ const SENSOR_THRESHOLDS = {
 
 type SensorStatus = 'optimal' | 'good' | 'warning';
 
+type DailyBaseline = Pick<SensorData, 'temperature' | 'humidity' | 'moisture'>;
+
 function calcStatus(value: number, key: keyof typeof SENSOR_THRESHOLDS): SensorStatus {
   const { optimalMin, optimalMax, criticalMin, criticalMax } = SENSOR_THRESHOLDS[key];
   if (value >= optimalMin && value <= optimalMax) return 'optimal';
@@ -126,6 +128,11 @@ function statusLabel(value: number, key: keyof typeof SENSOR_THRESHOLDS): string
   if (st === 'optimal') return 'Optimal';
   if (st === 'warning') return 'Critical';
   return value < optimalMin ? 'Below Optimal' : 'Above Optimal';
+}
+
+function formatSignedDelta(value: number, digits: number) {
+  const fixed = value.toFixed(digits);
+  return value > 0 ? `+${fixed}` : fixed;
 }
 
 // ── Chart processing ──────────────────────────────────────────────────────────
@@ -482,6 +489,12 @@ export default function SmartFarmDashboard() {
     moisture: 62, temperature: 24.5, humidity: 71,
     ph: 6.4, nitrogen: 45, phosphorus: 32, potassium: 180
   });
+  const [dailyBaseline, setDailyBaseline] = useState<DailyBaseline | null>(null);
+  const [dailyDelta, setDailyDelta] = useState<DailyBaseline>({
+    temperature: 0,
+    humidity: 0,
+    moisture: 0,
+  });
   const [isConnected, setIsConnected] = useState(false);
   const [lastSync, setLastSync] = useState('Never');
   const [timeRange, setTimeRange] = useState<'24h' | '7d' | '30d'>('24h');
@@ -566,6 +579,42 @@ export default function SmartFarmDashboard() {
       setLastSync(format(new Date(), 'HH:mm'));
     });
   }, []);
+
+  // ── Baseline for 24h delta ───────────────────────────────────────────────
+  useEffect(() => {
+    if (dailyBaseline) return;
+    let isActive = true;
+    const loadBaseline = async () => {
+      const historyData = await fetchHistoricalData(24);
+      if (!isActive) return;
+      if (historyData.length === 0) {
+        setDailyBaseline({
+          temperature: sensorData.temperature,
+          humidity: sensorData.humidity,
+          moisture: sensorData.moisture,
+        });
+        return;
+      }
+      const oldest = historyData[0];
+      setDailyBaseline({
+        temperature: oldest.temperature,
+        humidity: oldest.humidity,
+        moisture: oldest.soilMoisture,
+      });
+    };
+    loadBaseline();
+    return () => { isActive = false; };
+  }, [dailyBaseline, sensorData.temperature, sensorData.humidity, sensorData.moisture]);
+
+  // ── Real-time delta updates ──────────────────────────────────────────────
+  useEffect(() => {
+    if (!dailyBaseline) return;
+    setDailyDelta({
+      temperature: sensorData.temperature - dailyBaseline.temperature,
+      humidity: sensorData.humidity - dailyBaseline.humidity,
+      moisture: sensorData.moisture - dailyBaseline.moisture,
+    });
+  }, [dailyBaseline, sensorData.temperature, sensorData.humidity, sensorData.moisture]);
 
   // ── Historical chart data ───────────────────────────────────────────────────
   useEffect(() => {
@@ -698,8 +747,11 @@ Give concise, actionable advice. Be friendly and professional.`.trim();
 
         <div className="hidden sm:flex items-center gap-3 bg-slate-950 border border-slate-800 rounded-xl px-4 py-2 w-full sm:w-64 md:w-80 lg:w-96">
           <Search className="w-4 h-4 text-slate-500" />
-          <input type="text" placeholder="Search plots, crops..."
-            className="bg-transparent border-none outline-none text-sm text-slate-200 w-full placeholder:text-slate-600" />
+          <input
+            type="text"
+            placeholder="Search plots, crops..."
+            className="bg-transparent border-none outline-none text-sm text-slate-200 w-full placeholder:text-slate-600"
+          />
         </div>
 
         <div className="flex items-center gap-3 ml-auto">
@@ -825,21 +877,23 @@ Give concise, actionable advice. Be friendly and professional.`.trim();
             {
               key: 'temperature' as const, label: 'Temperature', icon: Thermometer,
               value: sensorData.temperature.toFixed(1), unit: '°C',
-              accent: '#f97316', pale: '#7c2d12', delta: '-1.2°C', up: false
+              accent: '#f97316', pale: '#7c2d12', delta: dailyDelta.temperature, deltaDigits: 1
             },
             {
               key: 'humidity' as const, label: 'Humidity', icon: Waves,
               value: sensorData.humidity.toFixed(1), unit: '%',
-              accent: '#0891b2', pale: '#164e63', delta: '+3%', up: true
+              accent: '#0891b2', pale: '#164e63', delta: dailyDelta.humidity, deltaDigits: 0
             },
             {
               key: 'moisture' as const, label: 'Soil Moisture', icon: Droplets,
               value: sensorData.moisture.toFixed(1), unit: '%',
-              accent: '#2563eb', pale: '#1e3a8a', delta: '+5%', up: true
+              accent: '#2563eb', pale: '#1e3a8a', delta: dailyDelta.moisture, deltaDigits: 0
             }
           ].map(s => {
             const st = calcStatus(parseFloat(s.value), s.key);
             const stLabel = statusLabel(parseFloat(s.value), s.key);
+            const deltaUp = s.delta > 0;
+            const deltaText = `${formatSignedDelta(s.delta, s.deltaDigits)}${s.unit} from yesterday`;
             return (
               <div
                 key={s.key}
@@ -864,9 +918,9 @@ Give concise, actionable advice. Be friendly and professional.`.trim();
                   {s.value}<span className="text-lg text-slate-400 ml-1">{s.unit}</span>
                 </div>
                 <div className="text-sm text-slate-400 mb-3">{s.label}</div>
-                <div className={cn("flex items-center gap-1 text-xs font-medium", s.up ? "text-emerald-400" : "text-red-400")}>
-                  {s.up ? <ArrowUpRight className="w-3 h-3" /> : <ArrowDownRight className="w-3 h-3" />}
-                  {s.delta} from yesterday
+                <div className={cn("flex items-center gap-1 text-xs font-medium", deltaUp ? "text-emerald-400" : "text-red-400")}>
+                  {deltaUp ? <ArrowUpRight className="w-3 h-3" /> : <ArrowDownRight className="w-3 h-3" />}
+                  {deltaText}
                 </div>
                 <div className="mt-4 h-16 opacity-60 group-hover:opacity-100 transition-opacity">
                   <MiniChart color={s.accent} data={miniChartData} />
