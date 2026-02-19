@@ -476,8 +476,8 @@ function SoilMetricsModal({ initial, saving, onSave, onClose }: {
 export default function SmartFarmDashboard() {
   const router = useRouter();
   const [currentUser, setCurrentUser] = useState<AuthUser | null>(null);
-  const [plots, setPlots] = useState<Plot[]>(DEFAULT_PLOTS);
-  const [activePlotId, setActivePlotId] = useState('plot-a');
+  const [plots, setPlots] = useState<Plot[]>([]);
+  const [activePlotId, setActivePlotId] = useState<string | null>(null);
   const [sensorData, setSensorData] = useState<SensorData>({
     moisture: 62, temperature: 24.5, humidity: 71,
     ph: 6.4, nitrogen: 45, phosphorus: 32, potassium: 180
@@ -504,7 +504,8 @@ export default function SmartFarmDashboard() {
 
   const miniChartData = Array.from({ length: 10 }, () => Math.floor(Math.random() * 40 + 40));
 
-  const plot = plots.find(p => p.id === activePlotId) ?? plots[0];
+  const plot = activePlotId ? (plots.find(p => p.id === activePlotId) ?? plots[0]) : plots[0];
+  const isPlotReady = Boolean(activePlotId && plot);
   const growth = plot?.plantedDate && plot?.harvestDate ? growthPct(plot.plantedDate, plot.harvestDate) : 0;
   const remaining = plot?.harvestDate ? daysLeft(plot.harvestDate) : null;
   const chartColor = { moisture: '#3b82f6', temperature: '#f97316', humidity: '#0891b2' }[selectedMetric];
@@ -515,12 +516,19 @@ export default function SmartFarmDashboard() {
   // ── Firebase plots listener ─────────────────────────────────────────────────
   useEffect(() => {
     return onSnapshot(collection(db, 'plots'), snap => {
-      if (!snap.empty) setPlots(snap.docs.map(d => d.data() as Plot));
+      const nextPlots = snap.docs.map(d => d.data() as Plot);
+      setPlots(nextPlots);
+      if (nextPlots.length > 0) {
+        setActivePlotId(prev => (prev && nextPlots.some(p => p.id === prev) ? prev : nextPlots[0].id));
+      } else {
+        setActivePlotId(null);
+      }
     });
   }, []);
 
   // ── Firebase soil metrics listener ─────────────────────────────────────────
   useEffect(() => {
+    if (!activePlotId) return;
     return onSnapshot(doc(db, 'plots', activePlotId, 'soil_metrics', 'current'), snap => {
       if (snap.exists()) {
         const d = snap.data();
@@ -628,6 +636,7 @@ Give concise, actionable advice. Be friendly and professional.`.trim();
 
   // ── Save soil metrics ───────────────────────────────────────────────────────
   const saveSoilMetrics = async (vals: SoilMetrics) => {
+    if (!activePlotId) return;
     setSoilSaving(true);
     try {
       // Optimistically update UI immediately
@@ -760,8 +769,9 @@ Give concise, actionable advice. Be friendly and professional.`.trim();
                 <Edit3 className="w-4 h-4" /> Edit Plot
               </button>
               <button
-                onClick={() => router.push('/plant_performance?plotId=' + activePlotId)}
-                className="px-4 py-2.5 rounded-xl bg-emerald-600 text-white font-semibold text-sm hover:bg-emerald-500 transition-colors flex items-center gap-2">
+                onClick={() => isPlotReady && router.push('/plant_performance?plotId=' + activePlotId)}
+                disabled={!isPlotReady}
+                className="px-4 py-2.5 rounded-xl bg-emerald-600 text-white font-semibold text-sm hover:bg-emerald-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center gap-2">
                 <Bot className="w-4 h-4" /> View Performance
               </button>
             </div>
