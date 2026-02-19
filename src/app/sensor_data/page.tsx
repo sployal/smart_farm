@@ -54,7 +54,7 @@ const SENSOR_BASES = [
     optimalMin: 18, optimalMax: 28,
     criticalMin: 10, criticalMax: 38,
     description:
-      'Air and soil temperature drives metabolic rates, enzymatic activity, and nutrient uptake. Consistent temperatures between 18–28°C support vigorous tomato growth and fruit development.',
+      'Air and soil temperature drives metabolic rates, enzymatic activity, and nutrient uptake. Consistent temperatures between 18–28°C support vigorous growth and fruit development.',
   },
   {
     key: 'humidity' as SensorKey,
@@ -583,7 +583,7 @@ export default function SensorDataPage() {
             Sensor Analytics
           </h1>
           <p className="text-slate-400 text-base max-w-xl leading-relaxed">
-            Real-time readings and trend analysis across all monitored environmental parameters for Plot A.
+            Real-time readings and trend analysis across all monitored environmental parameters.
           </p>
         </div>
 
