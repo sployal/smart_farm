@@ -45,13 +45,14 @@ function RoleBadge({ role }: { role: Role }) {
 }
 
 // ─── Role selector dropdown ───────────────────────────────────────────────────
-function RoleSelector({ uid, currentRole, onChanged, disabled }: {
-  uid: string; currentRole: Role; onChanged: (uid: string, role: Role) => void; disabled?: boolean;
+function RoleSelector({ uid, email, currentRole, onChanged, disabled }: {
+  uid: string; email: string; currentRole: Role; onChanged: (uid: string, role: Role) => void; disabled?: boolean;
 }) {
   const [open,   setOpen]   = useState(false);
   const [saving, setSaving] = useState(false);
 
-  if (currentRole === 'admin') {
+  const isMainAdmin = email === 'griffonb130@gmail.com';
+  if (isMainAdmin) {
     return <span className="text-xs font-medium" style={{ color: '#64748b' }}>Protected</span>;
   }
 
@@ -80,11 +81,11 @@ function RoleSelector({ uid, currentRole, onChanged, disabled }: {
       {open && (
         <div className="absolute right-0 mt-1.5 z-20 rounded-2xl overflow-hidden shadow-2xl"
           style={{ background: '#1e293b', border: '1px solid rgba(71,85,105,0.5)', minWidth: 150 }}>
-          {(['user', 'gardener'] as Role[]).map(r => (
+          {(['user', 'gardener', 'admin'] as Role[]).map(r => (
             <button key={r} onClick={() => select(r)}
               className="w-full flex items-center gap-2.5 px-4 py-2.5 text-xs font-semibold text-left transition-colors hover:bg-slate-700/50"
-              style={{ color: r === currentRole ? '#6ee7b7' : '#cbd5e1' }}>
-              {r === 'gardener' ? <Sprout className="w-3.5 h-3.5" /> : <UserCircle2 className="w-3.5 h-3.5" />}
+              style={{ color: r === currentRole ? '#6ee7b7' : r === 'admin' ? '#d8b4fe' : '#cbd5e1' }}>
+              {r === 'gardener' ? <Sprout className="w-3.5 h-3.5" /> : r === 'admin' ? <ShieldCheck className="w-3.5 h-3.5" /> : <UserCircle2 className="w-3.5 h-3.5" />}
               {r.charAt(0).toUpperCase() + r.slice(1)}
               {r === currentRole && <span className="ml-auto text-emerald-400">✓</span>}
             </button>
@@ -318,7 +319,7 @@ export default function AdminPage() {
                         </span>
                       </td>
                       <td className="px-5 py-4">
-                        <RoleSelector uid={u.uid} currentRole={u.role} onChanged={handleRoleChange} />
+                        <RoleSelector uid={u.uid} email={u.email} currentRole={u.role} onChanged={handleRoleChange} />
                       </td>
                     </tr>
                   ))}
