@@ -172,7 +172,7 @@ export default function Sidebar() {
         <button
           type="button"
           aria-label="Close menu"
-          className="fixed inset-0 bg-black/50 z-30 lg:hidden"
+          className="fixed inset-0 bg-black/50 z-40 lg:hidden"
           onClick={() => setMobileOpen(false)}
         />
       )}
@@ -234,7 +234,7 @@ export default function Sidebar() {
 
       {/* ── Mobile Sidebar ── */}
       <aside
-        className={`fixed top-0 left-0 w-64 h-screen bg-slate-900 border-r border-slate-800 flex flex-col overflow-hidden transition-all duration-300 z-40 lg:hidden ${
+        className={`fixed top-0 left-0 w-64 h-screen bg-slate-900 border-r border-slate-800 flex flex-col overflow-hidden transition-all duration-300 z-50 lg:hidden ${
           mobileOpen ? "translate-x-0" : "-translate-x-full"
         }`}
       >
