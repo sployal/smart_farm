@@ -841,7 +841,7 @@ Give up to 4 tailored irrigation tips plus optimal watering time.`;
 
             {/* AI Tips */}
             <SettingCard icon={Brain} title="AI Irrigation Tips"
-              subtitle="Personalized advice from Groq AI" accent="#a78bfa"
+              subtitle="Personalized AI advice " accent="#a78bfa"
               badge={
                 <button onClick={fetchAITips} disabled={aiLoading}
                   className="p-1.5 rounded-lg text-slate-400 hover:bg-slate-600 hover:text-slate-200 transition-colors disabled:opacity-40">
