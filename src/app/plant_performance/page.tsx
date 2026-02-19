@@ -490,14 +490,6 @@ Produce a JSON plant-health report.`.trim();
           <div className="flex items-center gap-2">
             <button
               type="button"
-              onClick={() => router.push('/dashboard')}
-              className="lg:hidden p-2 rounded-lg hover:bg-slate-800 text-slate-400 transition-colors flex-shrink-0"
-              title="Back to Dashboard"
-            >
-              <ChevronRight className="w-5 h-5 rotate-180" />
-            </button>
-            <button
-              type="button"
               onClick={() => document.dispatchEvent(new CustomEvent('toggleMobileMenu'))}
               className="lg:hidden p-2 rounded-lg hover:bg-slate-800 text-slate-400 transition-colors flex-shrink-0"
             >
