@@ -701,14 +701,12 @@ Give up to 4 tailored irrigation tips plus optimal watering time.`;
                 <div className="flex gap-2 flex-wrap">
                   {(['all', 'critical', 'none'] as AlertLevel[]).map(level => (
                     <button key={level}
-                      onClick={() => !isReadOnly && set('alertLevel', level)}
-                      disabled={isReadOnly}
-                      className="px-4 py-2 rounded-xl text-sm font-semibold capitalize transition-all disabled:cursor-not-allowed"
+                      onClick={() => setSettings(s => ({ ...s, alertLevel: level }))}
+                      className="px-4 py-2 rounded-xl text-sm font-semibold capitalize transition-all"
                       style={{
-                        background: settings.alertLevel === level ? (isReadOnly ? '#4b5563' : '#d97706') : '#3a4556',
-                        border: `1px solid ${settings.alertLevel === level ? (isReadOnly ? '#64748b' : '#f59e0b') : '#4a5568'}`,
+                        background: settings.alertLevel === level ? '#d97706' : '#3a4556',
+                        border: `1px solid ${settings.alertLevel === level ? '#f59e0b' : '#4a5568'}`,
                         color: settings.alertLevel === level ? '#fff' : '#94a3b8',
-                        opacity: isReadOnly ? 0.65 : 1,
                       }}>
                       {level === 'all' ? 'All Alerts' : level === 'critical' ? 'Critical Only' : 'Muted'}
                     </button>
@@ -716,26 +714,35 @@ Give up to 4 tailored irrigation tips plus optimal watering time.`;
                 </div>
               </div>
               <SettingRow label="Push Notifications" sublabel="Browser / mobile push">
-                <Toggle checked={settings.pushEnabled} onChange={v => set('pushEnabled', v)} color="#f59e0b" readOnly={isReadOnly} />
+                <Toggle checked={settings.pushEnabled} onChange={v => setSettings(s => ({ ...s, pushEnabled: v }))} color="#f59e0b" />
               </SettingRow>
               <SettingRow label="SMS Alerts" sublabel="Sent to registered phone (+254…)">
-                <Toggle checked={settings.smsEnabled} onChange={v => set('smsEnabled', v)} color="#f59e0b" readOnly={isReadOnly} />
+                <Toggle checked={settings.smsEnabled} onChange={v => setSettings(s => ({ ...s, smsEnabled: v }))} color="#f59e0b" />
               </SettingRow>
               <SettingRow label="Sound Alerts" sublabel="In-app audio notifications">
                 <div className="flex items-center gap-2">
                   {settings.soundEnabled ? <Volume2 className="w-4 h-4 text-amber-400" /> : <VolumeX className="w-4 h-4 text-slate-400" />}
-                  <Toggle checked={settings.soundEnabled} onChange={v => set('soundEnabled', v)} color="#f59e0b" readOnly={isReadOnly} />
+                  <Toggle checked={settings.soundEnabled} onChange={v => setSettings(s => ({ ...s, soundEnabled: v }))} color="#f59e0b" />
                 </div>
               </SettingRow>
             </SettingCard>
 
             {/* System */}
             <SettingCard icon={Database} title="System & Connectivity"
-              subtitle="Sync, storage and offline behaviour" accent="#10b981">
+              subtitle="Sync, storage and offline behaviour" accent="#10b981"
+              badge={
+                !isAdmin && (
+                  <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold"
+                    style={{ background: 'rgba(168,85,247,0.12)', border: '1px solid rgba(168,85,247,0.3)', color: '#d8b4fe' }}>
+                    <ShieldCheck className="w-3 h-3" />
+                    Admin Only
+                  </div>
+                )
+              }>
               <SliderRow label="Data Sync Interval" value={settings.syncInterval}
-                min={10} max={300} step={10} unit="s" onChange={v => set('syncInterval', v)} color="#10b981" readOnly={isReadOnly} />
+                min={10} max={300} step={10} unit="s" onChange={v => set('syncInterval', v)} color="#10b981" readOnly={!isAdmin} />
               <SliderRow label="Data Retention Period" value={settings.dataRetention}
-                min={7} max={365} step={7} unit=" days" onChange={v => set('dataRetention', v)} color="#10b981" readOnly={isReadOnly} />
+                min={7} max={365} step={7} unit=" days" onChange={v => set('dataRetention', v)} color="#10b981" readOnly={!isAdmin} />
             </SettingCard>
           </div>
 
