@@ -376,6 +376,23 @@ export default function SettingsPage() {
   const [saved,       setSaved]       = useState(false);
 
   // ── NEW: valve confirmed state — read back from ESP32 ─────────────────────
+  // Load irrigation config from Firebase on mount so settings survive page refresh
+  useEffect(() => {
+    const db = getDatabase();
+    onValue(ref(db, 'controls/irrigationConfig'), snap => {
+      if (!snap.exists()) return;
+      const c = snap.val();
+      setSettings(s => ({
+        ...s,
+        irrigationMode:     c.mode              ?? s.irrigationMode,
+        irrigationActive:   c.active            ?? s.irrigationActive,
+        wateringDuration:   c.wateringDuration  ?? s.wateringDuration,
+        wateringFrequency:  c.wateringFrequency ?? s.wateringFrequency,
+        scheduledTime:      c.scheduledTime     ?? s.scheduledTime,
+      }));
+    }, { onlyOnce: true });
+  }, []);
+
   const [valveConfirmed, setValveConfirmed] = useState<boolean | null>(null);
   useEffect(() => {
     const db = getDatabase();
@@ -500,9 +517,31 @@ Give up to 4 tailored irrigation tips plus optimal watering time.`;
 
   useEffect(() => { fetchAITips(); }, []);
 
+  // Sync irrigation config to Firebase whenever a relevant field changes
+  const syncIrrigationConfig = (updated: FarmSettings) => {
+    const db = getDatabase();
+    dbSet(ref(db, 'controls/irrigationConfig'), {
+      mode:              updated.irrigationMode,
+      active:            updated.irrigationActive,
+      wateringDuration:  updated.wateringDuration,
+      wateringFrequency: updated.wateringFrequency,
+      scheduledTime:     updated.scheduledTime,
+      updatedAt:         Date.now(),
+    });
+  };
+
+  const irrigationKeys: (keyof FarmSettings)[] = [
+    'irrigationMode', 'irrigationActive', 'wateringDuration',
+    'wateringFrequency', 'scheduledTime',
+  ];
+
   const set = <K extends keyof FarmSettings>(key: K, val: FarmSettings[K]) => {
     if (isReadOnly) return;
-    setSettings(s => ({ ...s, [key]: val }));
+    setSettings(s => {
+      const updated = { ...s, [key]: val };
+      if (irrigationKeys.includes(key)) syncIrrigationConfig(updated);
+      return updated;
+    });
   };
 
   const handleSave = () => {
