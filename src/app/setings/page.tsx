@@ -15,6 +15,9 @@ import {
 import { useRole } from '@/hooks/useRole';
 import { subscribeToESP32Status, type ESP32StatusResult } from '@/lib/firebase';
 
+// ── NEW: import Firebase database helpers ──────────────────────────────────
+import { getDatabase, ref, set as dbSet, onValue } from 'firebase/database';
+
 // ---------------------------------------------------------------------------
 // Config
 // ---------------------------------------------------------------------------
@@ -165,7 +168,7 @@ function WaterTank({ current, capacity, low }: { current: number; capacity: numb
 }
 
 // ---------------------------------------------------------------------------
-// Toggle — respects readOnly prop
+// Toggle
 // ---------------------------------------------------------------------------
 function Toggle({
   checked, onChange, size = 'md', color = '#10b981', disabled = false, readOnly = false,
@@ -208,7 +211,7 @@ function Toggle({
 }
 
 // ---------------------------------------------------------------------------
-// SliderRow — respects readOnly prop
+// SliderRow
 // ---------------------------------------------------------------------------
 function SliderRow({
   label, value, min, max, step = 1, unit, onChange, color = '#10b981', readOnly = false,
@@ -252,19 +255,9 @@ function SettingCard({
 }) {
   return (
     <div className="rounded-2xl border backdrop-blur-sm overflow-hidden"
-      style={{ 
-        borderColor: 'rgba(71, 85, 105, 0.4)', 
-        background: 'rgba(30, 41, 59, 0.6)' 
-      }}>
-      <div
-        className="flex items-center justify-between px-5 py-4 border-b"
-        style={{ 
-          borderLeftWidth: 3, 
-          borderLeftStyle: 'solid', 
-          borderLeftColor: accent,
-          borderBottomColor: 'rgba(71, 85, 105, 0.3)'
-        }}
-      >
+      style={{ borderColor: 'rgba(71, 85, 105, 0.4)', background: 'rgba(30, 41, 59, 0.6)' }}>
+      <div className="flex items-center justify-between px-5 py-4 border-b"
+        style={{ borderLeftWidth: 3, borderLeftStyle: 'solid', borderLeftColor: accent, borderBottomColor: 'rgba(71, 85, 105, 0.3)' }}>
         <div className="flex items-center gap-3">
           <div className="w-8 h-8 rounded-lg flex items-center justify-center"
             style={{ background: `${accent}18`, border: `1px solid ${accent}30` }}>
@@ -300,7 +293,7 @@ function SettingRow({ label, sublabel, children }: {
 }
 
 // ---------------------------------------------------------------------------
-// ReadOnly banner — shown at the top when user role is 'user'
+// ReadOnly banner
 // ---------------------------------------------------------------------------
 function ReadOnlyBanner() {
   return (
@@ -319,17 +312,23 @@ function ReadOnlyBanner() {
 }
 
 // ---------------------------------------------------------------------------
+// NEW: helper — write valve command to Firebase
+// ---------------------------------------------------------------------------
+function setValve(open: boolean) {
+  const db = getDatabase();
+  dbSet(ref(db, 'controls/irrigationValve'), open);
+}
+
+// ---------------------------------------------------------------------------
 // Main Page
 // ---------------------------------------------------------------------------
 export default function SettingsPage() {
   const router = useRouter();
-
   const { setTheme, resolvedTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
   useEffect(() => { setMounted(true); }, []);
   const isDark = mounted ? resolvedTheme !== 'light' : true;
 
-  // ── Role-based access ─────────────────────────────────────────────────────
   const { role, loading: roleLoading } = useRole();
   const isReadOnly = !roleLoading && role === 'user';
   const isAdmin    = !roleLoading && role === 'admin';
@@ -375,14 +374,31 @@ export default function SettingsPage() {
   const [wateringOn,  setWateringOn]  = useState(false);
   const [waterTimer,  setWaterTimer]  = useState(0);
   const [saved,       setSaved]       = useState(false);
+
+  // ── NEW: valve confirmed state — read back from ESP32 ─────────────────────
+  const [valveConfirmed, setValveConfirmed] = useState<boolean | null>(null);
+  useEffect(() => {
+    const db = getDatabase();
+    const unsubscribe = onValue(ref(db, 'controls/valveConfirmed'), snap => {
+      if (snap.exists()) setValveConfirmed(snap.val() as boolean);
+    });
+    return () => unsubscribe();
+  }, []);
+
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
+  // ── MODIFIED: wateringOn effect now also commands the valve ───────────────
   useEffect(() => {
     if (wateringOn) {
+      setValve(true);                                      // ← open valve
       setWaterTimer(settings.wateringDuration * 60);
       timerRef.current = setInterval(() => {
         setWaterTimer(t => {
-          if (t <= 1) { setWateringOn(false); clearInterval(timerRef.current!); return 0; }
+          if (t <= 1) {
+            setWateringOn(false);
+            clearInterval(timerRef.current!);
+            return 0;
+          }
           setSettings(s => ({
             ...s,
             tankCurrent: Math.max(0, s.tankCurrent - s.tankCapacity / (s.wateringDuration * 60)),
@@ -391,11 +407,28 @@ export default function SettingsPage() {
         });
       }, 1000);
     } else {
+      setValve(false);                                     // ← close valve
       clearInterval(timerRef.current!);
       setWaterTimer(0);
     }
     return () => clearInterval(timerRef.current!);
   }, [wateringOn]);
+
+  // ── NEW: auto-mode valve trigger ───────────────────────────────────────────
+  // When irrigationMode is 'auto' and irrigationActive is true,
+  // fire the valve on the configured frequency cycle.
+  const autoRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  useEffect(() => {
+    clearInterval(autoRef.current!);
+    if (settings.irrigationMode === 'auto' && settings.irrigationActive && !isReadOnly) {
+      autoRef.current = setInterval(() => {
+        // Open valve for wateringDuration minutes then close
+        setValve(true);
+        setTimeout(() => setValve(false), settings.wateringDuration * 60 * 1000);
+      }, settings.wateringFrequency * 60 * 60 * 1000);   // frequency in hours → ms
+    }
+    return () => clearInterval(autoRef.current!);
+  }, [settings.irrigationMode, settings.irrigationActive, settings.wateringFrequency, settings.wateringDuration, isReadOnly]);
 
   const fetchAITips = useCallback(async () => {
     setAiLoading(true); setAiError('');
@@ -447,7 +480,6 @@ Give up to 4 tailored irrigation tips plus optimal watering time.`;
   };
   const tipIcon = { info: Info, warning: AlertTriangle, success: CheckCircle };
 
-  // ── Static skeleton ──────────────────────────────────────────────────────
   if (!mounted) {
     return (
       <div className="min-h-screen text-slate-100 font-sans" style={{ background: '#1a2332' }}>
@@ -471,14 +503,7 @@ Give up to 4 tailored irrigation tips plus optimal watering time.`;
   }[esp32Status.status];
 
   return (
-    <div
-      className="min-h-screen font-sans"
-      style={{ 
-        background: '#1a2332',
-        color: '#f1f5f9' 
-      }}
-    >
-      {/* Subtle ambient blobs - much more subdued */}
+    <div className="min-h-screen font-sans" style={{ background: '#1a2332', color: '#f1f5f9' }}>
       <div className="fixed inset-0 pointer-events-none overflow-hidden z-0">
         <div className="absolute top-0 right-0 w-96 h-96 rounded-full blur-3xl"
           style={{ background: 'rgba(16,185,129,0.02)' }} />
@@ -488,22 +513,14 @@ Give up to 4 tailored irrigation tips plus optimal watering time.`;
 
       <div className="relative z-10 max-w-[1200px] mx-auto px-4 sm:px-6 lg:px-8 space-y-6">
 
-        {/* ── Header bar ─────────────────────────────────────────────────── */}
-        <div
-          className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 py-4 sm:py-6 border-b min-h-[4rem] -mx-4 sm:-mx-6 lg:-mx-8 px-4 sm:px-6 lg:px-8"
-          style={{
-            borderColor: 'rgba(100,116,139,0.3)',
-            background: 'rgba(30,41,59,0.3)',
-          }}
-        >
+        {/* Header */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 py-4 sm:py-6 border-b min-h-[4rem] -mx-4 sm:-mx-6 lg:-mx-8 px-4 sm:px-6 lg:px-8"
+          style={{ borderColor: 'rgba(100,116,139,0.3)', background: 'rgba(30,41,59,0.3)' }}>
           <div className="flex items-center gap-2 min-w-0">
-          <button type="button"
-            onClick={() => {
-              document.dispatchEvent(new CustomEvent('toggleMobileMenu'));
-            }}
-            className="lg:hidden p-2 rounded-lg hover:bg-slate-800 text-slate-400 transition-colors flex-shrink-0"
-          >
-            <Menu className="w-5 h-5" />
+            <button type="button"
+              onClick={() => document.dispatchEvent(new CustomEvent('toggleMobileMenu'))}
+              className="lg:hidden p-2 rounded-lg hover:bg-slate-800 text-slate-400 transition-colors flex-shrink-0">
+              <Menu className="w-5 h-5" />
             </button>
             <div className="min-w-0">
               <div className="flex items-center gap-2 text-sm mb-1 text-slate-400">
@@ -513,79 +530,66 @@ Give up to 4 tailored irrigation tips plus optimal watering time.`;
                 <span className="text-emerald-500">Settings</span>
               </div>
               <h1 className="text-3xl font-black tracking-tight text-slate-100">Farm Settings</h1>
-              <p className="text-sm mt-1 text-slate-400">
-                Control irrigation, alerts, system preferences and display
-              </p>
+              <p className="text-sm mt-1 text-slate-400">Control irrigation, alerts, system preferences and display</p>
             </div>
           </div>
-
-          {/* Right side buttons */}
           <div className="flex items-center gap-2 flex-shrink-0 flex-wrap">
             {isAdmin && (
-              <button
-                onClick={() => router.push('/admin')}
+              <button onClick={() => router.push('/admin')}
                 className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold transition-all"
-                style={{
-                  background: 'rgba(168,85,247,0.12)',
-                  border: '1px solid rgba(168,85,247,0.35)',
-                  color: '#d8b4fe',
-                  boxShadow: '0 0 16px rgba(168,85,247,0.12)',
-                }}
-              >
-                <ShieldCheck className="w-4 h-4" />
-                Manage Users
+                style={{ background: 'rgba(168,85,247,0.12)', border: '1px solid rgba(168,85,247,0.35)', color: '#d8b4fe', boxShadow: '0 0 16px rgba(168,85,247,0.12)' }}>
+                <ShieldCheck className="w-4 h-4" />Manage Users
               </button>
             )}
-            <button
-              onClick={handleReset}
-              disabled={isReadOnly}
+            <button onClick={handleReset} disabled={isReadOnly}
               className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold transition-all disabled:opacity-40 disabled:cursor-not-allowed"
-              style={{
-                background: '#3a4556',
-                border: '1px solid #4a5568',
-                color: '#cbd5e1',
-              }}>
+              style={{ background: '#3a4556', border: '1px solid #4a5568', color: '#cbd5e1' }}>
               <RotateCcw className="w-4 h-4" /> Reset
             </button>
-            <button
-              onClick={handleSave}
-              disabled={isReadOnly}
+            <button onClick={handleSave} disabled={isReadOnly}
               className="flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-bold text-white transition-all disabled:opacity-40 disabled:cursor-not-allowed"
-              style={{
-                background: saved ? '#059669' : '#10b981',
-                boxShadow: saved || isReadOnly ? 'none' : '0 4px 14px rgba(16,185,129,0.3)',
-                transform: saved ? 'scale(0.96)' : 'scale(1)',
-              }}>
+              style={{ background: saved ? '#059669' : '#10b981', boxShadow: saved || isReadOnly ? 'none' : '0 4px 14px rgba(16,185,129,0.3)', transform: saved ? 'scale(0.96)' : 'scale(1)' }}>
               {saved ? <CheckCircle className="w-4 h-4" /> : <Save className="w-4 h-4" />}
               {saved ? 'Saved!' : 'Save Changes'}
             </button>
           </div>
         </div>
 
-        {/* ── Read-only banner for user role ───────────────────────────── */}
         {isReadOnly && <ReadOnlyBanner />}
 
-        {/* ── Main grid ────────────────────────────────────────────────── */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
-
-          {/* LEFT COLUMN */}
           <div className="lg:col-span-2 space-y-5">
 
-            {/* Irrigation */}
+            {/* Irrigation Control — unchanged UI, valve logic wired to wateringOn */}
             <SettingCard icon={Droplets} title="Irrigation Control"
               subtitle="Manual override and automation settings" accent="#38bdf8"
               badge={
-                <div className="flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold"
-                  style={{
-                    background: wateringOn ? 'rgba(56,189,248,0.15)' : settings.irrigationActive ? 'rgba(16,185,129,0.15)' : 'rgba(71,85,105,0.6)',
-                    color: wateringOn ? '#7dd3fc' : settings.irrigationActive ? '#6ee7b7' : '#94a3b8',
-                  }}>
-                  <Droplets className="w-3 h-3" />
-                  {wateringOn ? `Running ${fmt(waterTimer)}` : settings.irrigationActive ? 'Armed' : 'Off'}
+                <div className="flex items-center gap-2">
+                  {/* ── NEW: valve confirmed indicator ── */}
+                  {valveConfirmed !== null && (
+                    <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold"
+                      style={{
+                        background: valveConfirmed ? 'rgba(56,189,248,0.1)' : 'rgba(71,85,105,0.5)',
+                        border: `1px solid ${valveConfirmed ? 'rgba(56,189,248,0.4)' : '#4a5568'}`,
+                        color: valveConfirmed ? '#7dd3fc' : '#94a3b8',
+                      }}>
+                      <span className="w-1.5 h-1.5 rounded-full"
+                        style={{ background: valveConfirmed ? '#38bdf8' : '#64748b' }} />
+                      Valve {valveConfirmed ? 'Open' : 'Closed'}
+                    </div>
+                  )}
+                  <div className="flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold"
+                    style={{
+                      background: wateringOn ? 'rgba(56,189,248,0.15)' : settings.irrigationActive ? 'rgba(16,185,129,0.15)' : 'rgba(71,85,105,0.6)',
+                      color: wateringOn ? '#7dd3fc' : settings.irrigationActive ? '#6ee7b7' : '#94a3b8',
+                    }}>
+                    <Droplets className="w-3 h-3" />
+                    {wateringOn ? `Running ${fmt(waterTimer)}` : settings.irrigationActive ? 'Armed' : 'Off'}
+                  </div>
                 </div>
-              }
-            >
-              {/* Big water switch */}
+              }>
+
+              {/* Water Plants Now — this toggle now also opens/closes the servo valve */}
               <div className="relative overflow-hidden rounded-2xl p-5 transition-all duration-500"
                 style={{
                   background: wateringOn
@@ -614,6 +618,7 @@ Give up to 4 tailored irrigation tips plus optimal watering time.`;
                       </div>
                     )}
                   </div>
+                  {/* Toggle unchanged — valve logic lives in the useEffect above */}
                   <Toggle checked={wateringOn} onChange={setWateringOn}
                     size="lg" color="#38bdf8"
                     disabled={settings.tankCurrent < 5}
@@ -625,7 +630,6 @@ Give up to 4 tailored irrigation tips plus optimal watering time.`;
                 <Toggle checked={settings.irrigationActive} onChange={v => set('irrigationActive', v)} color="#38bdf8" readOnly={isReadOnly} />
               </SettingRow>
 
-              {/* Mode selector */}
               <div className="space-y-2">
                 <p className="text-sm font-medium text-slate-200">Irrigation Mode</p>
                 <div className="grid grid-cols-3 gap-2">
@@ -660,11 +664,7 @@ Give up to 4 tailored irrigation tips plus optimal watering time.`;
                     onChange={e => !isReadOnly && set('scheduledTime', e.target.value)}
                     disabled={isReadOnly}
                     className="px-4 py-2.5 rounded-xl text-sm font-mono outline-none transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-                    style={{
-                      background: '#3a4556',
-                      border: '1px solid #4a5568',
-                      color: '#e2e8f0',
-                    }} />
+                    style={{ background: '#3a4556', border: '1px solid #4a5568', color: '#e2e8f0' }} />
                   {aiOptTime && (
                     <p className="text-xs text-emerald-400 flex items-center gap-1.5">
                       <Brain className="w-3 h-3" />AI recommends: <strong>{aiOptTime}</strong>
@@ -734,8 +734,7 @@ Give up to 4 tailored irrigation tips plus optimal watering time.`;
                 !isAdmin && (
                   <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold"
                     style={{ background: 'rgba(168,85,247,0.12)', border: '1px solid rgba(168,85,247,0.3)', color: '#d8b4fe' }}>
-                    <ShieldCheck className="w-3 h-3" />
-                    Admin Only
+                    <ShieldCheck className="w-3 h-3" />Admin Only
                   </div>
                 )
               }>
@@ -760,11 +759,7 @@ Give up to 4 tailored irrigation tips plus optimal watering time.`;
                     onClick={() => !isReadOnly && set('tankCurrent', Math.min(settings.tankCapacity, settings.tankCurrent + settings.tankCapacity * (pct / 100)))}
                     disabled={isReadOnly}
                     className="py-2 rounded-xl text-xs font-bold transition-all hover:scale-[1.03] active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:scale-100"
-                    style={{
-                      background: '#3a4556',
-                      border: '1px solid #4a5568',
-                      color: '#cbd5e1',
-                    }}>
+                    style={{ background: '#3a4556', border: '1px solid #4a5568', color: '#cbd5e1' }}>
                     +{pct}%
                   </button>
                 ))}
@@ -786,8 +781,7 @@ Give up to 4 tailored irrigation tips plus optimal watering time.`;
             </SettingCard>
 
             {/* Display & Theme */}
-            <SettingCard icon={Sun} title="Display & Theme"
-              subtitle="Visual appearance for all pages" accent="#fbbf24">
+            <SettingCard icon={Sun} title="Display & Theme" subtitle="Visual appearance for all pages" accent="#fbbf24">
               <div className="relative rounded-2xl overflow-hidden p-4 transition-all duration-500"
                 style={{
                   background: isDark ? 'linear-gradient(135deg,#334155,#1e293b)' : 'linear-gradient(135deg,#fef3c7,#e0f2fe)',
@@ -818,7 +812,6 @@ Give up to 4 tailored irrigation tips plus optimal watering time.`;
                     size="lg" color={isDark ? '#60a5fa' : '#f59e0b'} />
                 </div>
               </div>
-
               <div className="space-y-2">
                 <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Theme Preset</p>
                 <div className="grid grid-cols-2 gap-2">
@@ -840,8 +833,7 @@ Give up to 4 tailored irrigation tips plus optimal watering time.`;
             </SettingCard>
 
             {/* AI Tips */}
-            <SettingCard icon={Brain} title="AI Irrigation Tips"
-              subtitle="Personalized AI advice " accent="#a78bfa"
+            <SettingCard icon={Brain} title="AI Irrigation Tips" subtitle="Personalized AI advice" accent="#a78bfa"
               badge={
                 <button onClick={fetchAITips} disabled={aiLoading}
                   className="p-1.5 rounded-lg text-slate-400 hover:bg-slate-600 hover:text-slate-200 transition-colors disabled:opacity-40">
@@ -885,12 +877,12 @@ Give up to 4 tailored irrigation tips plus optimal watering time.`;
                 </div>
               }>
               {[
-                { label: 'Device ID', value: 'ESP32-NODE-01',           Icon: Smartphone      },
-                { label: 'Firmware',  value: 'v2.4.1',                  Icon: BatteryCharging },
-                { label: 'Location',  value: 'Plot A',                  Icon: MapPin          },
-                { label: 'Signal',    value: '-67 dBm',                 Icon: Activity        },
-                { label: 'Status',    value: esp32StatusConfig.label,   Icon: esp32StatusConfig.Icon },
-                { label: 'Last Seen', value: esp32Status.lastSync,      Icon: CheckCircle     },
+                { label: 'Device ID', value: 'ESP32-NODE-01',         Icon: Smartphone      },
+                { label: 'Firmware',  value: 'v2.4.1',                Icon: BatteryCharging },
+                { label: 'Location',  value: 'Plot A',                Icon: MapPin          },
+                { label: 'Signal',    value: '-67 dBm',               Icon: Activity        },
+                { label: 'Status',    value: esp32StatusConfig.label, Icon: esp32StatusConfig.Icon },
+                { label: 'Last Seen', value: esp32Status.lastSync,    Icon: CheckCircle     },
               ].map((row, idx, arr) => (
                 <div key={row.label} className="flex items-center justify-between py-2"
                   style={{ borderBottom: idx < arr.length - 1 ? '1px solid #2a3441' : 'none' }}>
@@ -904,7 +896,6 @@ Give up to 4 tailored irrigation tips plus optimal watering time.`;
                 </div>
               ))}
             </SettingCard>
-
           </div>
         </div>
 
