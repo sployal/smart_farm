@@ -414,21 +414,71 @@ export default function SettingsPage() {
     return () => clearInterval(timerRef.current!);
   }, [wateringOn]);
 
-  // ── NEW: auto-mode valve trigger ───────────────────────────────────────────
-  // When irrigationMode is 'auto' and irrigationActive is true,
-  // fire the valve on the configured frequency cycle.
-  const autoRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  // ── Scheduled mode: watch clock every minute ──────────────────────────────
+  const scheduledRunning = useRef(false);
+
   useEffect(() => {
-    clearInterval(autoRef.current!);
-    if (settings.irrigationMode === 'auto' && settings.irrigationActive && !isReadOnly) {
-      autoRef.current = setInterval(() => {
-        // Open valve for wateringDuration minutes then close
+    if (settings.irrigationMode !== 'scheduled' || !settings.irrigationActive || isReadOnly) return;
+
+    const check = () => {
+      if (scheduledRunning.current) return;
+      const now    = new Date();
+      const hhmm   = `${now.getHours().toString().padStart(2,'0')}:${now.getMinutes().toString().padStart(2,'0')}`;
+      if (hhmm === settings.scheduledTime) {
+        scheduledRunning.current = true;
         setValve(true);
-        setTimeout(() => setValve(false), settings.wateringDuration * 60 * 1000);
-      }, settings.wateringFrequency * 60 * 60 * 1000);   // frequency in hours → ms
-    }
-    return () => clearInterval(autoRef.current!);
+        setTimeout(() => {
+          setValve(false);
+          scheduledRunning.current = false;
+        }, settings.wateringDuration * 60 * 1000);
+      }
+    };
+
+    check();  // run immediately in case page loaded exactly at scheduled time
+    const interval = setInterval(check, 60 * 1000);
+    return () => clearInterval(interval);
+  }, [settings.irrigationMode, settings.irrigationActive, settings.scheduledTime, settings.wateringDuration, isReadOnly]);
+
+  // ── Auto-mode: Firebase timestamp approach ────────────────────────────────
+  // On page load and every minute, read lastAutoWater from Firebase.
+  // If enough time has passed (or it has never run), fire a watering cycle.
+  // This survives page reloads because the last-watered time lives in Firebase.
+  const autoRunning = useRef(false);
+
+  const runAutoCheck = useCallback(() => {
+    if (settings.irrigationMode !== 'auto' || !settings.irrigationActive || isReadOnly) return;
+    if (autoRunning.current) return;   // cycle already in progress
+
+    const db = getDatabase();
+    onValue(ref(db, 'controls/lastAutoWater'), snap => {
+      const lastWatered: number = snap.exists() ? (snap.val() as number) : 0;
+      const frequencyMs = settings.wateringFrequency * 60 * 60 * 1000;
+      const elapsed     = Date.now() - lastWatered;
+
+      if (elapsed >= frequencyMs) {
+        // Enough time has passed — start a cycle
+        autoRunning.current = true;
+        setValve(true);
+
+        // Write current timestamp so next check knows when we last watered
+        dbSet(ref(db, 'controls/lastAutoWater'), Date.now());
+
+        // Close valve after wateringDuration minutes
+        setTimeout(() => {
+          setValve(false);
+          autoRunning.current = false;
+        }, settings.wateringDuration * 60 * 1000);
+      }
+    }, { onlyOnce: true });   // read once per check, not a persistent listener
   }, [settings.irrigationMode, settings.irrigationActive, settings.wateringFrequency, settings.wateringDuration, isReadOnly]);
+
+  useEffect(() => {
+    // Run immediately on mount / when settings change
+    runAutoCheck();
+    // Then re-check every minute so we catch the moment frequency elapses
+    const interval = setInterval(runAutoCheck, 60 * 1000);
+    return () => clearInterval(interval);
+  }, [runAutoCheck]);
 
   const fetchAITips = useCallback(async () => {
     setAiLoading(true); setAiError('');
