@@ -101,6 +101,18 @@ Open [http://localhost:3000](http://localhost:3000). The app auto-redirects to t
 
 The ESP32 microcontroller transmits sensor data to Firebase Realtime Database with WiFi connectivity, multi-sensor support, and low power consumption.
 
+### ESP32 Pin Configuration
+
+| GPIO | Physical Location | Label on Board | Used For |
+|---|---|---|---|
+| 15 | Left side | D15 | DHT11 sensor data |
+| 25 | Right side | D25 | LED indicator |
+| 26 | Right side | D26 | Servo signal (valve) |
+| 34 | Right side | D34 / VP | Soil moisture sensor (analog input) |
+| 12 | Left side | D12 | Upload indicator LED |
+| 21 | Left side | D21 | I2C SDA (LCD) |
+| 22 | Left side | D22 | I2C SCL (LCD) |
+
 ## 📈 Features in Detail
 
 ### Sensor Monitoring
