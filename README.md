@@ -25,13 +25,13 @@ Smart Farm connects ESP32-based IoT sensors to a responsive web dashboard, enabl
 
 ## 📊 Dashboard Illustration
 
-![Dashboard](./images/image1.png)
+![Dashboard](./images/image101.png)
 
 An intuitive interface displaying live sensor data, system status, and AI-generated farm management insights.
 
 ## 🔧 Hardware Architecture
 
-![Hardware Setup](./images/image2.png)
+![Hardware Setup](./images/image201.png)
 
 ESP32 microcontrollers with multiple sensors collect field data and transmit it to the cloud via WiFi.
 
