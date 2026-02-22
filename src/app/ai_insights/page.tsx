@@ -430,7 +430,7 @@ export default function AIInsightsPage() {
   const chatEndRef = useRef<HTMLDivElement>(null);
 
   // UI
-  const [activeTab, setActiveTab] = useState<'insights' | 'chat'>('insights');
+  const [activeTab, setActiveTab] = useState<'insights' | 'chat'>('chat');
 
   const plot = plots.find(p => p.id === activePlotId) ?? plots[0];
 
@@ -723,7 +723,7 @@ All advice must be specific to ${plot?.cropType ?? 'the crop'}${plot?.variety ? 
         {/* Tab Navigation */}
         <div className="max-w-6xl mx-auto mt-4 flex gap-1 rounded-xl p-1 w-fit"
           style={{ background: 'rgba(30, 41, 59, 0.6)' }}>
-          {(['insights', 'chat'] as const).map(tab => (
+          {(['chat', 'insights'] as const).map(tab => (
             <button
               key={tab}
               onClick={() => setActiveTab(tab)}
