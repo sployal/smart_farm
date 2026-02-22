@@ -344,8 +344,13 @@ function PlantPerformanceContent() {
   const searchParams = useSearchParams();
   const plotIdParam  = searchParams?.get('plotId') || 'plot-a';
 
-  const [plots, setPlots]           = useState<Plot[]>(DEFAULT_PLOTS);
-  const activePlot                  = plots.find(p => p.id === plotIdParam) ?? plots[0];
+  // Start with empty plots so we never show DEFAULT_PLOTS data to the AI.
+  // plotsReady flips to true once Firebase responds (or times out).
+  const [plots, setPlots]           = useState<Plot[]>([]);
+  const [plotsReady, setPlotsReady] = useState(false);
+  // activePlot is undefined until Firebase loads — we never fall back to
+  // DEFAULT_PLOTS so the AI is never accidentally given the wrong crop.
+  const activePlot = plots.find(p => p.id === plotIdParam) ?? plots[0];
 
   const [sensorData, setSensorData] = useState<SensorData>({
     moisture:    62,
@@ -358,28 +363,26 @@ function PlantPerformanceContent() {
   });
 
   const [aiReport,    setAiReport]    = useState<AIReport | null>(null);
-  const [aiLoading,   setAiLoading]   = useState(false);
+  const [aiLoading,   setAiLoading]   = useState(true);  // show spinner immediately
   const [aiError,     setAiError]     = useState('');
   const [lastRefresh, setLastRefresh] = useState<Date>(new Date());
   const [timeline]                    = useState(() => buildGrowthTimeline(sensorData));
 
-  // Keep a ref to the latest sensorData and activePlot so fetchAIReport
-  // can read current values without being in the dependency array.
+  // Keep a ref to the latest sensorData so fetchAIReport can read it.
+  // activePlot is passed directly as a parameter instead of via ref
+  // to guarantee the correct plot is always used.
   const sensorDataRef  = useRef(sensorData);
-  const activePlotRef  = useRef(activePlot);
   useEffect(() => { sensorDataRef.current = sensorData; }, [sensorData]);
-  useEffect(() => { activePlotRef.current = activePlot; }, [activePlot]);
 
   const status      = computeHealth(sensorData);
   const meta        = healthMeta[status];
   const radarData   = buildRadarData(sensorData);
   const healthScore = Math.round(radarData.reduce((acc, d) => acc + d.A, 0) / radarData.length);
 
-  // fetchAIReport reads from refs — it is stable across renders and will
-  // NOT be recreated when sensorData changes, so nothing auto-triggers it.
-  const fetchAIReport = useCallback(async () => {
-    const s    = sensorDataRef.current;
-    const plot = activePlotRef.current;
+  // fetchAIReport accepts the plot directly so it always uses the current
+  // active plot rather than a potentially stale ref value.
+  const fetchAIReport = useCallback(async (plot: Plot) => {
+    const s = sensorDataRef.current;
 
     setAiLoading(true);
     setAiError('');
@@ -423,19 +426,34 @@ Produce a JSON plant-health report.`.trim();
     }
   }, []); // ← empty deps: function is created once and never recreated
 
-  // Run ONCE on mount to load the initial AI report.
-  // Subsequent calls happen only when the user clicks "Refresh AI Report".
+  // Fire the AI fetch only after Firebase has returned the real plots.
+  // We never fall back to DEFAULT_PLOTS for the AI call — the spinner
+  // stays visible until we have confirmed data.
+  const hasFetchedForPlot = useRef<string | null>(null);
   useEffect(() => {
-    fetchAIReport();
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+    if (!plotsReady) return;
+    if (!activePlot) return;
+    if (hasFetchedForPlot.current === activePlot.id) return;
+    hasFetchedForPlot.current = activePlot.id;
+    fetchAIReport(activePlot);
+  }, [plotsReady, activePlot?.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Load plots from Firebase
+  // Load plots from Firebase.
+  // plotsReady is ONLY set to true once Firebase returns a non-empty
+  // snapshot — never via a timer — so the AI always gets real data.
   useEffect(() => {
+    let unsubscribe: (() => void) | undefined;
     try {
-      return onSnapshot(collection(db, 'plots'), snap => {
-        if (!snap.empty) setPlots(snap.docs.map(d => d.data() as Plot));
+      unsubscribe = onSnapshot(collection(db, 'plots'), snap => {
+        if (!snap.empty) {
+          setPlots(snap.docs.map(d => d.data() as Plot));
+          setPlotsReady(true);   // ← only fires when real data exists
+        }
       });
-    } catch { /* Firebase not configured */ }
+    } catch {
+      // Firebase not configured — the spinner will stay; nothing incorrect fires
+    }
+    return () => unsubscribe?.();
   }, []);
 
   // Firebase soil metrics listener
@@ -519,15 +537,15 @@ Produce a JSON plant-health report.`.trim();
                 <span style={{ color: meta.color }}>Plant Performance</span>
               </div>
               <h1 className="text-2xl sm:text-3xl font-black text-slate-100 tracking-tight">
-                {activePlot.name} · {activePlot.cropType}
+                {activePlot?.name} · {activePlot?.cropType}
               </h1>
               <p className="text-slate-400 text-sm mt-1">
-                {activePlot.variety} · {activePlot.area} · Real-time diagnostics
+                {activePlot?.variety} · {activePlot?.area} · Real-time diagnostics
               </p>
             </div>
           </div>
           <button
-            onClick={fetchAIReport}
+            onClick={() => fetchAIReport(activePlot)}
             disabled={aiLoading}
             className={cn(
               "flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold transition-all border",
