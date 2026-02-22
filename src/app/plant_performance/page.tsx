@@ -46,6 +46,31 @@ type AIReport = {
 };
 
 // ---------------------------------------------------------------------------
+// localStorage helpers (guarded for SSR)
+// ---------------------------------------------------------------------------
+const CACHE_PREFIX = 'plant_ai_report_';
+
+function loadCachedReport(plotId: string): AIReport | null {
+  if (typeof window === 'undefined') return null;
+  try {
+    const raw = localStorage.getItem(`${CACHE_PREFIX}${plotId}`);
+    if (!raw) return null;
+    return JSON.parse(raw) as AIReport;
+  } catch {
+    return null;
+  }
+}
+
+function saveCachedReport(plotId: string, report: AIReport): void {
+  if (typeof window === 'undefined') return;
+  try {
+    localStorage.setItem(`${CACHE_PREFIX}${plotId}`, JSON.stringify(report));
+  } catch {
+    // Storage quota exceeded or unavailable — silently ignore
+  }
+}
+
+// ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
 async function callGroqAI(prompt: string, system: string): Promise<string> {
@@ -344,12 +369,8 @@ function PlantPerformanceContent() {
   const searchParams = useSearchParams();
   const plotIdParam  = searchParams?.get('plotId') || 'plot-a';
 
-  // Start with empty plots so we never show DEFAULT_PLOTS data to the AI.
-  // plotsReady flips to true once Firebase responds (or times out).
   const [plots, setPlots]           = useState<Plot[]>([]);
   const [plotsReady, setPlotsReady] = useState(false);
-  // activePlot is undefined until Firebase loads — we never fall back to
-  // DEFAULT_PLOTS so the AI is never accidentally given the wrong crop.
   const activePlot = plots.find(p => p.id === plotIdParam) ?? plots[0];
 
   const [sensorData, setSensorData] = useState<SensorData>({
@@ -363,25 +384,33 @@ function PlantPerformanceContent() {
   });
 
   const [aiReport,    setAiReport]    = useState<AIReport | null>(null);
-  const [aiLoading,   setAiLoading]   = useState(true);  // show spinner immediately
+  // aiLoading starts false — we check the cache first before showing a spinner
+  const [aiLoading,   setAiLoading]   = useState(false);
   const [aiError,     setAiError]     = useState('');
-  const [lastRefresh, setLastRefresh] = useState<Date>(new Date());
+  const [lastRefresh, setLastRefresh] = useState<Date | null>(null);
   const [timeline]                    = useState(() => buildGrowthTimeline(sensorData));
 
-  // Keep a ref to the latest sensorData so fetchAIReport can read it.
-  // activePlot is passed directly as a parameter instead of via ref
-  // to guarantee the correct plot is always used.
-  const sensorDataRef  = useRef(sensorData);
+  const sensorDataRef = useRef(sensorData);
   useEffect(() => { sensorDataRef.current = sensorData; }, [sensorData]);
 
-  const status      = computeHealth(sensorData);
-  const meta        = healthMeta[status];
-  const radarData   = buildRadarData(sensorData);
-  const healthScore = Math.round(radarData.reduce((acc, d) => acc + d.A, 0) / radarData.length);
+  // -------------------------------------------------------------------------
+  // fetchAIReport — always calls the API (bypasses cache).
+  // Pass force=false to use cache when available; force=true to skip cache
+  // (used by the Refresh button).
+  // -------------------------------------------------------------------------
+  const fetchAIReport = useCallback(async (plot: Plot, force = false) => {
+    // If not forced, try the cache first
+    if (!force) {
+      const cached = loadCachedReport(plot.id);
+      if (cached) {
+        setAiReport(cached);
+        setAiLoading(false);
+        setAiError('');
+        // lastRefresh stays null to indicate it came from cache, not a fresh call
+        return;
+      }
+    }
 
-  // fetchAIReport accepts the plot directly so it always uses the current
-  // active plot rather than a potentially stale ref value.
-  const fetchAIReport = useCallback(async (plot: Plot) => {
     const s = sensorDataRef.current;
 
     setAiLoading(true);
@@ -417,6 +446,10 @@ Produce a JSON plant-health report.`.trim();
       const raw    = await callGroqAI(prompt, systemCtx);
       const clean  = raw.replace(/```json|```/g, '').trim();
       const report: AIReport = JSON.parse(clean);
+
+      // Save fresh report to localStorage so next page load uses it
+      saveCachedReport(plot.id, report);
+
       setAiReport(report);
       setLastRefresh(new Date());
     } catch (e) {
@@ -424,34 +457,35 @@ Produce a JSON plant-health report.`.trim();
     } finally {
       setAiLoading(false);
     }
-  }, []); // ← empty deps: function is created once and never recreated
+  }, []); // empty deps — created once
 
-  // Fire the AI fetch only after Firebase has returned the real plots.
-  // We never fall back to DEFAULT_PLOTS for the AI call — the spinner
-  // stays visible until we have confirmed data.
+  // -------------------------------------------------------------------------
+  // Once Firebase confirms the real plots, load the AI report.
+  // We check the cache first; only hit the API if nothing is cached.
+  // -------------------------------------------------------------------------
   const hasFetchedForPlot = useRef<string | null>(null);
   useEffect(() => {
     if (!plotsReady) return;
     if (!activePlot) return;
     if (hasFetchedForPlot.current === activePlot.id) return;
     hasFetchedForPlot.current = activePlot.id;
-    fetchAIReport(activePlot);
+
+    // force=false → uses cache if available, API only if no cache exists
+    fetchAIReport(activePlot, false);
   }, [plotsReady, activePlot?.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Load plots from Firebase.
-  // plotsReady is ONLY set to true once Firebase returns a non-empty
-  // snapshot — never via a timer — so the AI always gets real data.
+  // Load plots from Firebase
   useEffect(() => {
     let unsubscribe: (() => void) | undefined;
     try {
       unsubscribe = onSnapshot(collection(db, 'plots'), snap => {
         if (!snap.empty) {
           setPlots(snap.docs.map(d => d.data() as Plot));
-          setPlotsReady(true);   // ← only fires when real data exists
+          setPlotsReady(true);
         }
       });
     } catch {
-      // Firebase not configured — the spinner will stay; nothing incorrect fires
+      // Firebase not configured
     }
     return () => unsubscribe?.();
   }, []);
@@ -474,7 +508,7 @@ Produce a JSON plant-health report.`.trim();
     } catch { /* Firebase not configured */ }
   }, [plotIdParam]);
 
-  // Wire Firebase real-time updates if available
+  // Wire Firebase real-time sensor updates
   useEffect(() => {
     let unsubscribe: (() => void) | undefined;
     (async () => {
@@ -500,11 +534,23 @@ Produce a JSON plant-health report.`.trim();
     return () => unsubscribe?.();
   }, []);
 
+  const status      = computeHealth(sensorData);
+  const meta        = healthMeta[status];
+  const radarData   = buildRadarData(sensorData);
+  const healthScore = Math.round(radarData.reduce((acc, d) => acc + d.A, 0) / radarData.length);
+
   const priorityStyle = {
     high:   'bg-red-500/10 border border-red-500/20 text-red-300',
     medium: 'bg-amber-500/10 border border-amber-500/20 text-amber-300',
     low:    'bg-emerald-500/10 border border-emerald-500/20 text-emerald-300',
   };
+
+  // Determine what to show in the "Updated" timestamp area
+  const timestampLabel = lastRefresh
+    ? `Refreshed ${lastRefresh.toLocaleTimeString()}`
+    : aiReport
+      ? 'Loaded from cache'
+      : '';
 
   return (
     <div className="min-h-screen text-slate-100 font-sans" style={{ background: '#1a2332' }}>
@@ -544,9 +590,10 @@ Produce a JSON plant-health report.`.trim();
               </p>
             </div>
           </div>
+          {/* Refresh button — force=true bypasses cache */}
           <button
-            onClick={() => fetchAIReport(activePlot)}
-            disabled={aiLoading}
+            onClick={() => activePlot && fetchAIReport(activePlot, true)}
+            disabled={aiLoading || !activePlot}
             className={cn(
               "flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold transition-all border",
               "disabled:opacity-50 disabled:cursor-not-allowed"
@@ -609,7 +656,9 @@ Produce a JSON plant-health report.`.trim();
                 <Brain className="w-4 h-4 text-violet-400" />
                 <span className="font-semibold text-sm">AI Crop Diagnosis</span>
               </div>
-              <span className="text-[10px] text-slate-500">Updated {lastRefresh.toLocaleTimeString()}</span>
+              {timestampLabel && (
+                <span className="text-[10px] text-slate-500">{timestampLabel}</span>
+              )}
             </div>
             <div className="flex-1 p-5">
               {aiLoading ? (
@@ -669,7 +718,14 @@ Produce a JSON plant-health report.`.trim();
                     </div>
                   </div>
                 </div>
-              ) : null}
+              ) : (
+                // No report yet and not loading — waiting for Firebase plots
+                <div className="flex flex-col items-center justify-center h-full gap-4 py-12">
+                  <div className="w-12 h-12 rounded-full border-2 border-t-transparent animate-spin"
+                    style={{ borderColor: `${meta.color}50`, borderTopColor: meta.color }} />
+                  <p className="text-slate-400 text-sm animate-pulse">Loading plot data…</p>
+                </div>
+              )}
             </div>
           </div>
         </div>
@@ -791,7 +847,7 @@ Produce a JSON plant-health report.`.trim();
           <Info className="w-3.5 h-3.5 flex-shrink-0" />
           <span>
             Plant animation and health indicators update in real-time from sensor data.
-            AI diagnostics powered by Groq (llama-3.3-70b).
+            AI diagnostics powered by Groq (llama-3.3-70b). Reports are cached locally and only refreshed on demand.
           </span>
         </div>
       </div>
