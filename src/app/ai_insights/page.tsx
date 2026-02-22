@@ -142,9 +142,14 @@ async function callAI(prompt: string, systemContext: string): Promise<string> {
   return data?.choices?.[0]?.message?.content ?? 'No response received.';
 }
 
-async function generateInsights(sensor: SensorData): Promise<Insight[]> {
+// ── generateInsights now accepts the active plot so the prompt is dynamic ──
+async function generateInsights(sensor: SensorData, plot: Plot | undefined): Promise<Insight[]> {
+  const cropLabel = plot
+    ? `${plot.cropType}${plot.variety ? ` (${plot.variety})` : ''} farm in Kenya — Plot: ${plot.name}`
+    : 'farm in Kenya';
+
   const prompt = `
-You are an expert agronomist AI. Given the following real-time sensor readings from a tomato farm in Kenya, return a JSON array of exactly 4 insights.
+You are an expert agronomist AI. Given the following real-time sensor readings from a ${cropLabel}, return a JSON array of exactly 4 insights.
 
 SENSOR DATA:
 - Temperature: ${sensor.temperature}°C
@@ -161,6 +166,7 @@ IMPORTANT RULES:
 3. The THIRD insight MUST be about Soil Moisture.
 4. The FOURTH insight should cover whichever of pH, Nutrition, Disease Risk, or Harvest is most urgent.
 5. Each insight must directly reference the actual sensor value in the detail field.
+6. All recommendations must be specific to ${plot?.cropType ?? 'the crop'} cultivation.
 
 Return ONLY valid JSON (no markdown fences) in this exact format:
 [
@@ -508,7 +514,8 @@ export default function AIInsightsPage() {
     setInsightsLoading(true);
     
     try {
-      const result = await generateInsights(sensor);
+      // Pass the active plot so the AI uses the real crop type & variety
+      const result = await generateInsights(sensor, plot);
       if (result.length > 0) {
         setInsights(result);
         setLastRefreshed(new Date());
@@ -518,7 +525,7 @@ export default function AIInsightsPage() {
     } finally {
       setInsightsLoading(false);
     }
-  }, [sensor, dataLoaded]);
+  }, [sensor, dataLoaded, plot]);
 
   // Auto-generate insights ONLY when data first loads
   useEffect(() => {
@@ -535,6 +542,7 @@ export default function AIInsightsPage() {
     chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
+  // systemContext now uses the real plot's cropType and variety
   const systemContext = `
 You are an expert AI agronomist assistant for a smart farm in Kenya.
 Active plot: ${plot?.name ?? 'N/A'} — ${plot?.cropType ?? 'N/A'} (${plot?.variety ?? 'N/A'}).
@@ -546,7 +554,7 @@ Current real-time sensor readings:
 - Nitrogen (N): ${sensor.nitrogen} mg/kg
 - Phosphorus (P): ${sensor.phosphorus} mg/kg
 - Potassium (K): ${sensor.potassium} mg/kg
-Give concise, actionable advice. Use bullet points sparingly. Be friendly and professional.
+All advice must be specific to ${plot?.cropType ?? 'the crop'}${plot?.variety ? ` variety ${plot.variety}` : ''} cultivation. Give concise, actionable advice. Use bullet points sparingly. Be friendly and professional.
   `.trim();
 
   const handleSend = useCallback(async () => {
