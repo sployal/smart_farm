@@ -416,25 +416,29 @@ export default function SettingsPage() {
   const [valveConfirmed, setValveConfirmed] = useState<boolean | null>(null);
 
   // ---------------------------------------------------------------------------
-  // On mount: load AI tips from cache (no API call)
+  // On mount: load from cache if it exists, otherwise call the API once
+  // to populate it. After that first call, tips are only refreshed when
+  // the user explicitly clicks the refresh icon.
   // ---------------------------------------------------------------------------
   useEffect(() => {
     const cached = loadCachedTips();
     if (cached) {
+      // Cache hit — show immediately, no API call
       setAiTips(cached.tips);
       setAiOptTime(cached.optimalTime);
       setAiWeeklyEst(cached.weeklyEstimate);
       setAiTipsSource('cache');
-      // Format the saved-at time for display
       try {
         const d = new Date(cached.savedAt);
         setAiTipsSavedAt(d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }));
       } catch {
         setAiTipsSavedAt(null);
       }
+    } else {
+      // No cache yet — fetch from API once to seed the cache
+      fetchAITips();
     }
-    // No API call here — user must click Refresh
-  }, []);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   // ---------------------------------------------------------------------------
   // Firebase: load irrigation config on mount
