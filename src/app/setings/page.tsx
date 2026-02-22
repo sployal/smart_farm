@@ -14,8 +14,6 @@ import {
 } from 'lucide-react';
 import { useRole } from '@/hooks/useRole';
 import { subscribeToESP32Status, type ESP32StatusResult } from '@/lib/firebase';
-
-// ── NEW: import Firebase database helpers ──────────────────────────────────
 import { getDatabase, ref, set as dbSet, onValue } from 'firebase/database';
 
 // ---------------------------------------------------------------------------
@@ -55,6 +53,39 @@ interface FarmSettings {
 }
 
 type AITip = { type: 'info' | 'warning' | 'success'; text: string };
+
+// Serialisable cache shape stored in localStorage
+type AITipsCache = {
+  tips:            AITip[];
+  optimalTime:     string;
+  weeklyEstimate:  number;
+  savedAt:         string; // ISO timestamp
+};
+
+// ---------------------------------------------------------------------------
+// localStorage helpers (SSR-safe)
+// ---------------------------------------------------------------------------
+const AI_TIPS_CACHE_KEY = 'farm_ai_irrigation_tips';
+
+function loadCachedTips(): AITipsCache | null {
+  if (typeof window === 'undefined') return null;
+  try {
+    const raw = localStorage.getItem(AI_TIPS_CACHE_KEY);
+    if (!raw) return null;
+    return JSON.parse(raw) as AITipsCache;
+  } catch {
+    return null;
+  }
+}
+
+function saveCachedTips(cache: AITipsCache): void {
+  if (typeof window === 'undefined') return;
+  try {
+    localStorage.setItem(AI_TIPS_CACHE_KEY, JSON.stringify(cache));
+  } catch {
+    // Storage quota exceeded — silently ignore
+  }
+}
 
 // ---------------------------------------------------------------------------
 // Groq helper
@@ -111,7 +142,7 @@ function WaterTank({ current, capacity, low }: { current: number; capacity: numb
               <stop offset="0%" stopColor={color} stopOpacity="0.9" />
               <stop offset="100%" stopColor={color} stopOpacity="0.5" />
             </linearGradient>
-            <linearGradient id="tankBody" x1="0" y1="0" x2="1" y2="1">
+            <linearGradient id="tankBody" x1="0" y1="1" x2="1" y2="1">
               <stop offset="0%" stopColor="#475569" />
               <stop offset="100%" stopColor="#334155" />
             </linearGradient>
@@ -312,7 +343,7 @@ function ReadOnlyBanner() {
 }
 
 // ---------------------------------------------------------------------------
-// NEW: helper — write valve command to Firebase
+// Firebase valve helper
 // ---------------------------------------------------------------------------
 function setValve(open: boolean) {
   const db = getDatabase();
@@ -366,17 +397,48 @@ export default function SettingsPage() {
     lowWaterThreshold:  20,
   });
 
+  // ---------------------------------------------------------------------------
+  // AI Tips state — starts empty; cache loaded on mount
+  // ---------------------------------------------------------------------------
   const [aiTips,      setAiTips]      = useState<AITip[]>([]);
   const [aiOptTime,   setAiOptTime]   = useState('');
   const [aiWeeklyEst, setAiWeeklyEst] = useState(0);
   const [aiLoading,   setAiLoading]   = useState(false);
   const [aiError,     setAiError]     = useState('');
+  // 'cache' | 'fresh' | null — shown in the card subtitle
+  const [aiTipsSource, setAiTipsSource] = useState<'cache' | 'fresh' | null>(null);
+  const [aiTipsSavedAt, setAiTipsSavedAt] = useState<string | null>(null);
+
   const [wateringOn,  setWateringOn]  = useState(false);
   const [waterTimer,  setWaterTimer]  = useState(0);
   const [saved,       setSaved]       = useState(false);
 
-  // ── NEW: valve confirmed state — read back from ESP32 ─────────────────────
-  // Load irrigation config from Firebase on mount so settings survive page refresh
+  const [valveConfirmed, setValveConfirmed] = useState<boolean | null>(null);
+
+  // ---------------------------------------------------------------------------
+  // On mount: load AI tips from cache (no API call)
+  // ---------------------------------------------------------------------------
+  useEffect(() => {
+    const cached = loadCachedTips();
+    if (cached) {
+      setAiTips(cached.tips);
+      setAiOptTime(cached.optimalTime);
+      setAiWeeklyEst(cached.weeklyEstimate);
+      setAiTipsSource('cache');
+      // Format the saved-at time for display
+      try {
+        const d = new Date(cached.savedAt);
+        setAiTipsSavedAt(d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }));
+      } catch {
+        setAiTipsSavedAt(null);
+      }
+    }
+    // No API call here — user must click Refresh
+  }, []);
+
+  // ---------------------------------------------------------------------------
+  // Firebase: load irrigation config on mount
+  // ---------------------------------------------------------------------------
   useEffect(() => {
     const db = getDatabase();
     onValue(ref(db, 'controls/irrigationConfig'), snap => {
@@ -393,7 +455,7 @@ export default function SettingsPage() {
     }, { onlyOnce: true });
   }, []);
 
-  const [valveConfirmed, setValveConfirmed] = useState<boolean | null>(null);
+  // Firebase: listen for valve confirmed state
   useEffect(() => {
     const db = getDatabase();
     const unsubscribe = onValue(ref(db, 'controls/valveConfirmed'), snap => {
@@ -404,10 +466,10 @@ export default function SettingsPage() {
 
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
-  // ── MODIFIED: wateringOn effect now also commands the valve ───────────────
+  // Watering on/off → open/close valve
   useEffect(() => {
     if (wateringOn) {
-      setValve(true);                                      // ← open valve
+      setValve(true);
       setWaterTimer(settings.wateringDuration * 60);
       timerRef.current = setInterval(() => {
         setWaterTimer(t => {
@@ -424,23 +486,21 @@ export default function SettingsPage() {
         });
       }, 1000);
     } else {
-      setValve(false);                                     // ← close valve
+      setValve(false);
       clearInterval(timerRef.current!);
       setWaterTimer(0);
     }
     return () => clearInterval(timerRef.current!);
   }, [wateringOn]);
 
-  // ── Scheduled mode: watch clock every minute ──────────────────────────────
+  // Scheduled mode
   const scheduledRunning = useRef(false);
-
   useEffect(() => {
     if (settings.irrigationMode !== 'scheduled' || !settings.irrigationActive || isReadOnly) return;
-
     const check = () => {
       if (scheduledRunning.current) return;
-      const now    = new Date();
-      const hhmm   = `${now.getHours().toString().padStart(2,'0')}:${now.getMinutes().toString().padStart(2,'0')}`;
+      const now  = new Date();
+      const hhmm = `${now.getHours().toString().padStart(2,'0')}:${now.getMinutes().toString().padStart(2,'0')}`;
       if (hhmm === settings.scheduledTime) {
         scheduledRunning.current = true;
         setValve(true);
@@ -450,55 +510,45 @@ export default function SettingsPage() {
         }, settings.wateringDuration * 60 * 1000);
       }
     };
-
-    check();  // run immediately in case page loaded exactly at scheduled time
+    check();
     const interval = setInterval(check, 60 * 1000);
     return () => clearInterval(interval);
   }, [settings.irrigationMode, settings.irrigationActive, settings.scheduledTime, settings.wateringDuration, isReadOnly]);
 
-  // ── Auto-mode: Firebase timestamp approach ────────────────────────────────
-  // On page load and every minute, read lastAutoWater from Firebase.
-  // If enough time has passed (or it has never run), fire a watering cycle.
-  // This survives page reloads because the last-watered time lives in Firebase.
+  // Auto-mode
   const autoRunning = useRef(false);
-
   const runAutoCheck = useCallback(() => {
     if (settings.irrigationMode !== 'auto' || !settings.irrigationActive || isReadOnly) return;
-    if (autoRunning.current) return;   // cycle already in progress
-
+    if (autoRunning.current) return;
     const db = getDatabase();
     onValue(ref(db, 'controls/lastAutoWater'), snap => {
       const lastWatered: number = snap.exists() ? (snap.val() as number) : 0;
       const frequencyMs = settings.wateringFrequency * 60 * 60 * 1000;
-      const elapsed     = Date.now() - lastWatered;
-
-      if (elapsed >= frequencyMs) {
-        // Enough time has passed — start a cycle
+      if (Date.now() - lastWatered >= frequencyMs) {
         autoRunning.current = true;
         setValve(true);
-
-        // Write current timestamp so next check knows when we last watered
         dbSet(ref(db, 'controls/lastAutoWater'), Date.now());
-
-        // Close valve after wateringDuration minutes
         setTimeout(() => {
           setValve(false);
           autoRunning.current = false;
         }, settings.wateringDuration * 60 * 1000);
       }
-    }, { onlyOnce: true });   // read once per check, not a persistent listener
+    }, { onlyOnce: true });
   }, [settings.irrigationMode, settings.irrigationActive, settings.wateringFrequency, settings.wateringDuration, isReadOnly]);
 
   useEffect(() => {
-    // Run immediately on mount / when settings change
     runAutoCheck();
-    // Then re-check every minute so we catch the moment frequency elapses
     const interval = setInterval(runAutoCheck, 60 * 1000);
     return () => clearInterval(interval);
   }, [runAutoCheck]);
 
+  // ---------------------------------------------------------------------------
+  // fetchAITips — always hits the API (force refresh).
+  // Only called when the user clicks the refresh icon.
+  // ---------------------------------------------------------------------------
   const fetchAITips = useCallback(async () => {
-    setAiLoading(true); setAiError('');
+    setAiLoading(true);
+    setAiError('');
     try {
       const sys = `You are an expert agronomist AI. Reply ONLY with valid JSON, no prose, no markdown.
 Schema: { "tips": [{ "type": "info"|"warning"|"success", "text": "<max 20 words>" }], "optimalWateringTime": "<HH:MM>", "weeklyWaterEstimate": <integer> }`;
@@ -506,18 +556,38 @@ Schema: { "tips": [{ "type": "info"|"warning"|"success", "text": "<max 20 words>
 Settings: mode=${settings.irrigationMode}, duration=${settings.wateringDuration}min, every ${settings.wateringFrequency}h.
 Tank: ${settings.tankCurrent}L / ${settings.tankCapacity}L. Moisture thresholds: ${settings.moistureMin}–${settings.moistureMax}%.
 Give up to 4 tailored irrigation tips plus optimal watering time.`;
+
       const raw    = await callGroq(prompt, sys);
       const parsed = JSON.parse(raw.replace(/```json|```/g, '').trim());
-      setAiTips(parsed.tips ?? []);
-      setAiOptTime(parsed.optimalWateringTime ?? '');
-      setAiWeeklyEst(parsed.weeklyWaterEstimate ?? 0);
-    } catch (e) { setAiError((e as Error).message); }
-    finally { setAiLoading(false); }
+
+      const tips:           AITip[] = parsed.tips               ?? [];
+      const optimalTime:    string  = parsed.optimalWateringTime ?? '';
+      const weeklyEstimate: number  = parsed.weeklyWaterEstimate ?? 0;
+
+      // Save to localStorage
+      const cache: AITipsCache = {
+        tips,
+        optimalTime,
+        weeklyEstimate,
+        savedAt: new Date().toISOString(),
+      };
+      saveCachedTips(cache);
+
+      setAiTips(tips);
+      setAiOptTime(optimalTime);
+      setAiWeeklyEst(weeklyEstimate);
+      setAiTipsSource('fresh');
+      setAiTipsSavedAt(new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }));
+    } catch (e) {
+      setAiError((e as Error).message);
+    } finally {
+      setAiLoading(false);
+    }
   }, [settings]);
 
-  useEffect(() => { fetchAITips(); }, []);
-
-  // Sync irrigation config to Firebase whenever a relevant field changes
+  // ---------------------------------------------------------------------------
+  // Settings helpers
+  // ---------------------------------------------------------------------------
   const syncIrrigationConfig = (updated: FarmSettings) => {
     const db = getDatabase();
     dbSet(ref(db, 'controls/irrigationConfig'), {
@@ -555,6 +625,7 @@ Give up to 4 tailored irrigation tips plus optimal watering time.`;
     if (isReadOnly) return;
     if (confirm('Reset all settings to factory defaults?')) {
       localStorage.removeItem('farmSettings');
+      localStorage.removeItem(AI_TIPS_CACHE_KEY);
       window.location.reload();
     }
   };
@@ -568,6 +639,14 @@ Give up to 4 tailored irrigation tips plus optimal watering time.`;
     success: 'bg-emerald-500/10 border-emerald-500/20 text-emerald-300',
   };
   const tipIcon = { info: Info, warning: AlertTriangle, success: CheckCircle };
+
+  // Subtitle shown under "AI Irrigation Tips" card header
+  const aiTipsSubtitle =
+    aiTipsSource === 'cache' && aiTipsSavedAt
+      ? `Loaded from cache · ${aiTipsSavedAt}`
+      : aiTipsSource === 'fresh' && aiTipsSavedAt
+        ? `Refreshed at ${aiTipsSavedAt}`
+        : 'Personalized AI advice';
 
   if (!mounted) {
     return (
@@ -649,12 +728,11 @@ Give up to 4 tailored irrigation tips plus optimal watering time.`;
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
           <div className="lg:col-span-2 space-y-5">
 
-            {/* Irrigation Control — unchanged UI, valve logic wired to wateringOn */}
+            {/* Irrigation Control */}
             <SettingCard icon={Droplets} title="Irrigation Control"
               subtitle="Manual override and automation settings" accent="#38bdf8"
               badge={
                 <div className="flex items-center gap-2">
-                  {/* ── NEW: valve confirmed indicator ── */}
                   {valveConfirmed !== null && (
                     <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold"
                       style={{
@@ -678,7 +756,6 @@ Give up to 4 tailored irrigation tips plus optimal watering time.`;
                 </div>
               }>
 
-              {/* Water Plants Now — this toggle now also opens/closes the servo valve */}
               <div className="relative overflow-hidden rounded-2xl p-5 transition-all duration-500"
                 style={{
                   background: wateringOn
@@ -707,7 +784,6 @@ Give up to 4 tailored irrigation tips plus optimal watering time.`;
                       </div>
                     )}
                   </div>
-                  {/* Toggle unchanged — valve logic lives in the useEffect above */}
                   <Toggle checked={wateringOn} onChange={setWateringOn}
                     size="lg" color="#38bdf8"
                     disabled={settings.tankCurrent < 5}
@@ -921,14 +997,23 @@ Give up to 4 tailored irrigation tips plus optimal watering time.`;
               </div>
             </SettingCard>
 
-            {/* AI Tips */}
-            <SettingCard icon={Brain} title="AI Irrigation Tips" subtitle="Personalized AI advice" accent="#a78bfa"
+            {/* ── AI Irrigation Tips — cached, manual refresh only ── */}
+            <SettingCard
+              icon={Brain}
+              title="AI Irrigation Tips"
+              subtitle={aiTipsSubtitle}
+              accent="#a78bfa"
               badge={
-                <button onClick={fetchAITips} disabled={aiLoading}
-                  className="p-1.5 rounded-lg text-slate-400 hover:bg-slate-600 hover:text-slate-200 transition-colors disabled:opacity-40">
-                  <RefreshCw className={cn('w-4 h-4', aiLoading ? 'animate-spin' : '')} />
+                <button
+                  onClick={fetchAITips}
+                  disabled={aiLoading}
+                  title="Refresh AI tips"
+                  className="p-1.5 rounded-lg text-slate-400 hover:bg-slate-600 hover:text-slate-200 transition-colors disabled:opacity-40"
+                >
+                  <RefreshCw className={cn('w-4 h-4', aiLoading && 'animate-spin')} />
                 </button>
-              }>
+              }
+            >
               {aiLoading ? (
                 <div className="flex items-center justify-center py-6 gap-3 text-slate-400 text-sm">
                   <div className="w-5 h-5 border-2 border-violet-500 border-t-transparent rounded-full animate-spin" />
@@ -939,7 +1024,7 @@ Give up to 4 tailored irrigation tips plus optimal watering time.`;
                   style={{ background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.2)' }}>
                   {aiError}
                 </div>
-              ) : (
+              ) : aiTips.length > 0 ? (
                 <div className="space-y-2.5">
                   {aiTips.map((tip, i) => {
                     const TipIcon = tipIcon[tip.type as keyof typeof tipIcon] ?? Info;
@@ -950,6 +1035,14 @@ Give up to 4 tailored irrigation tips plus optimal watering time.`;
                       </div>
                     );
                   })}
+                </div>
+              ) : (
+                // No cache and no tips yet — prompt the user to refresh
+                <div className="flex flex-col items-center justify-center py-8 gap-3 text-center">
+                  <Brain className="w-8 h-8 text-slate-600" />
+                  <p className="text-slate-400 text-sm">
+                    No tips yet — click <RefreshCw className="w-3 h-3 inline mx-0.5" /> to generate.
+                  </p>
                 </div>
               )}
             </SettingCard>
@@ -994,7 +1087,7 @@ Give up to 4 tailored irrigation tips plus optimal watering time.`;
             <Info className="w-3.5 h-3.5 flex-shrink-0" />
             {isReadOnly
               ? 'You are in view-only mode. Contact an admin to request Gardener access.'
-              : 'Changes apply immediately. Theme switch propagates site-wide via next-themes.'}
+              : 'Changes apply immediately. AI tips are cached locally and only refreshed on demand.'}
           </div>
           <span>SmartFarm v1.0 · Kenya</span>
         </div>
