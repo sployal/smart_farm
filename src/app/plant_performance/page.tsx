@@ -341,7 +341,7 @@ const DEFAULT_PLOTS: Plot[] = [
 // ---------------------------------------------------------------------------
 function PlantPerformanceContent() {
   const router       = useRouter();
-  const searchParams = useSearchParams();               // ← the problematic hook
+  const searchParams = useSearchParams();
   const plotIdParam  = searchParams?.get('plotId') || 'plot-a';
 
   const [plots, setPlots]           = useState<Plot[]>(DEFAULT_PLOTS);
@@ -363,12 +363,24 @@ function PlantPerformanceContent() {
   const [lastRefresh, setLastRefresh] = useState<Date>(new Date());
   const [timeline]                    = useState(() => buildGrowthTimeline(sensorData));
 
+  // Keep a ref to the latest sensorData and activePlot so fetchAIReport
+  // can read current values without being in the dependency array.
+  const sensorDataRef  = useRef(sensorData);
+  const activePlotRef  = useRef(activePlot);
+  useEffect(() => { sensorDataRef.current = sensorData; }, [sensorData]);
+  useEffect(() => { activePlotRef.current = activePlot; }, [activePlot]);
+
   const status      = computeHealth(sensorData);
   const meta        = healthMeta[status];
   const radarData   = buildRadarData(sensorData);
   const healthScore = Math.round(radarData.reduce((acc, d) => acc + d.A, 0) / radarData.length);
 
+  // fetchAIReport reads from refs — it is stable across renders and will
+  // NOT be recreated when sensorData changes, so nothing auto-triggers it.
   const fetchAIReport = useCallback(async () => {
+    const s    = sensorDataRef.current;
+    const plot = activePlotRef.current;
+
     setAiLoading(true);
     setAiError('');
     try {
@@ -388,15 +400,15 @@ Schema:
 }`.trim();
 
       const prompt = `
-Crop: ${activePlot.cropType} ${activePlot.variety} — ${activePlot.name}, Kenya highlands.
+Crop: ${plot.cropType} ${plot.variety} — ${plot.name}, Kenya highlands.
 Sensors:
-  Moisture: ${sensorData.moisture.toFixed(1)}%
-  Temperature: ${sensorData.temperature.toFixed(1)}°C
-  Humidity: ${sensorData.humidity.toFixed(1)}%
-  pH: ${sensorData.ph.toFixed(1)}
-  Nitrogen: ${sensorData.nitrogen} mg/kg
-  Phosphorus: ${sensorData.phosphorus} mg/kg
-  Potassium: ${sensorData.potassium} mg/kg
+  Moisture: ${s.moisture.toFixed(1)}%
+  Temperature: ${s.temperature.toFixed(1)}°C
+  Humidity: ${s.humidity.toFixed(1)}%
+  pH: ${s.ph.toFixed(1)}
+  Nitrogen: ${s.nitrogen} mg/kg
+  Phosphorus: ${s.phosphorus} mg/kg
+  Potassium: ${s.potassium} mg/kg
 Produce a JSON plant-health report.`.trim();
 
       const raw    = await callGroqAI(prompt, systemCtx);
@@ -409,9 +421,13 @@ Produce a JSON plant-health report.`.trim();
     } finally {
       setAiLoading(false);
     }
-  }, [sensorData, activePlot]);
+  }, []); // ← empty deps: function is created once and never recreated
 
-  useEffect(() => { fetchAIReport(); }, [fetchAIReport]);
+  // Run ONCE on mount to load the initial AI report.
+  // Subsequent calls happen only when the user clicks "Refresh AI Report".
+  useEffect(() => {
+    fetchAIReport();
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Load plots from Firebase
   useEffect(() => {
@@ -782,8 +798,6 @@ function PlantPerformanceFallback() {
 
 // ---------------------------------------------------------------------------
 // DEFAULT EXPORT — wraps the inner component in Suspense.
-// This is what Next.js prerenders; the Suspense boundary tells the build
-// that everything inside is client-only and safe to defer.
 // ---------------------------------------------------------------------------
 export default function PlantPerformancePage() {
   return (
