@@ -15,6 +15,7 @@ import {
   ChevronLeft,
   ChevronRight,
   Info,
+  CreditCard,
   WifiOff,
   Wifi,
 } from "lucide-react";
@@ -163,6 +164,7 @@ export default function Sidebar() {
     { href: "/plant_performance", icon: Sprout,    label: "Plant Performance" },
     { href: "/setings",           icon: Settings,  label: "Settings" },
     { href: "/about",             icon: Info,      label: "About" },
+    { href: "/billing",           icon: CreditCard, label: "Billing" },
   ];
 
   return (
