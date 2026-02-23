@@ -153,6 +153,15 @@ function fakeDailyHistory(planId: string): DailyBucket[] {
   });
 }
 
+// ── Format date as "Feb 23" ───────────────────────────────────────────────────
+const MONTH_ABBR = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+function fmtDateLabel(dateStr: string): string {
+  if (!dateStr) return '';
+  const [, mm, dd] = dateStr.split('-');
+  const monthIdx = parseInt(mm, 10) - 1;
+  return `${MONTH_ABBR[monthIdx]} ${parseInt(dd, 10)}`;
+}
+
 // ── Firestore data hook ───────────────────────────────────────────────────────
 const DEFAULT_USAGE: TokenUsage = {
   daily:   { used: 3_820,   limit: 5_000 },
@@ -293,7 +302,7 @@ function UsageRing({label,used,limit,accent,size=88}:{label:string;used:number;l
 function DailyTokenChart({history,accent,dailyLimit}:{history:DailyBucket[];accent:string;dailyLimit:number}) {
   const maxVal  = Math.max(...history.map(h=>h.tokens), dailyLimit*0.1, 1);
   const today   = new Date().toISOString().slice(0,10);
-  const chartH  = 80;
+  const chartH  = 130;
   const visible = history.slice(-30);
 
   return (
@@ -331,7 +340,7 @@ function DailyTokenChart({history,accent,dailyLimit}:{history:DailyBucket[];acce
                   <div className="px-2 py-1.5 rounded-lg text-[10px] whitespace-nowrap shadow-xl"
                     style={{background:'#1e293b',border:`1px solid ${accent}30`,color:'#cbd5e1'}}>
                     <p className="font-bold">{fmt(b.tokens)} tokens</p>
-                    <p className="text-slate-500">{b.date.slice(5)}</p>
+                    <p className="text-slate-500">{fmtDateLabel(b.date)}</p>
                   </div>
                   <div className="w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent" style={{borderTopColor:'#1e293b'}}/>
                 </div>
@@ -343,9 +352,9 @@ function DailyTokenChart({history,accent,dailyLimit}:{history:DailyBucket[];acce
           })}
         </div>
 
-        {/* X-axis */}
+        {/* X-axis — "Feb 23" style labels */}
         <div className="absolute bottom-0 left-0 right-7 flex justify-between text-[9px] text-slate-600 px-0.5">
-          {[0,7,14,21,29].map(idx=><span key={idx}>{visible[idx]?.date.slice(5)??''}</span>)}
+          {[0,7,14,21,29].map(idx=><span key={idx}>{fmtDateLabel(visible[idx]?.date??'')}</span>)}
         </div>
       </div>
 
