@@ -162,6 +162,52 @@ function fmtDateLabel(dateStr: string): string {
   return `${MONTH_ABBR[monthIdx]} ${parseInt(dd, 10)}`;
 }
 
+// ── Scroll Reveal ─────────────────────────────────────────────────────────────
+type RevealVariant = 'up' | 'down' | 'left' | 'right' | 'scale' | 'fade';
+
+function useReveal(threshold = 0.12) {
+  const ref = useRef<HTMLDivElement>(null);
+  const [visible, setVisible] = useState(false);
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const obs = new IntersectionObserver(
+      ([entry]) => { if (entry.isIntersecting) { setVisible(true); obs.disconnect(); } },
+      { threshold }
+    );
+    obs.observe(el);
+    return () => obs.disconnect();
+  }, [threshold]);
+  return { ref, visible };
+}
+
+function Reveal({
+  children, variant = 'up', delay = 0, duration = 600, className = '', threshold = 0.12,
+}: {
+  children: React.ReactNode; variant?: RevealVariant;
+  delay?: number; duration?: number; className?: string; threshold?: number;
+}) {
+  const { ref, visible } = useReveal(threshold);
+  const transforms: Record<RevealVariant, string> = {
+    up:    'translateY(36px)',
+    down:  'translateY(-36px)',
+    left:  'translateX(-40px)',
+    right: 'translateX(40px)',
+    scale: 'scale(0.88)',
+    fade:  'none',
+  };
+  return (
+    <div ref={ref} className={className} style={{
+      opacity: visible ? 1 : 0,
+      transform: visible ? 'none' : transforms[variant],
+      transition: `opacity ${duration}ms cubic-bezier(0.22,1,0.36,1) ${delay}ms, transform ${duration}ms cubic-bezier(0.22,1,0.36,1) ${delay}ms`,
+      willChange: 'opacity, transform',
+    }}>
+      {children}
+    </div>
+  );
+}
+
 // ── Firestore data hook ───────────────────────────────────────────────────────
 const DEFAULT_USAGE: TokenUsage = {
   daily:   { used: 3_820,   limit: 5_000 },
@@ -844,12 +890,13 @@ export default function BillingPage() {
           </div>
 
           {/* Token Usage Panel */}
-          <div className="mb-10">
+          <Reveal variant="up" delay={100} className="mb-10">
             <TokenUsagePanel usage={billing.tokenUsage} history={billing.tokenHistory} currentPlan={currentPlanData} loading={billing.loading}/>
-          </div>
+          </Reveal>
 
           {/* Token limits comparison */}
-          <div className="rounded-2xl border mb-10 overflow-hidden"
+          <Reveal variant="up" delay={0} className="mb-10">
+          <div className="rounded-2xl border mb-0 overflow-hidden"
             style={{background:'rgba(20,30,46,0.9)',borderColor:'rgba(71,85,105,0.35)'}}>
             <div className="flex items-center justify-between px-6 py-4 border-b" style={{borderColor:'rgba(71,85,105,0.3)'}}>
               <div className="flex items-center gap-2">
@@ -894,8 +941,10 @@ export default function BillingPage() {
               </div>
             </div>
           </div>
+          </Reveal>
 
           {/* Billing toggle + plan cards */}
+          <Reveal variant="up" delay={0}>
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-7">
             <h2 className="text-2xl font-black text-slate-100" style={{fontFamily:'Sora,sans-serif',letterSpacing:'-0.02em'}}>Choose your plan</h2>
             <div className="inline-flex items-center gap-1 p-1.5 rounded-2xl border self-start sm:self-auto"
@@ -912,19 +961,23 @@ export default function BillingPage() {
               ))}
             </div>
           </div>
+          </Reveal>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-5 mb-8">
-            {PLANS.map(plan=>(
-              <PlanCard key={plan.id} plan={plan} period={period}
-                selected={selectedPlan===plan.id}
-                onSelect={()=>setSelectedPlan(plan.id)}
-                isCurrentPlan={plan.id===billing.planId}/>
+            {PLANS.map((plan, idx)=>(
+              <Reveal key={plan.id} variant="up" delay={idx * 120} threshold={0.08}>
+                <PlanCard plan={plan} period={period}
+                  selected={selectedPlan===plan.id}
+                  onSelect={()=>setSelectedPlan(plan.id)}
+                  isCurrentPlan={plan.id===billing.planId}/>
+              </Reveal>
             ))}
           </div>
 
           {/* CTA */}
           {canUpgrade&&(
-            <div className="flex flex-col sm:flex-row items-center gap-5 p-5 rounded-2xl border mb-12"
+            <Reveal variant="up" delay={0} className="mb-12">
+            <div className="flex flex-col sm:flex-row items-center gap-5 p-5 rounded-2xl border"
               style={{background:`${selectedPlanData.accent}06`,borderColor:`${selectedPlanData.accent}22`}}>
               <div className="flex-1">
                 <p className="font-bold text-slate-100 text-sm">Ready to upgrade to <span style={{color:selectedPlanData.accent}}>{selectedPlanData.name}</span>?</p>
@@ -939,10 +992,12 @@ export default function BillingPage() {
                 </button>
               </div>
             </div>
+            </Reveal>
           )}
 
           {/* Comparison table */}
-          <div className="mb-12">
+          <Reveal variant="up" delay={0} className="mb-12">
+          <div className="mb-0">
             <h2 className="text-2xl font-black text-center mb-8" style={{fontFamily:'Sora,sans-serif',letterSpacing:'-0.02em'}}>
               Everything you need, <span className="shimmer-text">at every level</span>
             </h2>
@@ -982,16 +1037,19 @@ export default function BillingPage() {
               ))}
             </div>
           </div>
+          </Reveal>
 
           {/* Social proof */}
+          <Reveal variant="up" delay={0}>
           <div className="flex flex-wrap justify-center gap-4 mb-12">
             {[
               {icon:Users,   value:'2,400+',label:'Active Farmers'},
               {icon:Activity,value:'99.9%', label:'Uptime SLA'},
               {icon:Star,    value:'4.9/5', label:'Avg Rating'},
               {icon:Database,value:'2.1B+', label:'Sensor Readings'},
-            ].map(s=>(
-              <div key={s.label} className="flex items-center gap-3 px-6 py-3.5 rounded-2xl border"
+            ].map((s, idx)=>(
+              <Reveal key={s.label} variant="scale" delay={idx * 80} threshold={0.1}>
+              <div className="flex items-center gap-3 px-6 py-3.5 rounded-2xl border"
                 style={{background:'rgba(20,30,46,0.7)',borderColor:'rgba(71,85,105,0.3)'}}>
                 <div className="w-8 h-8 rounded-xl bg-emerald-500/10 flex items-center justify-center">
                   <s.icon className="w-4 h-4 text-emerald-400"/>
@@ -1001,57 +1059,81 @@ export default function BillingPage() {
                   <p className="text-xs text-slate-500">{s.label}</p>
                 </div>
               </div>
+              </Reveal>
             ))}
           </div>
+          </Reveal>
 
           {/* Payment methods */}
-          <div className="mb-12 text-center">
+          <Reveal variant="fade" delay={0} className="mb-12 text-center">
             <p className="text-slate-500 text-xs mb-5 uppercase tracking-widest font-semibold">Accepted payment methods</p>
             <div className="flex flex-wrap items-center justify-center gap-3">
-              {['Visa','Mastercard','M-Pesa','PayPal','Amex'].map(pm=>(
-                <div key={pm} className="px-5 py-2.5 rounded-xl border text-xs font-bold tracking-wider"
+              {['Visa','Mastercard','M-Pesa','PayPal','Amex'].map((pm, idx)=>(
+                <Reveal key={pm} variant="up" delay={idx * 60} threshold={0.1}>
+                <div className="px-5 py-2.5 rounded-xl border text-xs font-bold tracking-wider"
                   style={{borderColor:'rgba(71,85,105,0.4)',background:'rgba(20,30,46,0.8)',color:'#94a3b8'}}>{pm}</div>
+                </Reveal>
               ))}
             </div>
             <p className="flex items-center justify-center gap-2 mt-4 text-xs text-slate-600">
               <Lock className="w-3.5 h-3.5"/> 256-bit SSL · PCI-DSS compliant
             </p>
-          </div>
+          </Reveal>
 
           {/* FAQ */}
           <div className="max-w-2xl mx-auto mb-16">
+            <Reveal variant="up" delay={0}>
             <h2 className="text-2xl font-black text-center mb-8" style={{fontFamily:'Sora,sans-serif'}}>Common questions</h2>
-            <div className="space-y-3">{FAQS.map((f,i)=><FAQItem key={i} q={f.q} a={f.a}/>)}</div>
+            </Reveal>
+            <div className="space-y-3">
+              {FAQS.map((f,i)=>(
+                <Reveal key={i} variant="up" delay={i * 70} threshold={0.05}>
+                  <FAQItem q={f.q} a={f.a}/>
+                </Reveal>
+              ))}
+            </div>
           </div>
 
           {/* Final CTA */}
+          <Reveal variant="scale" delay={0} threshold={0.1}>
           <div className="relative rounded-3xl overflow-hidden p-10 sm:p-14 text-center border"
             style={{background:'radial-gradient(ellipse at center,rgba(16,185,129,.12) 0%,rgba(12,21,32,.97) 70%)',borderColor:'rgba(16,185,129,.25)',boxShadow:'0 0 80px rgba(16,185,129,.07)'}}>
             <div className="absolute inset-0 grid-bg opacity-40"/>
             <ParticleField/>
             <div className="relative z-10">
+              <Reveal variant="up" delay={100} threshold={0.05}>
               <div className="w-16 h-16 rounded-3xl mx-auto mb-6 flex items-center justify-center"
                 style={{background:'rgba(16,185,129,.14)',border:'1px solid rgba(16,185,129,.3)'}}>
                 <Brain className="w-8 h-8 text-emerald-400"/>
               </div>
+              </Reveal>
+              <Reveal variant="up" delay={180} threshold={0.05}>
               <h2 className="text-3xl sm:text-4xl font-black mb-4" style={{fontFamily:'Sora,sans-serif',letterSpacing:'-0.02em'}}>
                 Ready to grow smarter?
               </h2>
+              </Reveal>
+              <Reveal variant="up" delay={260} threshold={0.05}>
               <p className="text-slate-400 mb-8 max-w-lg mx-auto">
                 Join 2,400+ farmers already using AI-powered insights to reduce water, boost yields, and protect crops.
               </p>
+              </Reveal>
+              <Reveal variant="up" delay={340} threshold={0.05}>
               <button onClick={()=>{setSelectedPlan('grower');setShowCheckout(true);}}
                 className="glow-card inline-flex items-center gap-2 px-8 py-4 rounded-2xl font-bold transition-all hover:-translate-y-0.5 active:scale-95"
                 style={{background:'#10b981',color:'#052e16',boxShadow:'0 8px 30px rgba(16,185,129,.35)'}}>
                 <Zap className="w-5 h-5"/> Start with Grower — $29/mo
               </button>
               <p className="mt-4 text-xs text-slate-600">14-day money-back · Cancel anytime · Data saved in Firestore</p>
+              </Reveal>
             </div>
           </div>
+          </Reveal>
 
+          <Reveal variant="fade" delay={0}>
           <p className="text-center text-[10px] text-slate-700 mt-6 flex items-center justify-center gap-1">
             <Database className="w-3 h-3"/> Billing & usage synced to Firestore: users/&#123;uid&#125;/billing · tokenUsage · tokenHistory
           </p>
+          </Reveal>
         </div>
       </main>
 
