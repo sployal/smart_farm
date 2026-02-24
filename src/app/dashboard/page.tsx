@@ -389,6 +389,7 @@ export default function SmartFarmDashboard() {
   const [soilSaving, setSoilSaving] = useState(false);
   const [showSoilModal, setShowSoilModal] = useState(false);
   const [currentTime, setCurrentTime] = useState(new Date());
+  const [isMounted, setIsMounted] = useState(false);
   const chatEndRef = useRef<HTMLDivElement>(null);
 
   const miniChartData = Array.from({ length: 12 }, (_, i) => Math.floor(Math.random() * 30 + 50));
@@ -409,6 +410,7 @@ export default function SmartFarmDashboard() {
 
   // ── Ticker ──────────────────────────────────────────────────────────────────
   useEffect(() => {
+    setIsMounted(true);
     const t = setInterval(() => setCurrentTime(new Date()), 1000);
     return () => clearInterval(t);
   }, []);
@@ -588,9 +590,9 @@ export default function SmartFarmDashboard() {
         </button>
 
         {/* Live clock + date */}
-        <div className="hidden lg:flex flex-col leading-tight">
-          <span className="stat-number text-emerald-400 font-bold text-sm">{format(currentTime, 'HH:mm:ss')}</span>
-          <span className="text-slate-500 text-[11px]">{format(currentTime, 'EEEE, MMM d yyyy')}</span>
+        <div className="hidden lg:flex flex-col leading-tight" suppressHydrationWarning>
+          <span className="stat-number text-emerald-400 font-bold text-sm">{isMounted ? format(currentTime, 'HH:mm:ss') : '00:00:00'}</span>
+          <span className="text-slate-500 text-[11px]">{isMounted ? format(currentTime, 'EEEE, MMM d yyyy') : ''}</span>
         </div>
 
         <div className="flex items-center gap-3 bg-slate-950/80 border border-slate-800 rounded-xl px-4 py-2 w-full sm:w-64 md:w-72"
