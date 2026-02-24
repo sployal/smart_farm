@@ -121,14 +121,12 @@ function PipelineValvePanel({ isOpen, isRunning, timer, duration, onToggle, isRe
         transition: 'all 0.6s ease',
       }}>
 
-      {/* Ambient glow when open */}
       {isOpen && (
         <div className="absolute inset-0 pointer-events-none"
           style={{ background: 'radial-gradient(ellipse at 50% 60%, rgba(56,189,248,0.08) 0%, transparent 70%)' }} />
       )}
 
       <div className="relative">
-        {/* Title row */}
         <div className="flex items-center justify-between mb-6">
           <div>
             <h4 className="font-bold text-slate-100 text-base">Irrigation Valve</h4>
@@ -153,96 +151,68 @@ function PipelineValvePanel({ isOpen, isRunning, timer, duration, onToggle, isRe
           </div>
         </div>
 
-        {/* ── PIPELINE SVG ── */}
         <div className="relative flex items-center justify-center my-2">
           <svg viewBox="0 0 480 120" className="w-full" style={{ maxWidth: 480, height: 120 }}>
             <defs>
-              {/* Pipe gradient */}
               <linearGradient id="pipeGrad" x1="0" y1="0" x2="0" y2="1">
                 <stop offset="0%" stopColor="#334155" />
                 <stop offset="40%" stopColor="#475569" />
                 <stop offset="60%" stopColor="#334155" />
                 <stop offset="100%" stopColor="#1e293b" />
               </linearGradient>
-
-              {/* Water gradient (horizontal) */}
               <linearGradient id="waterGrad" x1="0" y1="0" x2="1" y2="0">
                 <stop offset="0%" stopColor="#0ea5e9" stopOpacity="0.9" />
                 <stop offset="50%" stopColor="#38bdf8" stopOpacity="1" />
                 <stop offset="100%" stopColor="#7dd3fc" stopOpacity="0.7" />
               </linearGradient>
-
-              {/* Valve gradient */}
               <linearGradient id="valveGrad" x1="0" y1="0" x2="0" y2="1">
                 <stop offset="0%" stopColor={isOpen ? '#0284c7' : '#374151'} />
                 <stop offset="100%" stopColor={isOpen ? '#0369a1' : '#1f2937'} />
               </linearGradient>
-
-              {/* Clip for left pipe water */}
               <clipPath id="leftPipeClip">
                 <rect x="20" y="46" width="148" height="28" rx="0" />
               </clipPath>
-
-              {/* Clip for right pipe water */}
               <clipPath id="rightPipeClip">
                 <rect x="312" y="46" width="148" height="28" rx="0" />
               </clipPath>
-
-              {/* Clip for valve water */}
               <clipPath id="valveBodyClip">
                 <rect x="196" y="36" width="88" height="48" rx="4" />
               </clipPath>
             </defs>
 
-            {/* ── LEFT PIPE ── */}
-            {/* Pipe outer */}
             <rect x="20" y="44" width="150" height="32" rx="6" fill="url(#pipeGrad)" />
-            {/* Pipe inner (hollow) */}
             <rect x="20" y="48" width="150" height="24" rx="4" fill="#0f172a" />
-            {/* Pipe highlight */}
             <rect x="20" y="49" width="150" height="5" rx="3" fill="rgba(255,255,255,0.05)" />
 
-            {/* Water in left pipe */}
             {isOpen && (
               <g clipPath="url(#leftPipeClip)">
                 <rect x="20" y="49" width="148" height="22" fill="url(#waterGrad)" opacity="0.85" rx="3">
                   <animate attributeName="opacity" values="0.7;0.95;0.7" dur="2s" repeatCount="indefinite" />
                 </rect>
-                {/* Moving water shimmer */}
-                <rect x="-100" y="49" width="60" height="22" rx="3"
-                  fill="rgba(255,255,255,0.15)">
+                <rect x="-100" y="49" width="60" height="22" rx="3" fill="rgba(255,255,255,0.15)">
                   <animateTransform attributeName="transform" type="translate" from="-80 0" to="230 0" dur="1.4s" repeatCount="indefinite" />
                 </rect>
-                <rect x="-100" y="49" width="30" height="22" rx="3"
-                  fill="rgba(255,255,255,0.08)">
+                <rect x="-100" y="49" width="30" height="22" rx="3" fill="rgba(255,255,255,0.08)">
                   <animateTransform attributeName="transform" type="translate" from="-80 0" to="230 0" dur="1.8s" begin="0.5s" repeatCount="indefinite" />
                 </rect>
               </g>
             )}
 
-            {/* Left pipe cap */}
             <rect x="14" y="40" width="12" height="40" rx="4" fill="#475569" />
             <rect x="18" y="44" width="4" height="32" rx="2" fill="#334155" />
 
-            {/* ── VALVE BODY ── */}
-            {/* Valve housing */}
             <rect x="193" y="32" width="94" height="56" rx="8" fill={isOpen ? '#0c4a6e' : '#1e293b'}
               stroke={isOpen ? '#0ea5e9' : '#374151'} strokeWidth="1.5" />
             <rect x="196" y="35" width="88" height="50" rx="6" fill="url(#valveGrad)" opacity="0.8" />
 
-            {/* Valve gate (the disc that rotates) */}
-            <g transform={`translate(240, 60) rotate(${isOpen ? 90 : 0})`}
-              style={{ transition: 'none' }}>
-              {/* Gate disc */}
+            <g transform={`translate(240, 60) rotate(${isOpen ? 90 : 0})`}>
               <ellipse cx="0" cy="0" rx={isOpen ? 4 : 11} ry="11"
                 fill={isOpen ? 'rgba(56,189,248,0.3)' : '#374151'}
                 stroke={isOpen ? '#38bdf8' : '#4b5563'} strokeWidth="1.5" />
-              {/* Gate stem indicator */}
               <line x1="0" y1="-11" x2="0" y2="11"
                 stroke={isOpen ? '#7dd3fc' : '#6b7280'} strokeWidth="1.5" />
             </g>
 
-            {/* Water through valve when open */}
             {isOpen && (
               <g clipPath="url(#valveBodyClip)">
                 <rect x="196" y="47" width="88" height="22" fill="url(#waterGrad)" opacity="0.7" rx="2">
@@ -254,44 +224,34 @@ function PipelineValvePanel({ isOpen, isRunning, timer, duration, onToggle, isRe
               </g>
             )}
 
-            {/* Valve top actuator */}
             <rect x="228" y="14" width="24" height="22" rx="4"
               fill={isOpen ? '#0369a1' : '#1f2937'}
               stroke={isOpen ? '#0ea5e9' : '#374151'} strokeWidth="1" />
-            {/* Actuator handle */}
             <rect x="221" y="10" width="38" height="8" rx="3"
               fill={isOpen ? '#0284c7' : '#374151'}
               stroke={isOpen ? '#38bdf8' : '#4b5563'} strokeWidth="1" />
-            {/* Handle rotation indicator */}
             <line x1="240" y1="12" x2={isOpen ? 250 : 240} y2={isOpen ? 14 : 10}
               stroke={isOpen ? '#7dd3fc' : '#6b7280'} strokeWidth="2" strokeLinecap="round" />
-
-            {/* Valve label */}
             <text x="240" y="76" textAnchor="middle" fontSize="8" fontWeight="700"
               fill={isOpen ? '#7dd3fc' : '#6b7280'} fontFamily="monospace">
               {isOpen ? 'OPEN' : 'CLOSED'}
             </text>
 
-            {/* ── RIGHT PIPE ── */}
             <rect x="310" y="44" width="150" height="32" rx="6" fill="url(#pipeGrad)" />
             <rect x="310" y="48" width="150" height="24" rx="4" fill="#0f172a" />
             <rect x="310" y="49" width="150" height="5" rx="3" fill="rgba(255,255,255,0.05)" />
 
-            {/* Water in right pipe */}
             {isOpen && (
               <g clipPath="url(#rightPipeClip)">
                 <rect x="312" y="49" width="148" height="22" fill="url(#waterGrad)" opacity="0.85" rx="3">
                   <animate attributeName="opacity" values="0.7;0.95;0.7" dur="2s" begin="0.2s" repeatCount="indefinite" />
                 </rect>
-                <rect x="200" y="49" width="60" height="22" rx="3"
-                  fill="rgba(255,255,255,0.15)">
+                <rect x="200" y="49" width="60" height="22" rx="3" fill="rgba(255,255,255,0.15)">
                   <animateTransform attributeName="transform" type="translate" from="110 0" to="460 0" dur="1.4s" begin="0.2s" repeatCount="indefinite" />
                 </rect>
-                <rect x="200" y="49" width="30" height="22" rx="3"
-                  fill="rgba(255,255,255,0.08)">
+                <rect x="200" y="49" width="30" height="22" rx="3" fill="rgba(255,255,255,0.08)">
                   <animateTransform attributeName="transform" type="translate" from="110 0" to="460 0" dur="1.9s" begin="0.7s" repeatCount="indefinite" />
                 </rect>
-                {/* Spray droplets at pipe end */}
                 {[0,1,2,3,4].map(i => (
                   <circle key={i} cx={450 + (i % 2) * 6} cy={52 + i * 4} r="2"
                     fill="#38bdf8" opacity="0.6">
@@ -303,18 +263,15 @@ function PipelineValvePanel({ isOpen, isRunning, timer, duration, onToggle, isRe
               </g>
             )}
 
-            {/* Right pipe end */}
             <rect x="456" y="40" width="12" height="40" rx="4" fill="#475569" />
             <rect x="460" y="44" width="4" height="32" rx="2" fill="#334155" />
 
-            {/* Pipe labels */}
             <text x="95" y="95" textAnchor="middle" fontSize="8" fill="#475569" fontFamily="monospace">INLET</text>
             <text x="385" y="95" textAnchor="middle" fontSize="8" fill="#475569" fontFamily="monospace">FIELD LINE</text>
             <text x="240" y="108" textAnchor="middle" fontSize="8" fill={isOpen ? '#38bdf8' : '#374151'} fontFamily="monospace" fontWeight="700">
               VALVE — {isOpen ? 'FLOW ACTIVE' : 'NO FLOW'}
             </text>
 
-            {/* Pressure indicator dots on pipe */}
             {isOpen && [60, 100, 140].map((x, i) => (
               <circle key={x} cx={x} cy="60" r="2.5" fill="#38bdf8" opacity="0.5">
                 <animate attributeName="opacity" values="0.2;0.8;0.2" dur={`${1 + i*0.3}s`} repeatCount="indefinite" />
@@ -328,7 +285,6 @@ function PipelineValvePanel({ isOpen, isRunning, timer, duration, onToggle, isRe
           </svg>
         </div>
 
-        {/* Progress bar when running */}
         {isRunning && duration > 0 && (
           <div className="mt-4 space-y-1.5">
             <div className="flex justify-between text-xs">
@@ -347,7 +303,6 @@ function PipelineValvePanel({ isOpen, isRunning, timer, duration, onToggle, isRe
           </div>
         )}
 
-        {/* Toggle button */}
         <button
           onClick={() => !isReadOnly && onToggle(!isOpen)}
           disabled={isReadOnly}
@@ -429,7 +384,8 @@ function SettingCard({ icon: Icon, title, subtitle, children, accent = '#10b981'
 }) {
   return (
     <div className="rounded-2xl border overflow-hidden"
-      style={{ background: 'rgba(15,23,42,0.7)', borderColor: 'rgba(71,85,105,0.3)', backdropFilter: 'blur(12px)' }}>
+      style={{ background: 'rgba(22,32,46,0.6)', borderColor: 'rgba(71,85,105,0.3)', backdropFilter: 'blur(12px)' }}>
+      <div className="h-0.5 w-full" style={{ background: `linear-gradient(90deg, ${accent}, ${accent}40, transparent)` }} />
       <div className="flex items-center justify-between px-5 py-4 border-b"
         style={{ borderLeftWidth: 3, borderLeftStyle: 'solid', borderLeftColor: accent, borderBottomColor: 'rgba(71,85,105,0.2)', background: `linear-gradient(90deg, ${accent}06 0%, transparent 60%)` }}>
         <div className="flex items-center gap-3">
@@ -531,7 +487,6 @@ export default function SettingsPage() {
     dataRetention:     90,
   });
 
-  // AI Tips
   const [aiTips,       setAiTips]       = useState<AITip[]>([]);
   const [aiOptTime,    setAiOptTime]    = useState('');
   const [aiWeeklyEst,  setAiWeeklyEst]  = useState(0);
@@ -540,13 +495,11 @@ export default function SettingsPage() {
   const [aiTipsSource, setAiTipsSource] = useState<'cache' | 'fresh' | null>(null);
   const [aiTipsSavedAt,setAiTipsSavedAt]= useState<string | null>(null);
 
-  // Valve / watering state
   const [wateringOn,  setWateringOn]  = useState(false);
   const [waterTimer,  setWaterTimer]  = useState(0);
   const [valveConfirmed, setValveConfirmed] = useState<boolean | null>(null);
   const [saved,       setSaved]       = useState(false);
 
-  // Load AI tips from cache on mount
   useEffect(() => {
     const cached = loadCachedTips();
     if (cached) {
@@ -556,7 +509,6 @@ export default function SettingsPage() {
     } else { fetchAITips(); }
   }, []); // eslint-disable-line
 
-  // Firebase: load irrigation config
   useEffect(() => {
     const db = getDatabase();
     onValue(ref(db, 'controls/irrigationConfig'), snap => {
@@ -566,14 +518,12 @@ export default function SettingsPage() {
     }, { onlyOnce: true });
   }, []);
 
-  // Firebase: valve confirmed
   useEffect(() => {
     const db = getDatabase();
     const u = onValue(ref(db, 'controls/valveConfirmed'), snap => { if (snap.exists()) setValveConfirmed(snap.val() as boolean); });
     return () => u();
   }, []);
 
-  // Timer
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   useEffect(() => {
     if (wateringOn) {
@@ -593,7 +543,6 @@ export default function SettingsPage() {
     return () => clearInterval(timerRef.current!);
   }, [wateringOn]);
 
-  // Scheduled mode
   const scheduledRunning = useRef(false);
   useEffect(() => {
     if (settings.irrigationMode !== 'scheduled' || !settings.irrigationActive || isReadOnly) return;
@@ -612,7 +561,6 @@ export default function SettingsPage() {
     return () => clearInterval(interval);
   }, [settings.irrigationMode, settings.irrigationActive, settings.scheduledTime, settings.wateringDuration, isReadOnly]);
 
-  // Auto mode
   const autoRunning = useRef(false);
   const runAutoCheck = useCallback(() => {
     if (settings.irrigationMode !== 'auto' || !settings.irrigationActive || isReadOnly) return;
@@ -635,7 +583,6 @@ export default function SettingsPage() {
     return () => clearInterval(interval);
   }, [runAutoCheck]);
 
-  // Fetch AI tips
   const fetchAITips = useCallback(async () => {
     setAiLoading(true); setAiError('');
     try {
@@ -656,7 +603,6 @@ Schema: { "tips": [{ "type": "info"|"warning"|"success", "text": "<max 20 words>
     finally { setAiLoading(false); }
   }, [settings]);
 
-  // Settings helpers
   const syncIrrigationConfig = (updated: FarmSettings) => {
     const db = getDatabase();
     dbSet(ref(db, 'controls/irrigationConfig'), { mode: updated.irrigationMode, active: updated.irrigationActive, wateringDuration: updated.wateringDuration, wateringFrequency: updated.wateringFrequency, scheduledTime: updated.scheduledTime, updatedAt: Date.now() });
@@ -696,7 +642,7 @@ Schema: { "tips": [{ "type": "info"|"warning"|"success", "text": "<max 20 words>
   }[esp32Status.status];
 
   if (!mounted) return (
-    <div className="min-h-screen" style={{ background: '#0a1628' }}>
+    <div className="min-h-screen" style={{ background: '#0f1824' }}>
       <div className="max-w-[1200px] mx-auto px-6 py-8 space-y-4">
         {[...Array(4)].map((_,i) => <div key={i} className="h-48 rounded-2xl bg-slate-800/50 animate-pulse" />)}
       </div>
@@ -704,7 +650,7 @@ Schema: { "tips": [{ "type": "info"|"warning"|"success", "text": "<max 20 words>
   );
 
   return (
-    <div className="min-h-screen" style={{ background: '#0a1628', color: '#f1f5f9', fontFamily: "'DM Sans', system-ui, sans-serif" }}>
+    <div className="min-h-screen" style={{ background: '#0f1824', color: '#f1f5f9', fontFamily: "'DM Sans', system-ui, sans-serif" }}>
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap');
         * { box-sizing: border-box; }
@@ -728,17 +674,14 @@ Schema: { "tips": [{ "type": "info"|"warning"|"success", "text": "<max 20 words>
         }
       `}</style>
 
-      {/* Background layers */}
+      {/* ── BACKGROUND — matching sensor data page exactly ── */}
       <div className="fixed inset-0 pointer-events-none z-0 overflow-hidden">
-        <div className="absolute top-0 right-0 w-[700px] h-[700px] rounded-full"
-          style={{ background: 'radial-gradient(circle, rgba(16,185,129,0.03) 0%, transparent 70%)', transform: 'translate(30%, -30%)' }} />
-        <div className="absolute bottom-0 left-0 w-[500px] h-[500px] rounded-full"
-          style={{ background: 'radial-gradient(circle, rgba(56,189,248,0.025) 0%, transparent 70%)', transform: 'translate(-30%, 30%)' }} />
-        {/* Subtle grid */}
-        <div className="absolute inset-0" style={{
-          backgroundImage: 'linear-gradient(rgba(255,255,255,0.015) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.015) 1px, transparent 1px)',
-          backgroundSize: '48px 48px',
-        }} />
+        <div className="absolute -top-60 right-0 w-[700px] h-[700px] rounded-full"
+          style={{ background: 'radial-gradient(circle, rgba(16,185,129,0.03) 0%, transparent 70%)' }} />
+        <div className="absolute top-1/3 -left-40 w-[500px] h-[500px] rounded-full"
+          style={{ background: 'radial-gradient(circle, rgba(59,130,246,0.025) 0%, transparent 70%)' }} />
+        <div className="absolute bottom-0 right-1/4 w-[400px] h-[400px] rounded-full"
+          style={{ background: 'radial-gradient(circle, rgba(167,139,250,0.025) 0%, transparent 70%)' }} />
       </div>
 
       <div className="relative z-10 max-w-[1200px] mx-auto px-4 sm:px-6 lg:px-8 space-y-5 pb-12">
@@ -752,7 +695,6 @@ Schema: { "tips": [{ "type": "info"|"warning"|"success", "text": "<max 20 words>
               <Menu className="w-5 h-5" />
             </button>
             <div>
-              {/* Breadcrumb */}
               <div className="flex items-center gap-2 text-xs text-slate-500 mb-2">
                 <Leaf className="w-3.5 h-3.5 text-emerald-500" />
                 <span>Dashboard</span>
@@ -819,7 +761,6 @@ Schema: { "tips": [{ "type": "info"|"warning"|"success", "text": "<max 20 words>
                 </div>
               }>
 
-              {/* PIPELINE VALVE ANIMATION */}
               <PipelineValvePanel
                 isOpen={wateringOn}
                 isRunning={wateringOn}
@@ -829,12 +770,10 @@ Schema: { "tips": [{ "type": "info"|"warning"|"success", "text": "<max 20 words>
                 isReadOnly={isReadOnly}
               />
 
-              {/* Auto-irrigation toggle */}
               <SettingRow label="Auto-Irrigation System" sublabel="Enable automated soil moisture control">
                 <Toggle checked={settings.irrigationActive} onChange={v => set('irrigationActive', v)} color="#38bdf8" readOnly={isReadOnly} />
               </SettingRow>
 
-              {/* Mode selector */}
               <div className="space-y-2.5">
                 <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Irrigation Mode</p>
                 <div className="grid grid-cols-3 gap-2">
@@ -950,12 +889,13 @@ Schema: { "tips": [{ "type": "info"|"warning"|"success", "text": "<max 20 words>
               style={{
                 background: wateringOn
                   ? 'linear-gradient(160deg, rgba(8,47,73,0.95) 0%, rgba(5,30,50,0.98) 100%)'
-                  : 'linear-gradient(160deg, rgba(15,23,42,0.95) 0%, rgba(10,16,28,0.98) 100%)',
+                  : 'linear-gradient(160deg, rgba(22,32,46,0.95) 0%, rgba(15,24,36,0.98) 100%)',
                 borderColor: wateringOn ? 'rgba(56,189,248,0.3)' : 'rgba(71,85,105,0.25)',
                 transition: 'all 0.8s ease',
               }}>
 
-              {/* Card header */}
+              <div className="h-0.5 w-full" style={{ background: wateringOn ? 'linear-gradient(90deg, #38bdf8, #38bdf840, transparent)' : 'linear-gradient(90deg, #475569, #47556940, transparent)' }} />
+
               <div className="flex items-center justify-between px-5 py-3.5 border-b"
                 style={{
                   borderLeftWidth: 3, borderLeftStyle: 'solid',
@@ -982,26 +922,21 @@ Schema: { "tips": [{ "type": "info"|"warning"|"success", "text": "<max 20 words>
                 </div>
               </div>
 
-              {/* Scene */}
               <div className="px-4 pt-4 pb-5">
                 <svg viewBox="0 0 300 220" className="w-full" style={{ height: 220 }}>
                   <defs>
-                    {/* Sky gradient */}
                     <linearGradient id="skyGrad" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="0%" stopColor={wateringOn ? '#0c2d4a' : '#0f172a'} />
+                      <stop offset="0%" stopColor={wateringOn ? '#0c2d4a' : '#0f1824'} />
                       <stop offset="100%" stopColor={wateringOn ? '#0a3d2e' : '#1a2535'} />
                     </linearGradient>
-                    {/* Ground gradient */}
                     <linearGradient id="groundGrad" x1="0" y1="0" x2="0" y2="1">
                       <stop offset="0%" stopColor={wateringOn ? '#14532d' : '#1c3a28'} />
                       <stop offset="100%" stopColor={wateringOn ? '#166534' : '#14532d'} />
                     </linearGradient>
-                    {/* Water drop gradient */}
                     <linearGradient id="dropGrad" x1="0" y1="0" x2="0" y2="1">
                       <stop offset="0%" stopColor="#7dd3fc" stopOpacity="0.9" />
                       <stop offset="100%" stopColor="#0ea5e9" stopOpacity="0.6" />
                     </linearGradient>
-                    {/* Leaf gradient */}
                     <linearGradient id="leafGrad1" x1="0" y1="0" x2="1" y2="1">
                       <stop offset="0%" stopColor="#22c55e" />
                       <stop offset="100%" stopColor="#16a34a" />
@@ -1012,36 +947,27 @@ Schema: { "tips": [{ "type": "info"|"warning"|"success", "text": "<max 20 words>
                     </linearGradient>
                   </defs>
 
-                  {/* Background sky */}
                   <rect width="300" height="220" fill="url(#skyGrad)" />
 
-                  {/* Stars (idle) / rain mood clouds (active) */}
                   {!wateringOn && [
                     [20,15],[50,25],[80,10],[120,20],[160,8],[200,18],[240,12],[270,22]
                   ].map(([x,y],i) => (
                     <circle key={i} cx={x} cy={y} r="1" fill="white" opacity={0.15 + i*0.04} />
                   ))}
 
-                  {/* Ground */}
-                  <rect x="0" y="165" width="300" height="55" fill="url(#groundGrad)" rx="0" />
-                  {/* Ground top highlight */}
+                  <rect x="0" y="165" width="300" height="55" fill="url(#groundGrad)" />
                   <rect x="0" y="165" width="300" height="3" fill={wateringOn ? '#4ade80' : '#1e4d35'} opacity="0.6" />
 
-                  {/* ── PLANT 1 (left, bushy tomato) ── */}
-                  {/* Stem */}
                   <line x1="52" y1="167" x2="52" y2="130" stroke={wateringOn ? '#16a34a' : '#14532d'} strokeWidth="3" strokeLinecap="round" />
-                  {/* Leaves */}
                   <ellipse cx="52" cy="138" rx="18" ry="10" fill="url(#leafGrad1)" transform="rotate(-20 52 138)" opacity={wateringOn ? 1 : 0.5} />
                   <ellipse cx="52" cy="138" rx="18" ry="10" fill="url(#leafGrad2)" transform="rotate(20 52 138)" opacity={wateringOn ? 0.9 : 0.4} />
                   <ellipse cx="52" cy="127" rx="14" ry="9" fill="url(#leafGrad1)" opacity={wateringOn ? 1 : 0.5} />
-                  {/* Tomatoes */}
                   {wateringOn && <>
                     <circle cx="44" cy="133" r="5" fill="#ef4444" opacity="0.9" />
                     <circle cx="60" cy="131" r="4" fill="#f97316" opacity="0.85" />
                     <circle cx="52" cy="124" r="3.5" fill="#ef4444" opacity="0.8" />
                   </>}
 
-                  {/* ── PLANT 2 (centre-left, tall plant) ── */}
                   <line x1="105" y1="167" x2="105" y2="115" stroke={wateringOn ? '#16a34a' : '#14532d'} strokeWidth="3" strokeLinecap="round" />
                   <ellipse cx="105" cy="122" rx="16" ry="10" fill="url(#leafGrad1)" opacity={wateringOn ? 1 : 0.45} />
                   <ellipse cx="98" cy="133" rx="14" ry="8" fill="url(#leafGrad2)" transform="rotate(-15 98 133)" opacity={wateringOn ? 0.9 : 0.4} />
@@ -1051,7 +977,6 @@ Schema: { "tips": [{ "type": "info"|"warning"|"success", "text": "<max 20 words>
                     <circle cx="99" cy="127" r="3" fill="#fbbf24" opacity="0.8" />
                   </>}
 
-                  {/* ── PLANT 3 (centre-right, leafy) ── */}
                   <line x1="200" y1="167" x2="200" y2="125" stroke={wateringOn ? '#15803d' : '#14532d'} strokeWidth="3" strokeLinecap="round" />
                   <ellipse cx="200" cy="130" rx="20" ry="11" fill="url(#leafGrad2)" opacity={wateringOn ? 1 : 0.45} />
                   <ellipse cx="190" cy="140" rx="15" ry="8" fill="url(#leafGrad1)" transform="rotate(-20 190 140)" opacity={wateringOn ? 0.85 : 0.35} />
@@ -1062,53 +987,39 @@ Schema: { "tips": [{ "type": "info"|"warning"|"success", "text": "<max 20 words>
                     <circle cx="207" cy="134" r="3.5" fill="#ef4444" opacity="0.85" />
                   </>}
 
-                  {/* ── PLANT 4 (right, short shrub) ── */}
                   <line x1="258" y1="167" x2="258" y2="140" stroke={wateringOn ? '#16a34a' : '#14532d'} strokeWidth="3" strokeLinecap="round" />
                   <ellipse cx="258" cy="144" rx="17" ry="10" fill="url(#leafGrad1)" opacity={wateringOn ? 1 : 0.5} />
                   <ellipse cx="248" cy="150" rx="12" ry="7" fill="url(#leafGrad2)" transform="rotate(-10 248 150)" opacity={wateringOn ? 0.9 : 0.4} />
                   <ellipse cx="268" cy="150" rx="12" ry="7" fill="url(#leafGrad1)" transform="rotate(10 268 150)" opacity={wateringOn ? 0.9 : 0.4} />
 
-                  {/* ── SPRINKLER HEAD (centre) ── */}
-                  {/* Pipe vertical */}
                   <rect x="147" y="148" width="6" height="20" rx="2" fill={wateringOn ? '#0369a1' : '#334155'} />
-                  {/* Pipe base plate */}
                   <rect x="140" y="165" width="20" height="5" rx="2" fill={wateringOn ? '#0284c7' : '#475569'} />
-                  {/* Sprinkler body */}
                   <rect x="144" y="138" width="12" height="12" rx="3" fill={wateringOn ? '#0ea5e9' : '#334155'}
                     style={{ filter: wateringOn ? 'drop-shadow(0 0 6px rgba(56,189,248,0.6))' : 'none' }} />
-                  {/* Sprinkler nozzle */}
                   <ellipse cx="150" cy="137" rx="5" ry="3" fill={wateringOn ? '#38bdf8' : '#475569'} />
-                  {/* Nozzle tip */}
                   <circle cx="150" cy="135" r="2.5" fill={wateringOn ? '#7dd3fc' : '#64748b'}
                     style={{ animation: wateringOn ? 'pulse 1s infinite' : 'none' }} />
 
-                  {/* ── WATER SPRAY ARCS ── (only when on) */}
                   {wateringOn && <>
-                    {/* Left arc spray */}
                     <path d="M 150 135 Q 100 80 55 155" fill="none" stroke="#38bdf8" strokeWidth="1.5" strokeDasharray="4,3" opacity="0.5">
                       <animate attributeName="stroke-dashoffset" from="0" to="-56" dur="1.2s" repeatCount="indefinite" />
                     </path>
-                    {/* Left arc 2 */}
                     <path d="M 150 135 Q 90 70 42 148" fill="none" stroke="#7dd3fc" strokeWidth="1" strokeDasharray="3,4" opacity="0.35">
                       <animate attributeName="stroke-dashoffset" from="0" to="-56" dur="1.5s" begin="0.2s" repeatCount="indefinite" />
                     </path>
-                    {/* Right arc spray */}
                     <path d="M 150 135 Q 205 80 252 155" fill="none" stroke="#38bdf8" strokeWidth="1.5" strokeDasharray="4,3" opacity="0.5">
                       <animate attributeName="stroke-dashoffset" from="0" to="-56" dur="1.2s" begin="0.1s" repeatCount="indefinite" />
                     </path>
-                    {/* Right arc 2 */}
                     <path d="M 150 135 Q 215 68 262 148" fill="none" stroke="#7dd3fc" strokeWidth="1" strokeDasharray="3,4" opacity="0.35">
                       <animate attributeName="stroke-dashoffset" from="0" to="-56" dur="1.5s" begin="0.3s" repeatCount="indefinite" />
                     </path>
 
-                    {/* Falling drops — left side */}
                     {[
                       { cx: 75,  startY: 110, endY: 167, dur: '1.1s', begin: '0s'    },
                       { cx: 58,  startY: 130, endY: 167, dur: '0.9s', begin: '0.3s'  },
                       { cx: 90,  startY: 105, endY: 167, dur: '1.3s', begin: '0.6s'  },
                       { cx: 68,  startY: 118, endY: 167, dur: '1.0s', begin: '0.15s' },
                       { cx: 45,  startY: 142, endY: 167, dur: '0.7s', begin: '0.45s' },
-                      /* right side */
                       { cx: 228, startY: 110, endY: 167, dur: '1.1s', begin: '0.1s'  },
                       { cx: 245, startY: 130, endY: 167, dur: '0.9s', begin: '0.4s'  },
                       { cx: 213, startY: 105, endY: 167, dur: '1.3s', begin: '0.7s'  },
@@ -1121,13 +1032,11 @@ Schema: { "tips": [{ "type": "info"|"warning"|"success", "text": "<max 20 words>
                       </ellipse>
                     ))}
 
-                    {/* Ground puddle / wet soil effect */}
                     <ellipse cx="150" cy="168" rx="90" ry="4" fill="#0ea5e9" opacity="0.12">
                       <animate attributeName="rx" values="70;95;70" dur="3s" repeatCount="indefinite" />
                       <animate attributeName="opacity" values="0.08;0.18;0.08" dur="3s" repeatCount="indefinite" />
                     </ellipse>
 
-                    {/* Mist / fine spray dots near nozzle */}
                     {[
                       { cx: 138, cy: 128 }, { cx: 162, cy: 126 }, { cx: 132, cy: 120 },
                       { cx: 168, cy: 122 }, { cx: 145, cy: 115 }, { cx: 155, cy: 118 },
@@ -1139,7 +1048,6 @@ Schema: { "tips": [{ "type": "info"|"warning"|"success", "text": "<max 20 words>
                     ))}
                   </>}
 
-                  {/* Ground grass tufts */}
                   {[30,70,120,170,220,270].map((x,i) => (
                     <g key={i}>
                       <line x1={x-4} y1="165" x2={x-6} y2={wateringOn ? 153 : 158} stroke={wateringOn ? '#4ade80' : '#1e4d35'} strokeWidth="2" strokeLinecap="round" />
@@ -1148,14 +1056,12 @@ Schema: { "tips": [{ "type": "info"|"warning"|"success", "text": "<max 20 words>
                     </g>
                   ))}
 
-                  {/* Label at bottom */}
                   <text x="150" y="212" textAnchor="middle" fontSize="9" fontFamily="'JetBrains Mono', monospace"
                     fill={wateringOn ? '#38bdf8' : '#334155'} fontWeight="700" letterSpacing="1">
                     {wateringOn ? '— SPRINKLER ACTIVE —' : '— SYSTEM IDLE —'}
                   </text>
                 </svg>
 
-                {/* Status strip below scene */}
                 <div className="flex items-center justify-between mt-2 px-1">
                   <div className="flex items-center gap-1.5 text-xs" style={{ color: wateringOn ? '#7dd3fc' : '#475569' }}>
                     <Droplets className="w-3.5 h-3.5" />
@@ -1173,7 +1079,6 @@ Schema: { "tips": [{ "type": "info"|"warning"|"success", "text": "<max 20 words>
 
             {/* ── DISPLAY & THEME ────────────────────────────────────────────── */}
             <SettingCard icon={Sun} title="Display & Theme" subtitle="Visual appearance" accent="#fbbf24">
-              {/* Dark/light toggle */}
               <div className="relative rounded-xl overflow-hidden p-4 transition-all duration-500"
                 style={{
                   background: isDark
@@ -1205,7 +1110,6 @@ Schema: { "tips": [{ "type": "info"|"warning"|"success", "text": "<max 20 words>
                 </div>
               </div>
 
-              {/* Theme presets */}
               <div className="space-y-2">
                 <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Presets</p>
                 <div className="grid grid-cols-2 gap-2">
