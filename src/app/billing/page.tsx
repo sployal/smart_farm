@@ -825,6 +825,15 @@ export default function BillingPage() {
             linear-gradient(90deg, rgba(16,185,129,.04) 1px, transparent 1px);
           background-size: 48px 48px;
         }
+        .app-topbar {
+          left: 0;
+          right: 0;
+        }
+        @media (min-width: 1024px) {
+          .app-topbar {
+            left: var(--sidebar-width, 252px);
+          }
+        }
       `}</style>
 
       {/* ── Fixed background layers ── */}
@@ -838,7 +847,7 @@ export default function BillingPage() {
       </div>
 
       {/* ── Header ── */}
-      <header className="fixed top-0 inset-x-0 z-40 border-b"
+      <header className="fixed top-0 right-0 z-40 border-b app-topbar"
         style={{background:'rgba(12,21,32,.82)',backdropFilter:'blur(20px)',borderColor:'rgba(71,85,105,.2)'}}>
         <div className="max-w-6xl mx-auto px-6 h-16 flex items-center justify-between">
           <div className="flex items-center gap-3">
@@ -846,12 +855,6 @@ export default function BillingPage() {
               className="lg:hidden p-2 rounded-lg hover:bg-slate-800 text-slate-400 transition-colors">
               <Menu className="w-5 h-5"/>
             </button>
-            <div className="w-8 h-8 rounded-lg bg-emerald-500/20 border border-emerald-500/40 flex items-center justify-center">
-              <Leaf className="w-4 h-4 text-emerald-400"/>
-            </div>
-            <span className="font-bold text-lg tracking-tight" style={{fontFamily:'Sora,sans-serif'}}>
-              smart<span className="text-emerald-400">farm</span>
-            </span>
           </div>
           <div className="hidden md:flex items-center gap-2 text-sm text-slate-400">
             <button onClick={()=>router.push('/dashboard')} className="hover:text-slate-200 transition-colors">Dashboard</button>

@@ -658,6 +658,15 @@ export default function LandingPage() {
           backdrop-filter: blur(20px);
           -webkit-backdrop-filter: blur(20px);
         }
+        .app-topbar {
+          left: 0;
+          right: 0;
+        }
+        @media (min-width: 1024px) {
+          .app-topbar {
+            left: var(--sidebar-width, 252px);
+          }
+        }
         .grid-bg {
           background-image:
             linear-gradient(rgba(16,185,129,0.04) 1px, transparent 1px),
@@ -690,7 +699,7 @@ export default function LandingPage() {
 
       {/* ── Navbar ───────────────────────────────────────────── */}
       <nav
-        className="fixed top-0 inset-x-0 z-40 nav-blur border-b"
+        className="fixed top-0 right-0 z-40 nav-blur border-b app-topbar"
         style={{ transition: 'background 0.3s', borderColor: 'rgba(71,85,105,0.2)' }}
       >
         <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
@@ -704,12 +713,6 @@ export default function LandingPage() {
             >
               <Menu className="w-5 h-5" />
             </button>
-            <div className="w-8 h-8 rounded-lg bg-emerald-500/20 border border-emerald-500/40 flex items-center justify-center">
-              <Leaf className="w-4 h-4 text-emerald-400" />
-            </div>
-            <span className="font-bold text-lg tracking-tight" style={{ fontFamily: 'Sora, sans-serif' }}>
-              smart<span className="text-emerald-400">farm</span>
-            </span>
           </div>
 
           <div className="hidden md:flex items-center gap-8 text-sm text-slate-400">
