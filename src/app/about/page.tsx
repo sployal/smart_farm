@@ -297,6 +297,182 @@ const TESTIMONIALS: Testimonial[] = [
   },
 ];
 
+// ─── Scroll Reveal Hook ───────────────────────────────────────────────────────
+
+function useReveal(options?: IntersectionObserverInit) {
+  const ref = useRef<HTMLDivElement>(null);
+  const [visible, setVisible] = useState(false);
+
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          setVisible(true);
+          observer.disconnect();
+        }
+      },
+      { threshold: 0.15, rootMargin: '0px 0px -40px 0px', ...options }
+    );
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, []);
+
+  return { ref, visible };
+}
+
+// ─── Reveal Wrapper Components ────────────────────────────────────────────────
+
+interface RevealProps {
+  children: React.ReactNode;
+  className?: string;
+  style?: React.CSSProperties;
+  delay?: number; // ms
+  direction?: 'up' | 'down' | 'left' | 'right' | 'none';
+  distance?: number; // px
+  duration?: number; // ms
+}
+
+function Reveal({
+  children,
+  className = '',
+  style = {},
+  delay = 0,
+  direction = 'up',
+  distance = 36,
+  duration = 700,
+}: RevealProps) {
+  const { ref, visible } = useReveal();
+
+  const translate = {
+    up: `translateY(${distance}px)`,
+    down: `translateY(-${distance}px)`,
+    left: `translateX(${distance}px)`,
+    right: `translateX(-${distance}px)`,
+    none: 'none',
+  }[direction];
+
+  const baseStyle: React.CSSProperties = {
+    opacity: visible ? 1 : 0,
+    transform: visible ? 'translate(0,0)' : translate,
+    transition: `opacity ${duration}ms cubic-bezier(0.22,1,0.36,1) ${delay}ms, transform ${duration}ms cubic-bezier(0.22,1,0.36,1) ${delay}ms`,
+    willChange: 'opacity, transform',
+    ...style,
+  };
+
+  return (
+    <div ref={ref} className={className} style={baseStyle}>
+      {children}
+    </div>
+  );
+}
+
+// Staggered group: children get sequential delays
+interface StaggerProps {
+  children: React.ReactNode[];
+  className?: string;
+  baseDelay?: number;
+  stagger?: number;
+  direction?: RevealProps['direction'];
+  duration?: number;
+  childClassName?: string;
+  childStyle?: React.CSSProperties;
+}
+
+function StaggerReveal({
+  children,
+  className = '',
+  baseDelay = 0,
+  stagger = 100,
+  direction = 'up',
+  duration = 650,
+  childClassName = '',
+  childStyle = {},
+}: StaggerProps) {
+  const { ref, visible } = useReveal();
+
+  const translate = {
+    up: (d: number) => `translateY(${d}px)`,
+    down: (d: number) => `translateY(-${d}px)`,
+    left: (d: number) => `translateX(${d}px)`,
+    right: (d: number) => `translateX(-${d}px)`,
+    none: () => 'none',
+  }[direction];
+
+  return (
+    <div ref={ref} className={className}>
+      {React.Children.map(children, (child, i) => (
+        <div
+          key={i}
+          className={childClassName}
+          style={{
+            opacity: visible ? 1 : 0,
+            transform: visible ? 'translate(0,0)' : translate(32),
+            transition: `opacity ${duration}ms cubic-bezier(0.22,1,0.36,1) ${baseDelay + i * stagger}ms, transform ${duration}ms cubic-bezier(0.22,1,0.36,1) ${baseDelay + i * stagger}ms`,
+            willChange: 'opacity, transform',
+            ...childStyle,
+          }}
+        >
+          {child}
+        </div>
+      ))}
+    </div>
+  );
+}
+
+// Scale-in reveal (great for images / mockups)
+function ScaleReveal({
+  children,
+  className = '',
+  style = {},
+  delay = 0,
+  duration = 800,
+}: Omit<RevealProps, 'direction' | 'distance'>) {
+  const { ref, visible } = useReveal();
+
+  return (
+    <div
+      ref={ref}
+      className={className}
+      style={{
+        opacity: visible ? 1 : 0,
+        transform: visible ? 'scale(1)' : 'scale(0.94)',
+        transition: `opacity ${duration}ms cubic-bezier(0.22,1,0.36,1) ${delay}ms, transform ${duration}ms cubic-bezier(0.22,1,0.36,1) ${delay}ms`,
+        willChange: 'opacity, transform',
+        ...style,
+      }}
+    >
+      {children}
+    </div>
+  );
+}
+
+// Clip/wipe reveal — text line wipe using overflow hidden
+function WipeReveal({
+  children,
+  className = '',
+  delay = 0,
+  duration = 700,
+}: Omit<RevealProps, 'direction' | 'distance' | 'style'>) {
+  const { ref, visible } = useReveal();
+
+  return (
+    <div ref={ref} className={className} style={{ overflow: 'hidden' }}>
+      <div
+        style={{
+          transform: visible ? 'translateY(0)' : 'translateY(110%)',
+          opacity: visible ? 1 : 0,
+          transition: `transform ${duration}ms cubic-bezier(0.22,1,0.36,1) ${delay}ms, opacity ${duration}ms ease ${delay}ms`,
+          willChange: 'transform',
+        }}
+      >
+        {children}
+      </div>
+    </div>
+  );
+}
+
 // ─── Sub-components ──────────────────────────────────────────────────────────
 
 function AnimatedCounter({ target, suffix = '' }: { target: number; suffix?: string }) {
@@ -384,23 +560,19 @@ function TestimonialCarousel() {
   const posRef = useRef<number>(0);
   const isPausedRef = useRef<boolean>(false);
 
-  // Duplicate the testimonials 3× so the loop is seamless
   const items = [...TESTIMONIALS, ...TESTIMONIALS, ...TESTIMONIALS];
 
   useEffect(() => {
     const track = trackRef.current;
     if (!track) return;
 
-    // Width of one full set of testimonials
-    const cardWidth = window.innerWidth < 640 ? 380 + 24 : 440 + 24; // card + mx-3*2
+    const cardWidth = window.innerWidth < 640 ? 380 + 24 : 440 + 24;
     const singleSetWidth = TESTIMONIALS.length * cardWidth;
-
-    const speed = 0.6; // px per frame — tweak for faster/slower
+    const speed = 0.6;
 
     const animate = () => {
       if (!isPausedRef.current) {
         posRef.current += speed;
-        // Once we've scrolled one full set, snap back seamlessly
         if (posRef.current >= singleSetWidth) {
           posRef.current -= singleSetWidth;
         }
@@ -423,12 +595,10 @@ function TestimonialCarousel() {
       onTouchStart={() => { isPausedRef.current = true; }}
       onTouchEnd={() => { isPausedRef.current = false; }}
     >
-      {/* left fade */}
       <div
         className="absolute left-0 top-0 bottom-0 w-24 z-10 pointer-events-none"
         style={{ background: 'linear-gradient(to right, rgba(26,35,50,1), transparent)' }}
       />
-      {/* right fade */}
       <div
         className="absolute right-0 top-0 bottom-0 w-24 z-10 pointer-events-none"
         style={{ background: 'linear-gradient(to left, rgba(26,35,50,1), transparent)' }}
@@ -510,6 +680,12 @@ export default function LandingPage() {
         }
         .spin-slow { animation: spin 20s linear infinite; }
         @keyframes spin { from{transform:rotate(0deg)} to{transform:rotate(360deg)} }
+
+        /* Line reveal — used for decorative dividers */
+        @keyframes expandLine {
+          from { transform: scaleX(0); transform-origin: left; }
+          to   { transform: scaleX(1); transform-origin: left; }
+        }
       `}</style>
 
       {/* ── Navbar ───────────────────────────────────────────── */}
@@ -576,6 +752,7 @@ export default function LandingPage() {
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[700px] h-[700px] rounded-full border border-emerald-500/5 spin-slow pointer-events-none" />
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[520px] h-[520px] rounded-full border border-emerald-500/5 spin-slow pointer-events-none" style={{ animationDirection: 'reverse', animationDuration: '30s' }} />
 
+        {/* Hero content — uses slide-in (CSS animation on page load, not scroll) */}
         <div className="relative z-10 max-w-4xl mx-auto slide-in">
           <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full border border-emerald-500/30 bg-emerald-500/10 mb-8">
             <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
@@ -665,16 +842,18 @@ export default function LandingPage() {
             { value: 28, suffix: '%', label: 'Yield Increase' },
             { value: 500, suffix: '+', label: 'Plants Supported' },
             { value: 60, suffix: '%', label: 'Energy Saved via Solar' },
-          ].map(stat => (
-            <div key={stat.label} className="py-8 px-6 text-center">
-              <div
-                className="text-3xl sm:text-4xl font-extrabold text-emerald-400 mb-1"
-                style={{ fontFamily: 'Sora, sans-serif' }}
-              >
-                <AnimatedCounter target={stat.value} suffix={stat.suffix} />
+          ].map((stat, i) => (
+            <Reveal key={stat.label} delay={i * 100} direction="up">
+              <div className="py-8 px-6 text-center">
+                <div
+                  className="text-3xl sm:text-4xl font-extrabold text-emerald-400 mb-1"
+                  style={{ fontFamily: 'Sora, sans-serif' }}
+                >
+                  <AnimatedCounter target={stat.value} suffix={stat.suffix} />
+                </div>
+                <div className="text-xs sm:text-sm text-slate-500 font-medium">{stat.label}</div>
               </div>
-              <div className="text-xs sm:text-sm text-slate-500 font-medium">{stat.label}</div>
-            </div>
+            </Reveal>
           ))}
         </div>
       </div>
@@ -683,13 +862,19 @@ export default function LandingPage() {
       <section id="how-it-works" className="py-28 px-6">
         <div className="max-w-6xl mx-auto">
           <div className="text-center mb-20">
-            <SectionLabel text="How It Works" />
-            <h2 className="text-3xl sm:text-5xl font-bold" style={{ fontFamily: 'Sora, sans-serif', letterSpacing: '-0.02em' }}>
-              From Soil to Screen
-            </h2>
-            <p className="mt-4 text-slate-400 max-w-2xl mx-auto">
-              Three simple layers turn raw environmental data into actionable growing intelligence.
-            </p>
+            <Reveal direction="up" delay={0}>
+              <SectionLabel text="How It Works" />
+            </Reveal>
+            <WipeReveal delay={80}>
+              <h2 className="text-3xl sm:text-5xl font-bold" style={{ fontFamily: 'Sora, sans-serif', letterSpacing: '-0.02em' }}>
+                From Soil to Screen
+              </h2>
+            </WipeReveal>
+            <Reveal direction="up" delay={160}>
+              <p className="mt-4 text-slate-400 max-w-2xl mx-auto">
+                Three simple layers turn raw environmental data into actionable growing intelligence.
+              </p>
+            </Reveal>
           </div>
 
           <div className="grid md:grid-cols-3 gap-6 relative">
@@ -719,23 +904,24 @@ export default function LandingPage() {
                 color: '#a78bfa',
               },
             ].map((item, i) => (
-              <div
-                key={i}
-                className="relative p-8 rounded-2xl border card-hover text-center"
-                style={{ background: 'rgba(30,41,59,0.6)', borderColor: 'rgba(71,85,105,0.4)' }}
-              >
+              <Reveal key={i} delay={i * 150} direction="up" duration={700}>
                 <div
-                  className="inline-flex w-16 h-16 rounded-2xl items-center justify-center mb-6 mx-auto"
-                  style={{ background: `${item.color}18`, border: `1px solid ${item.color}40` }}
+                  className="relative p-8 rounded-2xl border card-hover text-center h-full"
+                  style={{ background: 'rgba(30,41,59,0.6)', borderColor: 'rgba(71,85,105,0.4)' }}
                 >
-                  <item.icon className="w-7 h-7" style={{ color: item.color }} />
+                  <div
+                    className="inline-flex w-16 h-16 rounded-2xl items-center justify-center mb-6 mx-auto"
+                    style={{ background: `${item.color}18`, border: `1px solid ${item.color}40` }}
+                  >
+                    <item.icon className="w-7 h-7" style={{ color: item.color }} />
+                  </div>
+                  <div className="text-xs font-bold tracking-widest mb-2" style={{ color: item.color }}>
+                    STEP {item.step}
+                  </div>
+                  <h3 className="text-xl font-bold text-slate-100 mb-3">{item.title}</h3>
+                  <p className="text-slate-400 text-sm leading-relaxed">{item.desc}</p>
                 </div>
-                <div className="text-xs font-bold tracking-widest mb-2" style={{ color: item.color }}>
-                  STEP {item.step}
-                </div>
-                <h3 className="text-xl font-bold text-slate-100 mb-3">{item.title}</h3>
-                <p className="text-slate-400 text-sm leading-relaxed">{item.desc}</p>
-              </div>
+              </Reveal>
             ))}
           </div>
         </div>
@@ -745,30 +931,36 @@ export default function LandingPage() {
       <section id="use-cases" className="py-28 px-6" style={{ background: 'rgba(30,41,59,0.3)' }}>
         <div className="max-w-6xl mx-auto">
           <div className="text-center mb-16">
-            <SectionLabel text="Use Cases" />
-            <h2 className="text-3xl sm:text-5xl font-bold" style={{ fontFamily: 'Sora, sans-serif', letterSpacing: '-0.02em' }}>
-              Built for Every<br />Growing Environment
-            </h2>
+            <Reveal direction="up" delay={0}>
+              <SectionLabel text="Use Cases" />
+            </Reveal>
+            <WipeReveal delay={80}>
+              <h2 className="text-3xl sm:text-5xl font-bold" style={{ fontFamily: 'Sora, sans-serif', letterSpacing: '-0.02em' }}>
+                Built for Every<br />Growing Environment
+              </h2>
+            </WipeReveal>
           </div>
 
           {/* tabs */}
-          <div className="flex flex-wrap gap-2 justify-center mb-12">
-            {USE_CASES.map((uc, i) => (
-              <button
-                key={uc.id}
-                onClick={() => setActiveCase(i)}
-                className="flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium transition-all"
-                style={
-                  activeCase === i
-                    ? { background: `${uc.accent}22`, border: `1px solid ${uc.accent}66`, color: uc.accent }
-                    : { background: 'transparent', border: '1px solid rgba(71,85,105,0.4)', color: '#94a3b8' }
-                }
-              >
-                <uc.icon className="w-3.5 h-3.5" />
-                {uc.label}
-              </button>
-            ))}
-          </div>
+          <Reveal direction="up" delay={100}>
+            <div className="flex flex-wrap gap-2 justify-center mb-12">
+              {USE_CASES.map((uc, i) => (
+                <button
+                  key={uc.id}
+                  onClick={() => setActiveCase(i)}
+                  className="flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium transition-all"
+                  style={
+                    activeCase === i
+                      ? { background: `${uc.accent}22`, border: `1px solid ${uc.accent}66`, color: uc.accent }
+                      : { background: 'transparent', border: '1px solid rgba(71,85,105,0.4)', color: '#94a3b8' }
+                  }
+                >
+                  <uc.icon className="w-3.5 h-3.5" />
+                  {uc.label}
+                </button>
+              ))}
+            </div>
+          </Reveal>
 
           {/* active case */}
           {USE_CASES.map((uc, i) => (
@@ -777,58 +969,68 @@ export default function LandingPage() {
               className={`grid md:grid-cols-2 gap-8 items-center transition-all duration-300 ${activeCase === i ? 'block slide-in' : 'hidden'}`}
             >
               {/* image */}
-              <div className="relative rounded-2xl overflow-hidden" style={{ height: 360 }}>
-                <img
-                  src={uc.image}
-                  alt={uc.label}
-                  className="w-full h-full object-cover"
-                />
-                <div
-                  className="absolute inset-0"
-                  style={{ background: `linear-gradient(135deg, ${uc.accent}22 0%, transparent 60%)` }}
-                />
-                <span
-                  className="absolute top-4 right-4 px-3 py-1 rounded-full text-xs font-bold"
-                  style={{ background: `${uc.accent}30`, color: uc.accent, border: `1px solid ${uc.accent}50` }}
-                >
-                  {uc.tag}
-                </span>
-              </div>
+              <ScaleReveal delay={0}>
+                <div className="relative rounded-2xl overflow-hidden" style={{ height: 360 }}>
+                  <img
+                    src={uc.image}
+                    alt={uc.label}
+                    className="w-full h-full object-cover"
+                  />
+                  <div
+                    className="absolute inset-0"
+                    style={{ background: `linear-gradient(135deg, ${uc.accent}22 0%, transparent 60%)` }}
+                  />
+                  <span
+                    className="absolute top-4 right-4 px-3 py-1 rounded-full text-xs font-bold"
+                    style={{ background: `${uc.accent}30`, color: uc.accent, border: `1px solid ${uc.accent}50` }}
+                  >
+                    {uc.tag}
+                  </span>
+                </div>
+              </ScaleReveal>
 
               {/* content */}
               <div>
-                <div className="flex items-center gap-3 mb-4">
-                  <div
-                    className="w-10 h-10 rounded-xl flex items-center justify-center"
-                    style={{ background: `${uc.accent}18`, border: `1px solid ${uc.accent}40` }}
-                  >
-                    <uc.icon className="w-5 h-5" style={{ color: uc.accent }} />
+                <Reveal direction="left" delay={100}>
+                  <div className="flex items-center gap-3 mb-4">
+                    <div
+                      className="w-10 h-10 rounded-xl flex items-center justify-center"
+                      style={{ background: `${uc.accent}18`, border: `1px solid ${uc.accent}40` }}
+                    >
+                      <uc.icon className="w-5 h-5" style={{ color: uc.accent }} />
+                    </div>
+                    <span className="text-xs font-semibold tracking-widest uppercase" style={{ color: uc.accent }}>
+                      {uc.label}
+                    </span>
                   </div>
-                  <span className="text-xs font-semibold tracking-widest uppercase" style={{ color: uc.accent }}>
-                    {uc.label}
-                  </span>
-                </div>
+                </Reveal>
 
-                <h3
-                  className="text-2xl sm:text-3xl font-bold text-slate-100 mb-4"
-                  style={{ fontFamily: 'Sora, sans-serif' }}
-                >
-                  {uc.title}
-                </h3>
-                <p className="text-slate-400 leading-relaxed mb-8">{uc.description}</p>
+                <WipeReveal delay={180}>
+                  <h3
+                    className="text-2xl sm:text-3xl font-bold text-slate-100 mb-4"
+                    style={{ fontFamily: 'Sora, sans-serif' }}
+                  >
+                    {uc.title}
+                  </h3>
+                </WipeReveal>
+
+                <Reveal direction="up" delay={240}>
+                  <p className="text-slate-400 leading-relaxed mb-8">{uc.description}</p>
+                </Reveal>
 
                 <div className="grid grid-cols-3 gap-4">
-                  {uc.stats.map(s => (
-                    <div
-                      key={s.label}
-                      className="p-4 rounded-xl text-center"
-                      style={{ background: `${uc.accent}0d`, border: `1px solid ${uc.accent}25` }}
-                    >
-                      <div className="text-2xl font-extrabold mb-1" style={{ color: uc.accent, fontFamily: 'Sora, sans-serif' }}>
-                        {s.value}
+                  {uc.stats.map((s, si) => (
+                    <Reveal key={s.label} direction="up" delay={300 + si * 80}>
+                      <div
+                        className="p-4 rounded-xl text-center"
+                        style={{ background: `${uc.accent}0d`, border: `1px solid ${uc.accent}25` }}
+                      >
+                        <div className="text-2xl font-extrabold mb-1" style={{ color: uc.accent, fontFamily: 'Sora, sans-serif' }}>
+                          {s.value}
+                        </div>
+                        <div className="text-[11px] text-slate-500 font-medium uppercase tracking-wide">{s.label}</div>
                       </div>
-                      <div className="text-[11px] text-slate-500 font-medium uppercase tracking-wide">{s.label}</div>
-                    </div>
+                    </Reveal>
                   ))}
                 </div>
               </div>
@@ -841,102 +1043,121 @@ export default function LandingPage() {
       <section id="hardware" className="py-28 px-6">
         <div className="max-w-6xl mx-auto">
           <div className="text-center mb-16">
-            <SectionLabel text="Hardware" />
-            <h2 className="text-3xl sm:text-5xl font-bold" style={{ fontFamily: 'Sora, sans-serif', letterSpacing: '-0.02em' }}>
-              The Devices Behind<br />the Intelligence
-            </h2>
-            <p className="mt-4 text-slate-400 max-w-xl mx-auto">
-              Every component is chosen for field reliability, low power consumption, and developer-friendly integration.
-            </p>
+            <Reveal direction="up" delay={0}>
+              <SectionLabel text="Hardware" />
+            </Reveal>
+            <WipeReveal delay={80}>
+              <h2 className="text-3xl sm:text-5xl font-bold" style={{ fontFamily: 'Sora, sans-serif', letterSpacing: '-0.02em' }}>
+                The Devices Behind<br />the Intelligence
+              </h2>
+            </WipeReveal>
+            <Reveal direction="up" delay={160}>
+              <p className="mt-4 text-slate-400 max-w-xl mx-auto">
+                Every component is chosen for field reliability, low power consumption, and developer-friendly integration.
+              </p>
+            </Reveal>
           </div>
 
           {/* hero hardware image */}
-          <div className="relative rounded-3xl overflow-hidden mb-16 border shadow-2xl"
-            style={{ borderColor: 'rgba(71,85,105,0.4)' }}>
-            <img
-              src="https://images.unsplash.com/photo-1518770660439-4636190af475?w=1200&h=500&fit=crop"
-              alt="ESP32 IoT Hardware System"
-              className="w-full h-[300px] sm:h-[420px] object-cover"
-            />
-            <div className="absolute inset-0"
-              style={{ background: 'linear-gradient(to right, rgba(26,35,50,0.9), rgba(26,35,50,0.5), transparent)' }} />
-            <div className="absolute inset-0 flex flex-col justify-center px-10 sm:px-16 max-w-xl">
-              <span className="text-xs font-bold tracking-widest uppercase text-emerald-400 mb-3">Core Hardware</span>
-              <h3 className="text-2xl sm:text-4xl font-bold text-slate-100 mb-4" style={{ fontFamily: 'Sora, sans-serif' }}>
-                ESP32 Sensor Node
-              </h3>
-              <p className="text-slate-300 text-sm sm:text-base leading-relaxed mb-6">
-                A compact, solar-friendly circuit board housing the ESP32 microcontroller alongside temperature, humidity, soil moisture, pH and NPK probes — all in a weatherproof enclosure.
-              </p>
-              <div className="flex flex-wrap gap-2">
-                {['Dual-Core MCU', 'WiFi + BLE', 'Analog & Digital IO', 'Deep Sleep Mode'].map(tag => (
-                  <span key={tag} className="px-3 py-1 rounded-full text-xs font-medium bg-emerald-500/15 text-emerald-400 border border-emerald-500/25">
-                    {tag}
-                  </span>
-                ))}
+          <ScaleReveal delay={0} duration={900}>
+            <div className="relative rounded-3xl overflow-hidden mb-16 border shadow-2xl"
+              style={{ borderColor: 'rgba(71,85,105,0.4)' }}>
+              <img
+                src="https://images.unsplash.com/photo-1518770660439-4636190af475?w=1200&h=500&fit=crop"
+                alt="ESP32 IoT Hardware System"
+                className="w-full h-[300px] sm:h-[420px] object-cover"
+              />
+              <div className="absolute inset-0"
+                style={{ background: 'linear-gradient(to right, rgba(26,35,50,0.9), rgba(26,35,50,0.5), transparent)' }} />
+              <div className="absolute inset-0 flex flex-col justify-center px-10 sm:px-16 max-w-xl">
+                <Reveal direction="right" delay={200}>
+                  <span className="text-xs font-bold tracking-widest uppercase text-emerald-400 mb-3 block">Core Hardware</span>
+                  <h3 className="text-2xl sm:text-4xl font-bold text-slate-100 mb-4" style={{ fontFamily: 'Sora, sans-serif' }}>
+                    ESP32 Sensor Node
+                  </h3>
+                  <p className="text-slate-300 text-sm sm:text-base leading-relaxed mb-6">
+                    A compact, solar-friendly circuit board housing the ESP32 microcontroller alongside temperature, humidity, soil moisture, pH and NPK probes — all in a weatherproof enclosure.
+                  </p>
+                  <div className="flex flex-wrap gap-2">
+                    {['Dual-Core MCU', 'WiFi + BLE', 'Analog & Digital IO', 'Deep Sleep Mode'].map(tag => (
+                      <span key={tag} className="px-3 py-1 rounded-full text-xs font-medium bg-emerald-500/15 text-emerald-400 border border-emerald-500/25">
+                        {tag}
+                      </span>
+                    ))}
+                  </div>
+                </Reveal>
               </div>
             </div>
-          </div>
+          </ScaleReveal>
 
           {/* second hardware image - circuit detail */}
           <div className="grid md:grid-cols-2 gap-6 mb-16">
-            <div className="relative rounded-2xl overflow-hidden border" style={{ height: 280, borderColor: 'rgba(71,85,105,0.4)' }}>
-              <img
-                src="https://images.unsplash.com/photo-1553406830-ef2513450d76?w=700&h=400&fit=crop"
-                alt="ESP32 PCB circuit board close up"
-                className="w-full h-full object-cover"
-              />
-              <div className="absolute inset-0"
-                style={{ background: 'linear-gradient(to top, rgba(26,35,50,0.8), transparent)' }} />
-              <div className="absolute bottom-4 left-4">
-                <p className="text-xs text-emerald-400 font-semibold uppercase tracking-widest mb-1">Microcontroller</p>
-                <p className="text-white font-bold text-lg">ESP32 Development Board</p>
-              </div>
-            </div>
-            <div className="relative rounded-2xl overflow-hidden border" style={{ height: 280, borderColor: 'rgba(71,85,105,0.4)' }}>
-              <img
-                src="https://images.unsplash.com/photo-1592861956120-e524fc739696?w=700&h=400&fit=crop"
-                alt="IoT soil sensors probes in field"
-                className="w-full h-full object-cover"
-              />
-              <div className="absolute inset-0"
-                style={{ background: 'linear-gradient(to top, rgba(26,35,50,0.8), transparent)' }} />
-              <div className="absolute bottom-4 left-4">
-                <p className="text-xs text-cyan-400 font-semibold uppercase tracking-widest mb-1">Field Deployment</p>
-                <p className="text-white font-bold text-lg">Sensor Array in Soil</p>
-              </div>
-            </div>
+            {[
+              {
+                src: 'https://images.unsplash.com/photo-1553406830-ef2513450d76?w=700&h=400&fit=crop',
+                alt: 'ESP32 PCB circuit board close up',
+                accentColor: '#10b981',
+                label: 'Microcontroller',
+                name: 'ESP32 Development Board',
+                dir: 'right' as const,
+              },
+              {
+                src: 'https://images.unsplash.com/photo-1592861956120-e524fc739696?w=700&h=400&fit=crop',
+                alt: 'IoT soil sensors probes in field',
+                accentColor: '#06b6d4',
+                label: 'Field Deployment',
+                name: 'Sensor Array in Soil',
+                dir: 'left' as const,
+              },
+            ].map((item, i) => (
+              <Reveal key={i} direction={item.dir} delay={i * 120} duration={750}>
+                <div className="relative rounded-2xl overflow-hidden border" style={{ height: 280, borderColor: 'rgba(71,85,105,0.4)' }}>
+                  <img
+                    src={item.src}
+                    alt={item.alt}
+                    className="w-full h-full object-cover"
+                  />
+                  <div className="absolute inset-0"
+                    style={{ background: 'linear-gradient(to top, rgba(26,35,50,0.8), transparent)' }} />
+                  <div className="absolute bottom-4 left-4">
+                    <p className="text-xs font-semibold uppercase tracking-widest mb-1" style={{ color: item.accentColor }}>{item.label}</p>
+                    <p className="text-white font-bold text-lg">{item.name}</p>
+                  </div>
+                </div>
+              </Reveal>
+            ))}
           </div>
 
           {/* device grid */}
           <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
             {DEVICES.map((device, i) => (
-              <div
-                key={i}
-                className="p-6 rounded-2xl border card-hover group"
-                style={{ background: 'rgba(30,41,59,0.5)', borderColor: 'rgba(71,85,105,0.4)' }}
-              >
+              <Reveal key={i} direction="up" delay={i * 90} duration={650}>
                 <div
-                  className="w-10 h-10 rounded-xl flex items-center justify-center mb-5"
-                  style={{ background: `${device.accent}18`, border: `1px solid ${device.accent}40` }}
+                  className="p-6 rounded-2xl border card-hover group h-full"
+                  style={{ background: 'rgba(30,41,59,0.5)', borderColor: 'rgba(71,85,105,0.4)' }}
                 >
-                  <span className="text-sm font-bold" style={{ color: device.accent }}>
-                    {String(i + 1).padStart(2, '0')}
-                  </span>
+                  <div
+                    className="w-10 h-10 rounded-xl flex items-center justify-center mb-5"
+                    style={{ background: `${device.accent}18`, border: `1px solid ${device.accent}40` }}
+                  >
+                    <span className="text-sm font-bold" style={{ color: device.accent }}>
+                      {String(i + 1).padStart(2, '0')}
+                    </span>
+                  </div>
+
+                  <h4 className="font-bold text-slate-100 mb-1">{device.name}</h4>
+                  <p className="text-xs text-slate-500 mb-4 leading-relaxed">{device.role}</p>
+
+                  <ul className="space-y-2">
+                    {device.specs.map((spec, j) => (
+                      <li key={j} className="flex items-start gap-2 text-xs text-slate-400">
+                        <CheckCircle className="w-3.5 h-3.5 mt-0.5 flex-shrink-0" style={{ color: device.accent }} />
+                        {spec}
+                      </li>
+                    ))}
+                  </ul>
                 </div>
-
-                <h4 className="font-bold text-slate-100 mb-1">{device.name}</h4>
-                <p className="text-xs text-slate-500 mb-4 leading-relaxed">{device.role}</p>
-
-                <ul className="space-y-2">
-                  {device.specs.map((spec, j) => (
-                    <li key={j} className="flex items-start gap-2 text-xs text-slate-400">
-                      <CheckCircle className="w-3.5 h-3.5 mt-0.5 flex-shrink-0" style={{ color: device.accent }} />
-                      {spec}
-                    </li>
-                  ))}
-                </ul>
-              </div>
+              </Reveal>
             ))}
           </div>
         </div>
@@ -946,47 +1167,60 @@ export default function LandingPage() {
       <section id="advantages" className="py-28 px-6" style={{ background: 'rgba(30,41,59,0.3)' }}>
         <div className="max-w-6xl mx-auto">
           <div className="text-center mb-16">
-            <SectionLabel text="Why smartfarm" />
-            <h2 className="text-3xl sm:text-5xl font-bold" style={{ fontFamily: 'Sora, sans-serif', letterSpacing: '-0.02em' }}>
-              Advantages That<br />Change the Way You Grow
-            </h2>
+            <Reveal direction="up" delay={0}>
+              <SectionLabel text="Why smartfarm" />
+            </Reveal>
+            <WipeReveal delay={80}>
+              <h2 className="text-3xl sm:text-5xl font-bold" style={{ fontFamily: 'Sora, sans-serif', letterSpacing: '-0.02em' }}>
+                Advantages That<br />Change the Way You Grow
+              </h2>
+            </WipeReveal>
           </div>
 
           <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
             {ADVANTAGES.map((adv, i) => (
-              <div
-                key={i}
-                className="p-7 rounded-2xl border card-hover group cursor-default"
-                style={{ background: 'rgba(30,41,59,0.6)', borderColor: 'rgba(71,85,105,0.4)' }}
-              >
+              <Reveal key={i} direction="up" delay={i * 80} duration={650}>
                 <div
-                  className="w-12 h-12 rounded-2xl flex items-center justify-center mb-5"
-                  style={{ background: `${adv.accent}18`, border: `1px solid ${adv.accent}40` }}
+                  className="p-7 rounded-2xl border card-hover group cursor-default h-full"
+                  style={{ background: 'rgba(30,41,59,0.6)', borderColor: 'rgba(71,85,105,0.4)' }}
                 >
-                  <adv.icon className="w-6 h-6" style={{ color: adv.accent }} />
+                  <div
+                    className="w-12 h-12 rounded-2xl flex items-center justify-center mb-5"
+                    style={{ background: `${adv.accent}18`, border: `1px solid ${adv.accent}40` }}
+                  >
+                    <adv.icon className="w-6 h-6" style={{ color: adv.accent }} />
+                  </div>
+                  <h3 className="font-bold text-slate-100 text-lg mb-2">{adv.title}</h3>
+                  <p className="text-slate-400 text-sm leading-relaxed">{adv.description}</p>
                 </div>
-                <h3 className="font-bold text-slate-100 text-lg mb-2">{adv.title}</h3>
-                <p className="text-slate-400 text-sm leading-relaxed">{adv.description}</p>
-              </div>
+              </Reveal>
             ))}
           </div>
 
           {/* ── Testimonial Carousel ──────────────────────────── */}
           <div className="mt-20">
             <div className="text-center mb-10">
-              <SectionLabel text="What Growers Say" />
-              <h3
-                className="text-2xl sm:text-3xl font-bold text-slate-100"
-                style={{ fontFamily: 'Sora, sans-serif', letterSpacing: '-0.01em' }}
-              >
-                Trusted by Farmers &amp; Gardeners
-              </h3>
-              <p className="mt-3 text-slate-400 text-sm max-w-xl mx-auto">
-                From commercial greenhouses to city balconies — here's what growers around the world are saying.
-              </p>
+              <Reveal direction="up" delay={0}>
+                <SectionLabel text="What Growers Say" />
+              </Reveal>
+              <WipeReveal delay={80}>
+                <h3
+                  className="text-2xl sm:text-3xl font-bold text-slate-100"
+                  style={{ fontFamily: 'Sora, sans-serif', letterSpacing: '-0.01em' }}
+                >
+                  Trusted by Farmers &amp; Gardeners
+                </h3>
+              </WipeReveal>
+              <Reveal direction="up" delay={160}>
+                <p className="mt-3 text-slate-400 text-sm max-w-xl mx-auto">
+                  From commercial greenhouses to city balconies — here's what growers around the world are saying.
+                </p>
+              </Reveal>
             </div>
 
-            <TestimonialCarousel />
+            <Reveal direction="up" delay={80}>
+              <TestimonialCarousel />
+            </Reveal>
           </div>
         </div>
       </section>
@@ -998,45 +1232,55 @@ export default function LandingPage() {
           style={{ background: 'radial-gradient(circle, rgba(16,185,129,0.1) 0%, transparent 70%)' }} />
 
         <div className="relative z-10 max-w-3xl mx-auto text-center">
-          <SectionLabel text="Get Started" />
-          <h2
-            className="text-3xl sm:text-5xl font-extrabold text-slate-100 mb-6"
-            style={{ fontFamily: 'Sora, sans-serif', letterSpacing: '-0.02em' }}
-          >
-            Ready to transform<br />your farm?
-          </h2>
-          <p className="text-slate-400 text-lg mb-10">
-            Open the live dashboard now and see your sensor data in real time.
-          </p>
-          <a
-            href="/dashboard"
-            className="inline-flex items-center gap-2 px-9 py-4 rounded-full bg-emerald-500 hover:bg-emerald-400 text-slate-900 font-bold text-lg transition-all hover:shadow-2xl hover:shadow-emerald-500/30 hover:-translate-y-1"
-          >
-            Open Dashboard <ArrowRight className="w-5 h-5" />
-          </a>
+          <Reveal direction="up" delay={0}>
+            <SectionLabel text="Get Started" />
+          </Reveal>
+          <WipeReveal delay={80}>
+            <h2
+              className="text-3xl sm:text-5xl font-extrabold text-slate-100 mb-6"
+              style={{ fontFamily: 'Sora, sans-serif', letterSpacing: '-0.02em' }}
+            >
+              Ready to transform<br />your farm?
+            </h2>
+          </WipeReveal>
+          <Reveal direction="up" delay={160}>
+            <p className="text-slate-400 text-lg mb-10">
+              Open the live dashboard now and see your sensor data in real time.
+            </p>
+          </Reveal>
+          <Reveal direction="up" delay={240}>
+            <a
+              href="/dashboard"
+              className="inline-flex items-center gap-2 px-9 py-4 rounded-full bg-emerald-500 hover:bg-emerald-400 text-slate-900 font-bold text-lg transition-all hover:shadow-2xl hover:shadow-emerald-500/30 hover:-translate-y-1"
+            >
+              Open Dashboard <ArrowRight className="w-5 h-5" />
+            </a>
+          </Reveal>
         </div>
       </section>
 
       {/* ── Footer ───────────────────────────────────────────── */}
       <footer className="border-t py-10 px-6" style={{ borderColor: 'rgba(71,85,105,0.4)' }}>
-        <div className="max-w-6xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4">
-          <div className="flex items-center gap-2.5">
-            <div className="w-7 h-7 rounded-lg bg-emerald-500/20 border border-emerald-500/40 flex items-center justify-center">
-              <Leaf className="w-3.5 h-3.5 text-emerald-400" />
+        <Reveal direction="up" delay={0}>
+          <div className="max-w-6xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4">
+            <div className="flex items-center gap-2.5">
+              <div className="w-7 h-7 rounded-lg bg-emerald-500/20 border border-emerald-500/40 flex items-center justify-center">
+                <Leaf className="w-3.5 h-3.5 text-emerald-400" />
+              </div>
+              <span className="font-bold tracking-tight" style={{ fontFamily: 'Sora, sans-serif' }}>
+                smart<span className="text-emerald-400">farm</span>
+              </span>
             </div>
-            <span className="font-bold tracking-tight" style={{ fontFamily: 'Sora, sans-serif' }}>
-              smart<span className="text-emerald-400">farm</span>
-            </span>
+            <p className="text-xs text-slate-600">
+              © {new Date().getFullYear()} smartfarm. Built with ESP32, Firebase & AI. Kenya.
+            </p>
+            <div className="flex gap-5 text-xs text-slate-600">
+              <a href="/dashboard" className="hover:text-emerald-400 transition-colors">Dashboard</a>
+              <a href="#" className="hover:text-emerald-400 transition-colors">Docs</a>
+              <a href="#" className="hover:text-emerald-400 transition-colors">GitHub</a>
+            </div>
           </div>
-          <p className="text-xs text-slate-600">
-            © {new Date().getFullYear()} smartfarm. Built with ESP32, Firebase & AI. Kenya.
-          </p>
-          <div className="flex gap-5 text-xs text-slate-600">
-            <a href="/dashboard" className="hover:text-emerald-400 transition-colors">Dashboard</a>
-            <a href="#" className="hover:text-emerald-400 transition-colors">Docs</a>
-            <a href="#" className="hover:text-emerald-400 transition-colors">GitHub</a>
-          </div>
-        </div>
+        </Reveal>
       </footer>
     </div>
   );
