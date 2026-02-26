@@ -9,10 +9,10 @@ import {
   Leaf, Volume2, VolumeX,
   Save, RotateCcw,
   Radio, MapPin, Activity,
-  Gauge, Info, Sliders, ArrowLeft,
+  Gauge, Info, Sliders, 
   Lock, ShieldCheck, WifiOff, Menu,
   BatteryCharging, Smartphone,
-  Zap, Settings, Shield,
+  Settings, Shield,
 } from 'lucide-react';
 import { useRole } from '@/hooks/useRole';
 import { subscribeToESP32Status, type ESP32StatusResult } from '@/lib/firebase';
@@ -57,15 +57,11 @@ type AITipsCache = { tips: AITip[]; optimalTime: string; weeklyEstimate: number;
 // localStorage helpers
 // ---------------------------------------------------------------------------
 const AI_TIPS_CACHE_KEY = 'farm_ai_irrigation_tips';
-
 function loadCachedTips(): AITipsCache | null {
   if (typeof window === 'undefined') return null;
-  try {
-    const raw = localStorage.getItem(AI_TIPS_CACHE_KEY);
-    return raw ? JSON.parse(raw) as AITipsCache : null;
-  } catch { return null; }
+  try { const raw = localStorage.getItem(AI_TIPS_CACHE_KEY); return raw ? JSON.parse(raw) as AITipsCache : null; }
+  catch { return null; }
 }
-
 function saveCachedTips(cache: AITipsCache): void {
   if (typeof window === 'undefined') return;
   try { localStorage.setItem(AI_TIPS_CACHE_KEY, JSON.stringify(cache)); } catch {}
@@ -99,66 +95,51 @@ function cn(...c: (string | false | null | undefined)[]): string {
 }
 
 // ---------------------------------------------------------------------------
-// ── PIPELINE VALVE ANIMATION ─────────────────────────────────────────────────
+// ── PIPELINE VALVE ANIMATION
 // ---------------------------------------------------------------------------
 function PipelineValvePanel({ isOpen, isRunning, timer, duration, onToggle, isReadOnly }: {
-  isOpen: boolean;
-  isRunning: boolean;
-  timer: number;
-  duration: number;
-  onToggle: (v: boolean) => void;
-  isReadOnly: boolean;
+  isOpen: boolean; isRunning: boolean; timer: number; duration: number;
+  onToggle: (v: boolean) => void; isReadOnly: boolean;
 }) {
   const progress = duration > 0 ? 1 - (timer / (duration * 60)) : 0;
-
   return (
-    <div className="relative rounded-2xl overflow-hidden p-6"
+    <div className="relative rounded-2xl overflow-hidden p-5"
       style={{
         background: isOpen
-          ? 'linear-gradient(135deg, rgba(8,47,73,0.9) 0%, rgba(12,74,110,0.7) 50%, rgba(8,47,73,0.9) 100%)'
-          : 'rgba(15,23,42,0.7)',
-        border: `1px solid ${isOpen ? 'rgba(56,189,248,0.35)' : 'rgba(71,85,105,0.35)'}`,
+          ? 'linear-gradient(135deg, rgba(8,47,73,0.75) 0%, rgba(12,74,110,0.55) 50%, rgba(8,47,73,0.75) 100%)'
+          : 'rgba(30,45,62,0.5)',
+        border: `1px solid ${isOpen ? 'rgba(56,189,248,0.3)' : 'rgba(71,85,105,0.35)'}`,
         transition: 'all 0.6s ease',
       }}>
-
       {isOpen && (
         <div className="absolute inset-0 pointer-events-none"
-          style={{ background: 'radial-gradient(ellipse at 50% 60%, rgba(56,189,248,0.08) 0%, transparent 70%)' }} />
+          style={{ background: 'radial-gradient(ellipse at 50% 60%, rgba(56,189,248,0.06) 0%, transparent 70%)' }} />
       )}
-
       <div className="relative">
-        <div className="flex items-center justify-between mb-6">
+        <div className="flex items-center justify-between mb-5">
           <div>
-            <h4 className="font-bold text-slate-100 text-base">Irrigation Valve</h4>
+            <h4 className="font-bold text-slate-100 text-sm">Irrigation Valve</h4>
             <p className="text-xs mt-0.5" style={{ color: isOpen ? '#7dd3fc' : '#64748b' }}>
               {isOpen ? (timer > 0 ? `Running · ${Math.floor(timer/60).toString().padStart(2,'0')}:${(timer%60).toString().padStart(2,'0')} left` : 'Valve open') : 'Valve closed · tap to start'}
             </p>
           </div>
-          <div className="flex items-center gap-2">
-            <div className="flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold border"
-              style={{
-                background: isOpen ? 'rgba(56,189,248,0.15)' : 'rgba(71,85,105,0.3)',
-                borderColor: isOpen ? 'rgba(56,189,248,0.4)' : 'rgba(71,85,105,0.4)',
-                color: isOpen ? '#7dd3fc' : '#64748b',
-              }}>
-              <span className="w-1.5 h-1.5 rounded-full" style={{
-                background: isOpen ? '#38bdf8' : '#475569',
-                boxShadow: isOpen ? '0 0 6px #38bdf8' : 'none',
-                animation: isOpen ? 'pulse 1.5s infinite' : 'none',
-              }} />
-              {isOpen ? 'OPEN' : 'CLOSED'}
-            </div>
+          <div className="flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold border"
+            style={{
+              background: isOpen ? 'rgba(56,189,248,0.12)' : 'rgba(71,85,105,0.25)',
+              borderColor: isOpen ? 'rgba(56,189,248,0.35)' : 'rgba(71,85,105,0.35)',
+              color: isOpen ? '#7dd3fc' : '#64748b',
+            }}>
+            <span className="w-1.5 h-1.5 rounded-full" style={{ background: isOpen ? '#38bdf8' : '#475569', boxShadow: isOpen ? '0 0 6px #38bdf8' : 'none', animation: isOpen ? 'pulse 1.5s infinite' : 'none' }} />
+            {isOpen ? 'OPEN' : 'CLOSED'}
           </div>
         </div>
 
         <div className="relative flex items-center justify-center my-2">
-          <svg viewBox="0 0 480 120" className="w-full" style={{ maxWidth: 480, height: 120 }}>
+          <svg viewBox="0 0 480 120" className="w-full" style={{ maxWidth: 480, height: 110 }}>
             <defs>
               <linearGradient id="pipeGrad" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stopColor="#334155" />
-                <stop offset="40%" stopColor="#475569" />
-                <stop offset="60%" stopColor="#334155" />
-                <stop offset="100%" stopColor="#1e293b" />
+                <stop offset="0%" stopColor="#2d3f55" /><stop offset="40%" stopColor="#3d5068" />
+                <stop offset="60%" stopColor="#2d3f55" /><stop offset="100%" stopColor="#1e2f42" />
               </linearGradient>
               <linearGradient id="waterGrad" x1="0" y1="0" x2="1" y2="0">
                 <stop offset="0%" stopColor="#0ea5e9" stopOpacity="0.9" />
@@ -166,138 +147,65 @@ function PipelineValvePanel({ isOpen, isRunning, timer, duration, onToggle, isRe
                 <stop offset="100%" stopColor="#7dd3fc" stopOpacity="0.7" />
               </linearGradient>
               <linearGradient id="valveGrad" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stopColor={isOpen ? '#0284c7' : '#374151'} />
-                <stop offset="100%" stopColor={isOpen ? '#0369a1' : '#1f2937'} />
+                <stop offset="0%" stopColor={isOpen ? '#0284c7' : '#2d3f55'} />
+                <stop offset="100%" stopColor={isOpen ? '#0369a1' : '#1e2f42'} />
               </linearGradient>
-              <clipPath id="leftPipeClip">
-                <rect x="20" y="46" width="148" height="28" rx="0" />
-              </clipPath>
-              <clipPath id="rightPipeClip">
-                <rect x="312" y="46" width="148" height="28" rx="0" />
-              </clipPath>
-              <clipPath id="valveBodyClip">
-                <rect x="196" y="36" width="88" height="48" rx="4" />
-              </clipPath>
+              <clipPath id="leftPipeClip"><rect x="20" y="46" width="148" height="28" rx="0" /></clipPath>
+              <clipPath id="rightPipeClip"><rect x="312" y="46" width="148" height="28" rx="0" /></clipPath>
+              <clipPath id="valveBodyClip"><rect x="196" y="36" width="88" height="48" rx="4" /></clipPath>
             </defs>
-
             <rect x="20" y="44" width="150" height="32" rx="6" fill="url(#pipeGrad)" />
-            <rect x="20" y="48" width="150" height="24" rx="4" fill="#0f172a" />
-            <rect x="20" y="49" width="150" height="5" rx="3" fill="rgba(255,255,255,0.05)" />
-
+            <rect x="20" y="48" width="150" height="24" rx="4" fill="#1a2738" />
             {isOpen && (
               <g clipPath="url(#leftPipeClip)">
-                <rect x="20" y="49" width="148" height="22" fill="url(#waterGrad)" opacity="0.85" rx="3">
-                  <animate attributeName="opacity" values="0.7;0.95;0.7" dur="2s" repeatCount="indefinite" />
-                </rect>
-                <rect x="-100" y="49" width="60" height="22" rx="3" fill="rgba(255,255,255,0.15)">
-                  <animateTransform attributeName="transform" type="translate" from="-80 0" to="230 0" dur="1.4s" repeatCount="indefinite" />
-                </rect>
-                <rect x="-100" y="49" width="30" height="22" rx="3" fill="rgba(255,255,255,0.08)">
-                  <animateTransform attributeName="transform" type="translate" from="-80 0" to="230 0" dur="1.8s" begin="0.5s" repeatCount="indefinite" />
-                </rect>
+                <rect x="20" y="49" width="148" height="22" fill="url(#waterGrad)" opacity="0.85" rx="3"><animate attributeName="opacity" values="0.7;0.95;0.7" dur="2s" repeatCount="indefinite" /></rect>
+                <rect x="-100" y="49" width="60" height="22" rx="3" fill="rgba(255,255,255,0.12)"><animateTransform attributeName="transform" type="translate" from="-80 0" to="230 0" dur="1.4s" repeatCount="indefinite" /></rect>
               </g>
             )}
-
-            <rect x="14" y="40" width="12" height="40" rx="4" fill="#475569" />
-            <rect x="18" y="44" width="4" height="32" rx="2" fill="#334155" />
-
-            <rect x="193" y="32" width="94" height="56" rx="8" fill={isOpen ? '#0c4a6e' : '#1e293b'}
-              stroke={isOpen ? '#0ea5e9' : '#374151'} strokeWidth="1.5" />
+            <rect x="14" y="40" width="12" height="40" rx="4" fill="#3d5068" />
+            <rect x="193" y="32" width="94" height="56" rx="8" fill={isOpen ? '#0c4a6e' : '#1e2f42'} stroke={isOpen ? '#0ea5e9' : '#3d5068'} strokeWidth="1.5" />
             <rect x="196" y="35" width="88" height="50" rx="6" fill="url(#valveGrad)" opacity="0.8" />
-
             <g transform={`translate(240, 60) rotate(${isOpen ? 90 : 0})`}>
-              <ellipse cx="0" cy="0" rx={isOpen ? 4 : 11} ry="11"
-                fill={isOpen ? 'rgba(56,189,248,0.3)' : '#374151'}
-                stroke={isOpen ? '#38bdf8' : '#4b5563'} strokeWidth="1.5" />
-              <line x1="0" y1="-11" x2="0" y2="11"
-                stroke={isOpen ? '#7dd3fc' : '#6b7280'} strokeWidth="1.5" />
+              <ellipse cx="0" cy="0" rx={isOpen ? 4 : 11} ry="11" fill={isOpen ? 'rgba(56,189,248,0.3)' : '#2d3f55'} stroke={isOpen ? '#38bdf8' : '#4b5563'} strokeWidth="1.5" />
+              <line x1="0" y1="-11" x2="0" y2="11" stroke={isOpen ? '#7dd3fc' : '#6b7280'} strokeWidth="1.5" />
             </g>
-
             {isOpen && (
               <g clipPath="url(#valveBodyClip)">
-                <rect x="196" y="47" width="88" height="22" fill="url(#waterGrad)" opacity="0.7" rx="2">
-                  <animate attributeName="opacity" values="0.6;0.9;0.6" dur="1.5s" repeatCount="indefinite" />
-                </rect>
-                <rect x="150" y="49" width="40" height="18" rx="2" fill="rgba(255,255,255,0.2)">
-                  <animateTransform attributeName="transform" type="translate" from="-50 0" to="340 0" dur="1s" repeatCount="indefinite" />
-                </rect>
+                <rect x="196" y="47" width="88" height="22" fill="url(#waterGrad)" opacity="0.7" rx="2"><animate attributeName="opacity" values="0.6;0.9;0.6" dur="1.5s" repeatCount="indefinite" /></rect>
               </g>
             )}
-
-            <rect x="228" y="14" width="24" height="22" rx="4"
-              fill={isOpen ? '#0369a1' : '#1f2937'}
-              stroke={isOpen ? '#0ea5e9' : '#374151'} strokeWidth="1" />
-            <rect x="221" y="10" width="38" height="8" rx="3"
-              fill={isOpen ? '#0284c7' : '#374151'}
-              stroke={isOpen ? '#38bdf8' : '#4b5563'} strokeWidth="1" />
-            <line x1="240" y1="12" x2={isOpen ? 250 : 240} y2={isOpen ? 14 : 10}
-              stroke={isOpen ? '#7dd3fc' : '#6b7280'} strokeWidth="2" strokeLinecap="round" />
-            <text x="240" y="76" textAnchor="middle" fontSize="8" fontWeight="700"
-              fill={isOpen ? '#7dd3fc' : '#6b7280'} fontFamily="monospace">
-              {isOpen ? 'OPEN' : 'CLOSED'}
-            </text>
-
+            <rect x="228" y="14" width="24" height="22" rx="4" fill={isOpen ? '#0369a1' : '#1e2f42'} stroke={isOpen ? '#0ea5e9' : '#3d5068'} strokeWidth="1" />
+            <rect x="221" y="10" width="38" height="8" rx="3" fill={isOpen ? '#0284c7' : '#2d3f55'} stroke={isOpen ? '#38bdf8' : '#4b5563'} strokeWidth="1" />
+            <text x="240" y="76" textAnchor="middle" fontSize="8" fontWeight="700" fill={isOpen ? '#7dd3fc' : '#6b7280'} fontFamily="monospace">{isOpen ? 'OPEN' : 'CLOSED'}</text>
             <rect x="310" y="44" width="150" height="32" rx="6" fill="url(#pipeGrad)" />
-            <rect x="310" y="48" width="150" height="24" rx="4" fill="#0f172a" />
-            <rect x="310" y="49" width="150" height="5" rx="3" fill="rgba(255,255,255,0.05)" />
-
+            <rect x="310" y="48" width="150" height="24" rx="4" fill="#1a2738" />
             {isOpen && (
               <g clipPath="url(#rightPipeClip)">
-                <rect x="312" y="49" width="148" height="22" fill="url(#waterGrad)" opacity="0.85" rx="3">
-                  <animate attributeName="opacity" values="0.7;0.95;0.7" dur="2s" begin="0.2s" repeatCount="indefinite" />
-                </rect>
-                <rect x="200" y="49" width="60" height="22" rx="3" fill="rgba(255,255,255,0.15)">
-                  <animateTransform attributeName="transform" type="translate" from="110 0" to="460 0" dur="1.4s" begin="0.2s" repeatCount="indefinite" />
-                </rect>
-                <rect x="200" y="49" width="30" height="22" rx="3" fill="rgba(255,255,255,0.08)">
-                  <animateTransform attributeName="transform" type="translate" from="110 0" to="460 0" dur="1.9s" begin="0.7s" repeatCount="indefinite" />
-                </rect>
+                <rect x="312" y="49" width="148" height="22" fill="url(#waterGrad)" opacity="0.85" rx="3"><animate attributeName="opacity" values="0.7;0.95;0.7" dur="2s" begin="0.2s" repeatCount="indefinite" /></rect>
+                <rect x="200" y="49" width="60" height="22" rx="3" fill="rgba(255,255,255,0.12)"><animateTransform attributeName="transform" type="translate" from="110 0" to="460 0" dur="1.4s" begin="0.2s" repeatCount="indefinite" /></rect>
                 {[0,1,2,3,4].map(i => (
-                  <circle key={i} cx={450 + (i % 2) * 6} cy={52 + i * 4} r="2"
-                    fill="#38bdf8" opacity="0.6">
-                    <animate attributeName="cx" values={`${450 + (i%2)*6};${460 + (i%2)*8}`} dur={`${0.8 + i*0.15}s`} repeatCount="indefinite" />
-                    <animate attributeName="cy" values={`${52 + i*4};${52 + i*4 + 8}`} dur={`${0.8 + i*0.15}s`} repeatCount="indefinite" />
-                    <animate attributeName="opacity" values="0.8;0" dur={`${0.8 + i*0.15}s`} repeatCount="indefinite" />
+                  <circle key={i} cx={450 + (i % 2) * 6} cy={52 + i * 4} r="2" fill="#38bdf8" opacity="0.6">
+                    <animate attributeName="cy" values={`${52+i*4};${52+i*4+8}`} dur={`${0.8+i*0.15}s`} repeatCount="indefinite" />
+                    <animate attributeName="opacity" values="0.8;0" dur={`${0.8+i*0.15}s`} repeatCount="indefinite" />
                   </circle>
                 ))}
               </g>
             )}
-
-            <rect x="456" y="40" width="12" height="40" rx="4" fill="#475569" />
-            <rect x="460" y="44" width="4" height="32" rx="2" fill="#334155" />
-
-            <text x="95" y="95" textAnchor="middle" fontSize="8" fill="#475569" fontFamily="monospace">INLET</text>
-            <text x="385" y="95" textAnchor="middle" fontSize="8" fill="#475569" fontFamily="monospace">FIELD LINE</text>
-            <text x="240" y="108" textAnchor="middle" fontSize="8" fill={isOpen ? '#38bdf8' : '#374151'} fontFamily="monospace" fontWeight="700">
-              VALVE — {isOpen ? 'FLOW ACTIVE' : 'NO FLOW'}
-            </text>
-
-            {isOpen && [60, 100, 140].map((x, i) => (
-              <circle key={x} cx={x} cy="60" r="2.5" fill="#38bdf8" opacity="0.5">
-                <animate attributeName="opacity" values="0.2;0.8;0.2" dur={`${1 + i*0.3}s`} repeatCount="indefinite" />
-              </circle>
-            ))}
-            {isOpen && [340, 380, 420].map((x, i) => (
-              <circle key={x} cx={x} cy="60" r="2.5" fill="#38bdf8" opacity="0.5">
-                <animate attributeName="opacity" values="0.2;0.8;0.2" dur={`${1.2 + i*0.3}s`} begin="0.2s" repeatCount="indefinite" />
-              </circle>
-            ))}
+            <rect x="456" y="40" width="12" height="40" rx="4" fill="#3d5068" />
+            <text x="240" y="108" textAnchor="middle" fontSize="8" fill={isOpen ? '#38bdf8' : '#3d5068'} fontFamily="monospace" fontWeight="700">VALVE — {isOpen ? 'FLOW ACTIVE' : 'NO FLOW'}</text>
           </svg>
         </div>
 
         {isRunning && duration > 0 && (
-          <div className="mt-4 space-y-1.5">
+          <div className="mt-3 space-y-1.5">
             <div className="flex justify-between text-xs">
               <span className="text-slate-400">Cycle progress</span>
               <span className="text-sky-400 font-bold">{Math.round(progress * 100)}%</span>
             </div>
-            <div className="h-1.5 rounded-full overflow-hidden" style={{ background: 'rgba(15,23,42,0.8)' }}>
+            <div className="h-1.5 rounded-full overflow-hidden" style={{ background: 'rgba(30,45,62,0.8)' }}>
               <div className="h-full rounded-full transition-all duration-1000 relative overflow-hidden"
                 style={{ width: `${progress * 100}%`, background: 'linear-gradient(90deg, #0284c7, #38bdf8, #7dd3fc)' }}>
-                <div className="absolute inset-0" style={{
-                  background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent)',
-                  animation: 'shimmerSlide 1.5s linear infinite',
-                }} />
+                <div className="absolute inset-0" style={{ background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent)', animation: 'shimmerSlide 1.5s linear infinite' }} />
               </div>
             </div>
           </div>
@@ -306,14 +214,10 @@ function PipelineValvePanel({ isOpen, isRunning, timer, duration, onToggle, isRe
         <button
           onClick={() => !isReadOnly && onToggle(!isOpen)}
           disabled={isReadOnly}
-          className="mt-5 w-full py-3 rounded-xl font-bold text-sm transition-all duration-300 disabled:opacity-40 disabled:cursor-not-allowed relative overflow-hidden"
+          className="mt-5 w-full py-3 rounded-xl font-bold text-sm transition-all duration-300 disabled:opacity-40 disabled:cursor-not-allowed"
           style={{
-            background: isOpen
-              ? 'linear-gradient(135deg, #be123c, #e11d48)'
-              : 'linear-gradient(135deg, #0369a1, #0284c7)',
-            boxShadow: isOpen
-              ? '0 4px 20px rgba(225,29,72,0.35)'
-              : '0 4px 20px rgba(2,132,199,0.35)',
+            background: isOpen ? 'linear-gradient(135deg, #be123c, #e11d48)' : 'linear-gradient(135deg, #0369a1, #0284c7)',
+            boxShadow: isOpen ? '0 4px 16px rgba(225,29,72,0.25)' : '0 4px 16px rgba(2,132,199,0.25)',
             color: '#fff',
           }}>
           {isOpen ? '🛑 Close Valve — Stop Irrigation' : '💧 Open Valve — Start Irrigation'}
@@ -324,7 +228,7 @@ function PipelineValvePanel({ isOpen, isRunning, timer, duration, onToggle, isRe
 }
 
 // ---------------------------------------------------------------------------
-// ── Toggle ────────────────────────────────────────────────────────────────────
+// ── Toggle
 // ---------------------------------------------------------------------------
 function Toggle({ checked, onChange, size = 'md', color = '#10b981', disabled = false, readOnly = false }: {
   checked: boolean; onChange: (v: boolean) => void;
@@ -334,8 +238,8 @@ function Toggle({ checked, onChange, size = 'md', color = '#10b981', disabled = 
   const isBlocked = disabled || readOnly;
   return (
     <button type="button" onClick={() => !isBlocked && onChange(!checked)} disabled={isBlocked}
-      className="relative flex-shrink-0 rounded-full focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 disabled:cursor-not-allowed"
-      style={{ width: dims.w, height: dims.h, background: checked ? (readOnly ? '#64748b' : color) : '#2d3748', boxShadow: checked && !readOnly ? `0 0 14px ${color}55` : 'none', opacity: readOnly ? 0.55 : disabled ? 0.4 : 1, transition: 'background 0.3s, box-shadow 0.3s' }}
+      className="relative flex-shrink-0 rounded-full focus:outline-none disabled:cursor-not-allowed"
+      style={{ width: dims.w, height: dims.h, background: checked ? (readOnly ? '#4d6070' : color) : '#2a3d52', boxShadow: checked && !readOnly ? `0 0 12px ${color}44` : 'none', opacity: readOnly ? 0.55 : disabled ? 0.4 : 1, transition: 'background 0.3s, box-shadow 0.3s' }}
       aria-checked={checked} role="switch">
       <span className="absolute rounded-full bg-white shadow-md"
         style={{ width: dims.thumb, height: dims.thumb, top: dims.pad, left: checked ? dims.w - dims.thumb - dims.pad : dims.pad, transition: 'left 0.25s cubic-bezier(.4,0,.2,1)' }} />
@@ -344,30 +248,31 @@ function Toggle({ checked, onChange, size = 'md', color = '#10b981', disabled = 
 }
 
 // ---------------------------------------------------------------------------
-// ── SliderRow ─────────────────────────────────────────────────────────────────
+// ── SliderRow
 // ---------------------------------------------------------------------------
 function SliderRow({ label, value, min, max, step = 1, unit, onChange, color = '#10b981', readOnly = false }: {
-  label: string; value: number; min: number; max: number; step?: number; unit: string; onChange: (v: number) => void; color?: string; readOnly?: boolean;
+  label: string; value: number; min: number; max: number; step?: number;
+  unit: string; onChange: (v: number) => void; color?: string; readOnly?: boolean;
 }) {
   return (
-    <div className="space-y-2.5" style={{ opacity: readOnly ? 0.55 : 1 }}>
+    <div className="space-y-2" style={{ opacity: readOnly ? 0.5 : 1 }}>
       <div className="flex justify-between text-xs">
-        <span className="text-slate-400 font-medium tracking-wide">{label}</span>
-        <span className="font-bold tabular-nums px-2 py-0.5 rounded-md text-xs"
-          style={{ color, background: `${color}18`, border: `1px solid ${color}25` }}>
+        <span className="text-slate-400 font-medium">{label}</span>
+        <span className="font-bold tabular-nums px-2 py-0.5 rounded-md text-xs mono"
+          style={{ color, background: `${color}14`, border: `1px solid ${color}20` }}>
           {value}{unit}
         </span>
       </div>
       <div className="relative h-5 flex items-center">
-        <div className="w-full h-1 rounded-full" style={{ background: '#1e293b' }}>
+        <div className="w-full h-1.5 rounded-full" style={{ background: 'rgba(30,45,62,0.8)' }}>
           <div className="h-full rounded-full transition-all duration-150"
-            style={{ width: `${((value - min) / (max - min)) * 100}%`, background: readOnly ? '#475569' : `linear-gradient(90deg, ${color}88, ${color})` }} />
+            style={{ width: `${((value - min) / (max - min)) * 100}%`, background: readOnly ? '#3d5068' : `linear-gradient(90deg, ${color}88, ${color})` }} />
         </div>
         <input type="range" min={min} max={max} step={step} value={value}
           onChange={e => !readOnly && onChange(Number(e.target.value))} disabled={readOnly}
           className="absolute inset-0 w-full opacity-0 cursor-pointer disabled:cursor-not-allowed h-full" />
-        <div className="absolute w-3.5 h-3.5 rounded-full bg-white shadow-lg border-2 pointer-events-none transition-all"
-          style={{ left: `calc(${((value - min) / (max - min)) * 100}% - 7px)`, borderColor: readOnly ? '#475569' : color }} />
+        <div className="absolute w-3.5 h-3.5 rounded-full bg-white shadow-lg border-2 pointer-events-none"
+          style={{ left: `calc(${((value - min) / (max - min)) * 100}% - 7px)`, borderColor: readOnly ? '#3d5068' : color }} />
       </div>
       <div className="flex justify-between text-[10px] text-slate-600">
         <span>{min}{unit}</span><span>{max}{unit}</span>
@@ -377,24 +282,23 @@ function SliderRow({ label, value, min, max, step = 1, unit, onChange, color = '
 }
 
 // ---------------------------------------------------------------------------
-// ── SettingCard ───────────────────────────────────────────────────────────────
+// ── SettingCard  (matches plant-perf card style)
 // ---------------------------------------------------------------------------
 function SettingCard({ icon: Icon, title, subtitle, children, accent = '#10b981', badge }: {
   icon: React.ElementType; title: string; subtitle?: string; children: React.ReactNode; accent?: string; badge?: React.ReactNode;
 }) {
   return (
-    <div className="rounded-2xl border overflow-hidden"
-      style={{ background: 'rgba(22,32,46,0.6)', borderColor: 'rgba(71,85,105,0.3)', backdropFilter: 'blur(12px)' }}>
-      <div className="h-0.5 w-full" style={{ background: `linear-gradient(90deg, ${accent}, ${accent}40, transparent)` }} />
-      <div className="flex items-center justify-between px-5 py-4 border-b"
-        style={{ borderLeftWidth: 3, borderLeftStyle: 'solid', borderLeftColor: accent, borderBottomColor: 'rgba(71,85,105,0.2)', background: `linear-gradient(90deg, ${accent}06 0%, transparent 60%)` }}>
+    <div className="rounded-3xl overflow-hidden"
+      style={{ background: 'rgba(40,55,74,0.7)', border: '1px solid rgba(71,85,105,0.45)', backdropFilter: 'blur(12px)' }}>
+      <div className="flex items-center justify-between px-5 py-4"
+        style={{ borderBottom: '1px solid rgba(71,85,105,0.3)' }}>
         <div className="flex items-center gap-3">
           <div className="w-9 h-9 rounded-xl flex items-center justify-center"
-            style={{ background: `${accent}15`, border: `1px solid ${accent}30` }}>
-            <Icon className="w-4.5 h-4.5" style={{ color: accent, width: 18, height: 18 }} />
+            style={{ background: `${accent}15`, border: `1px solid ${accent}28` }}>
+            <Icon className="w-4 h-4" style={{ color: accent }} />
           </div>
           <div>
-            <h3 className="font-bold text-sm text-slate-100 tracking-tight">{title}</h3>
+            <h3 className="font-semibold text-sm text-slate-200">{title}</h3>
             {subtitle && <p className="text-[11px] text-slate-500 mt-0.5">{subtitle}</p>}
           </div>
         </div>
@@ -406,13 +310,13 @@ function SettingCard({ icon: Icon, title, subtitle, children, accent = '#10b981'
 }
 
 // ---------------------------------------------------------------------------
-// ── SettingRow ────────────────────────────────────────────────────────────────
+// ── SettingRow
 // ---------------------------------------------------------------------------
 function SettingRow({ label, sublabel, children }: { label: string; sublabel?: string; children: React.ReactNode }) {
   return (
     <div className="flex items-center justify-between gap-4 py-1">
       <div className="flex-1 min-w-0">
-        <p className="text-sm font-medium text-slate-200 truncate">{label}</p>
+        <p className="text-sm font-medium text-slate-300 truncate">{label}</p>
         {sublabel && <p className="text-xs text-slate-500 mt-0.5">{sublabel}</p>}
       </div>
       <div className="flex-shrink-0">{children}</div>
@@ -421,14 +325,14 @@ function SettingRow({ label, sublabel, children }: { label: string; sublabel?: s
 }
 
 // ---------------------------------------------------------------------------
-// ── ReadOnly Banner ───────────────────────────────────────────────────────────
+// ── ReadOnly Banner
 // ---------------------------------------------------------------------------
 function ReadOnlyBanner() {
   return (
     <div className="flex items-center gap-3 px-5 py-4 rounded-2xl"
-      style={{ background: 'rgba(245,158,11,0.06)', border: '1px solid rgba(245,158,11,0.2)' }}>
+      style={{ background: 'rgba(245,158,11,0.06)', border: '1px solid rgba(245,158,11,0.18)' }}>
       <div className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0"
-        style={{ background: 'rgba(245,158,11,0.12)', border: '1px solid rgba(245,158,11,0.25)' }}>
+        style={{ background: 'rgba(245,158,11,0.1)', border: '1px solid rgba(245,158,11,0.2)' }}>
         <Lock className="w-4 h-4 text-amber-400" />
       </div>
       <div>
@@ -443,7 +347,7 @@ function ReadOnlyBanner() {
 }
 
 // ---------------------------------------------------------------------------
-// ── Firebase valve helper ─────────────────────────────────────────────────────
+// ── Firebase valve helper
 // ---------------------------------------------------------------------------
 function setValve(open: boolean) {
   const db = getDatabase();
@@ -468,37 +372,28 @@ export default function SettingsPage() {
   useEffect(() => { const u = subscribeToESP32Status(setEsp32Status); return () => u(); }, []);
 
   const [settings, setSettings] = useState<FarmSettings>({
-    irrigationActive:  false,
-    irrigationMode:    'auto',
-    wateringDuration:  20,
-    wateringFrequency: 12,
+    irrigationActive:  false, irrigationMode:    'auto',
+    wateringDuration:  20,    wateringFrequency: 12,
     scheduledTime:     '06:30',
-    moistureMin:       35,
-    moistureMax:       70,
-    tempMin:           15,
-    tempMax:           32,
-    phMin:             5.8,
-    phMax:             7.2,
-    alertLevel:        'all',
-    pushEnabled:       true,
-    smsEnabled:        false,
-    soundEnabled:      true,
-    syncInterval:      30,
-    dataRetention:     90,
+    moistureMin: 35, moistureMax: 70,
+    tempMin: 15, tempMax: 32,
+    phMin: 5.8, phMax: 7.2,
+    alertLevel: 'all', pushEnabled: true, smsEnabled: false, soundEnabled: true,
+    syncInterval: 30, dataRetention: 90,
   });
 
-  const [aiTips,       setAiTips]       = useState<AITip[]>([]);
-  const [aiOptTime,    setAiOptTime]    = useState('');
-  const [aiWeeklyEst,  setAiWeeklyEst]  = useState(0);
-  const [aiLoading,    setAiLoading]    = useState(false);
-  const [aiError,      setAiError]      = useState('');
-  const [aiTipsSource, setAiTipsSource] = useState<'cache' | 'fresh' | null>(null);
-  const [aiTipsSavedAt,setAiTipsSavedAt]= useState<string | null>(null);
+  const [aiTips,        setAiTips]        = useState<AITip[]>([]);
+  const [aiOptTime,     setAiOptTime]     = useState('');
+  const [aiWeeklyEst,   setAiWeeklyEst]   = useState(0);
+  const [aiLoading,     setAiLoading]     = useState(false);
+  const [aiError,       setAiError]       = useState('');
+  const [aiTipsSource,  setAiTipsSource]  = useState<'cache' | 'fresh' | null>(null);
+  const [aiTipsSavedAt, setAiTipsSavedAt] = useState<string | null>(null);
 
-  const [wateringOn,  setWateringOn]  = useState(false);
-  const [waterTimer,  setWaterTimer]  = useState(0);
+  const [wateringOn,     setWateringOn]     = useState(false);
+  const [waterTimer,     setWaterTimer]     = useState(0);
   const [valveConfirmed, setValveConfirmed] = useState<boolean | null>(null);
-  const [saved,       setSaved]       = useState(false);
+  const [saved,          setSaved]          = useState(false);
 
   useEffect(() => {
     const cached = loadCachedTips();
@@ -527,19 +422,11 @@ export default function SettingsPage() {
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   useEffect(() => {
     if (wateringOn) {
-      setValve(true);
-      setWaterTimer(settings.wateringDuration * 60);
+      setValve(true); setWaterTimer(settings.wateringDuration * 60);
       timerRef.current = setInterval(() => {
-        setWaterTimer(t => {
-          if (t <= 1) { setWateringOn(false); clearInterval(timerRef.current!); return 0; }
-          return t - 1;
-        });
+        setWaterTimer(t => { if (t <= 1) { setWateringOn(false); clearInterval(timerRef.current!); return 0; } return t - 1; });
       }, 1000);
-    } else {
-      setValve(false);
-      clearInterval(timerRef.current!);
-      setWaterTimer(0);
-    }
+    } else { setValve(false); clearInterval(timerRef.current!); setWaterTimer(0); }
     return () => clearInterval(timerRef.current!);
   }, [wateringOn]);
 
@@ -550,15 +437,9 @@ export default function SettingsPage() {
       if (scheduledRunning.current) return;
       const now = new Date();
       const hhmm = `${now.getHours().toString().padStart(2,'0')}:${now.getMinutes().toString().padStart(2,'0')}`;
-      if (hhmm === settings.scheduledTime) {
-        scheduledRunning.current = true;
-        setValve(true);
-        setTimeout(() => { setValve(false); scheduledRunning.current = false; }, settings.wateringDuration * 60 * 1000);
-      }
+      if (hhmm === settings.scheduledTime) { scheduledRunning.current = true; setValve(true); setTimeout(() => { setValve(false); scheduledRunning.current = false; }, settings.wateringDuration * 60 * 1000); }
     };
-    check();
-    const interval = setInterval(check, 60000);
-    return () => clearInterval(interval);
+    check(); const interval = setInterval(check, 60000); return () => clearInterval(interval);
   }, [settings.irrigationMode, settings.irrigationActive, settings.scheduledTime, settings.wateringDuration, isReadOnly]);
 
   const autoRunning = useRef(false);
@@ -569,18 +450,14 @@ export default function SettingsPage() {
     onValue(ref(db, 'controls/lastAutoWater'), snap => {
       const lastWatered = snap.exists() ? snap.val() as number : 0;
       if (Date.now() - lastWatered >= settings.wateringFrequency * 3600000) {
-        autoRunning.current = true;
-        setValve(true);
-        dbSet(ref(db, 'controls/lastAutoWater'), Date.now());
+        autoRunning.current = true; setValve(true); dbSet(ref(db, 'controls/lastAutoWater'), Date.now());
         setTimeout(() => { setValve(false); autoRunning.current = false; }, settings.wateringDuration * 60 * 1000);
       }
     }, { onlyOnce: true });
   }, [settings.irrigationMode, settings.irrigationActive, settings.wateringFrequency, settings.wateringDuration, isReadOnly]);
 
   useEffect(() => {
-    runAutoCheck();
-    const interval = setInterval(runAutoCheck, 60000);
-    return () => clearInterval(interval);
+    runAutoCheck(); const interval = setInterval(runAutoCheck, 60000); return () => clearInterval(interval);
   }, [runAutoCheck]);
 
   const fetchAITips = useCallback(async () => {
@@ -591,16 +468,11 @@ Schema: { "tips": [{ "type": "info"|"warning"|"success", "text": "<max 20 words>
       const prompt = `Farm: Roma VF Tomatoes, Kenya highlands. Mode=${settings.irrigationMode}, duration=${settings.wateringDuration}min, every ${settings.wateringFrequency}h. Moisture: ${settings.moistureMin}–${settings.moistureMax}%. Give up to 4 irrigation tips.`;
       const raw = await callGroq(prompt, sys);
       const parsed = JSON.parse(raw.replace(/```json|```/g, '').trim());
-      const tips = parsed.tips ?? [];
-      const optimalTime = parsed.optimalWateringTime ?? '';
-      const weeklyEstimate = parsed.weeklyWaterEstimate ?? 0;
+      const tips = parsed.tips ?? []; const optimalTime = parsed.optimalWateringTime ?? ''; const weeklyEstimate = parsed.weeklyWaterEstimate ?? 0;
       const cache: AITipsCache = { tips, optimalTime, weeklyEstimate, savedAt: new Date().toISOString() };
-      saveCachedTips(cache);
-      setAiTips(tips); setAiOptTime(optimalTime); setAiWeeklyEst(weeklyEstimate);
-      setAiTipsSource('fresh');
-      setAiTipsSavedAt(new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }));
-    } catch (e) { setAiError((e as Error).message); }
-    finally { setAiLoading(false); }
+      saveCachedTips(cache); setAiTips(tips); setAiOptTime(optimalTime); setAiWeeklyEst(weeklyEstimate);
+      setAiTipsSource('fresh'); setAiTipsSavedAt(new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }));
+    } catch (e) { setAiError((e as Error).message); } finally { setAiLoading(false); }
   }, [settings]);
 
   const syncIrrigationConfig = (updated: FarmSettings) => {
@@ -609,7 +481,6 @@ Schema: { "tips": [{ "type": "info"|"warning"|"success", "text": "<max 20 words>
   };
 
   const irrigationKeys: (keyof FarmSettings)[] = ['irrigationMode','irrigationActive','wateringDuration','wateringFrequency','scheduledTime'];
-
   const set = <K extends keyof FarmSettings>(key: K, val: FarmSettings[K]) => {
     if (isReadOnly) return;
     setSettings(s => { const updated = { ...s, [key]: val }; if (irrigationKeys.includes(key)) syncIrrigationConfig(updated); return updated; });
@@ -620,7 +491,6 @@ Schema: { "tips": [{ "type": "info"|"warning"|"success", "text": "<max 20 words>
     setSaved(true); setTimeout(() => setSaved(false), 2500);
     if (typeof window !== 'undefined') localStorage.setItem('farmSettings', JSON.stringify(settings));
   };
-
   const handleReset = () => {
     if (isReadOnly) return;
     if (confirm('Reset all settings to factory defaults?')) { localStorage.removeItem('farmSettings'); localStorage.removeItem(AI_TIPS_CACHE_KEY); window.location.reload(); }
@@ -632,7 +502,6 @@ Schema: { "tips": [{ "type": "info"|"warning"|"success", "text": "<max 20 words>
     success: 'bg-emerald-500/8 border-emerald-500/20 text-emerald-300',
   };
   const tipIcon = { info: Info, warning: AlertTriangle, success: CheckCircle };
-
   const aiSubtitle = aiTipsSource === 'cache' && aiTipsSavedAt ? `Cached · ${aiTipsSavedAt}` : aiTipsSource === 'fresh' && aiTipsSavedAt ? `Refreshed · ${aiTipsSavedAt}` : 'Personalized advice';
 
   const esp32Cfg = {
@@ -642,91 +511,80 @@ Schema: { "tips": [{ "type": "info"|"warning"|"success", "text": "<max 20 words>
   }[esp32Status.status];
 
   if (!mounted) return (
-    <div className="min-h-screen" style={{ background: '#0f1824' }}>
+    <div className="min-h-screen" style={{ background: '#1a2738' }}>
       <div className="max-w-[1200px] mx-auto px-6 py-8 space-y-4">
-        {[...Array(4)].map((_,i) => <div key={i} className="h-48 rounded-2xl bg-slate-800/50 animate-pulse" />)}
+        {[...Array(4)].map((_,i) => <div key={i} className="h-48 rounded-3xl animate-pulse" style={{ background: 'rgba(40,55,74,0.5)' }} />)}
       </div>
     </div>
   );
 
   return (
-    <div className="min-h-screen" style={{ background: '#0f1824', color: '#f1f5f9', fontFamily: "'DM Sans', system-ui, sans-serif" }}>
+    <div className="min-h-screen text-slate-100" style={{ background: '#1a2738', fontFamily: "'DM Sans', system-ui, sans-serif" }}>
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600;9..40,700&family=Space+Grotesk:wght@400;500;600;700&display=swap');
         * { box-sizing: border-box; }
         ::-webkit-scrollbar { width: 4px; }
-        ::-webkit-scrollbar-track { background: transparent; }
-        ::-webkit-scrollbar-thumb { background: #1e293b; border-radius: 4px; }
+        ::-webkit-scrollbar-track { background: #1a2738; }
+        ::-webkit-scrollbar-thumb { background: #334155; border-radius: 4px; }
         input[type='range'] { -webkit-appearance: none; appearance: none; }
         input[type='range']::-webkit-slider-thumb { -webkit-appearance: none; width: 14px; height: 14px; border-radius: 50%; cursor: pointer; }
-        .mono { font-family: 'JetBrains Mono', monospace; }
-        @keyframes shimmerSlide {
-          0%   { transform: translateX(-100%); }
-          100% { transform: translateX(400%); }
-        }
-        @keyframes breathe {
-          0%,100% { opacity: 0.6; transform: scale(1); }
-          50%     { opacity: 1;   transform: scale(1.05); }
-        }
-        @keyframes flowPulse {
-          0%,100% { opacity: 0.5; }
-          50%     { opacity: 1; }
-        }
+        .mono { font-family: 'Space Grotesk', monospace; }
+        @keyframes shimmerSlide { 0% { transform: translateX(-100%); } 100% { transform: translateX(400%); } }
       `}</style>
 
-      {/* ── BACKGROUND — matching sensor data page exactly ── */}
-      <div className="fixed inset-0 pointer-events-none z-0 overflow-hidden">
-        <div className="absolute -top-60 right-0 w-[700px] h-[700px] rounded-full"
-          style={{ background: 'radial-gradient(circle, rgba(16,185,129,0.03) 0%, transparent 70%)' }} />
-        <div className="absolute top-1/3 -left-40 w-[500px] h-[500px] rounded-full"
-          style={{ background: 'radial-gradient(circle, rgba(59,130,246,0.025) 0%, transparent 70%)' }} />
-        <div className="absolute bottom-0 right-1/4 w-[400px] h-[400px] rounded-full"
-          style={{ background: 'radial-gradient(circle, rgba(167,139,250,0.025) 0%, transparent 70%)' }} />
+      {/* Ambient blobs — same as plant perf page */}
+      <div className="fixed inset-0 pointer-events-none overflow-hidden z-0">
+        <div className="absolute -top-40 -right-40 w-[600px] h-[600px] rounded-full opacity-[0.06] blur-[120px]"
+          style={{ background: '#10b981' }} />
+        <div className="absolute bottom-0 left-0 w-[400px] h-[400px] rounded-full opacity-[0.04] blur-[100px]"
+          style={{ background: '#06b6d4' }} />
+        <div className="absolute top-1/3 left-1/2 w-[300px] h-[300px] rounded-full opacity-[0.03] blur-[100px]"
+          style={{ background: '#a78bfa' }} />
       </div>
 
       <div className="relative z-10 max-w-[1200px] mx-auto px-4 sm:px-6 lg:px-8 space-y-5 pb-12">
 
-        {/* ── HEADER ─────────────────────────────────────────────────────────── */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 py-6 border-b"
-          style={{ borderColor: 'rgba(71,85,105,0.2)' }}>
+        {/* ── HEADER */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 py-6"
+          style={{ borderBottom: '1px solid rgba(71,85,105,0.25)' }}>
           <div className="flex items-center gap-3">
             <button type="button" onClick={() => document.dispatchEvent(new CustomEvent('toggleMobileMenu'))}
-              className="lg:hidden p-2.5 rounded-xl hover:bg-slate-800/60 text-slate-400 transition-colors">
+              className="lg:hidden p-2.5 rounded-xl hover:bg-slate-700/40 text-slate-400 transition-colors">
               <Menu className="w-5 h-5" />
             </button>
             <div>
-              <div className="flex items-center gap-2 text-xs text-slate-500 mb-2">
+              <div className="flex items-center gap-2 text-slate-500 text-sm mb-1">
                 <Leaf className="w-3.5 h-3.5 text-emerald-500" />
                 <span>Dashboard</span>
                 <ChevronRight className="w-3 h-3" />
-                <span className="text-emerald-400 font-semibold">Settings</span>
+                <span className="text-emerald-400 font-medium">Settings</span>
               </div>
-              <h1 className="text-2xl sm:text-3xl font-black tracking-tight text-slate-100"
-                style={{ fontFamily: "'DM Sans', sans-serif", letterSpacing: '-0.02em' }}>
+              <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-slate-100"
+                style={{ fontFamily: "'Space Grotesk', sans-serif" }}>
                 Farm Settings
               </h1>
-              <p className="text-sm text-slate-500 mt-1">Configure irrigation, alerts, system preferences</p>
+              <p className="text-sm text-slate-500 mt-1">Configure irrigation, alerts, and system preferences</p>
             </div>
           </div>
 
           <div className="flex items-center gap-2 flex-wrap">
             {isAdmin && (
               <button onClick={() => router.push('/admin')}
-                className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold transition-all hover:-translate-y-0.5"
-                style={{ background: 'rgba(168,85,247,0.1)', border: '1px solid rgba(168,85,247,0.3)', color: '#d8b4fe', boxShadow: '0 4px 16px rgba(168,85,247,0.1)' }}>
+                className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold transition-all hover:brightness-110"
+                style={{ background: 'rgba(168,85,247,0.1)', border: '1px solid rgba(168,85,247,0.25)', color: '#d8b4fe' }}>
                 <ShieldCheck className="w-4 h-4" /> Manage Users
               </button>
             )}
             <button onClick={handleReset} disabled={isReadOnly}
-              className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold transition-all disabled:opacity-40 hover:-translate-y-0.5"
-              style={{ background: 'rgba(30,41,59,0.7)', border: '1px solid rgba(71,85,105,0.35)', color: '#94a3b8' }}>
+              className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold transition-all disabled:opacity-40 hover:brightness-110"
+              style={{ background: 'rgba(40,55,74,0.7)', border: '1px solid rgba(71,85,105,0.45)', color: '#94a3b8' }}>
               <RotateCcw className="w-4 h-4" /> Reset
             </button>
             <button onClick={handleSave} disabled={isReadOnly}
-              className="flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-bold text-white transition-all disabled:opacity-40 hover:-translate-y-0.5"
+              className="flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-bold text-white transition-all disabled:opacity-40 hover:brightness-110"
               style={{
                 background: saved ? 'linear-gradient(135deg, #059669, #047857)' : 'linear-gradient(135deg, #10b981, #059669)',
-                boxShadow: saved || isReadOnly ? 'none' : '0 4px 20px rgba(16,185,129,0.3)',
+                boxShadow: saved || isReadOnly ? 'none' : '0 4px 16px rgba(16,185,129,0.25)',
               }}>
               {saved ? <><CheckCircle className="w-4 h-4" /> Saved!</> : <><Save className="w-4 h-4" /> Save Changes</>}
             </button>
@@ -735,56 +593,47 @@ Schema: { "tips": [{ "type": "info"|"warning"|"success", "text": "<max 20 words>
 
         {isReadOnly && <ReadOnlyBanner />}
 
-        {/* ── MAIN GRID ───────────────────────────────────────────────────────── */}
+        {/* ── MAIN GRID */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
 
           {/* LEFT (2-col) */}
           <div className="lg:col-span-2 space-y-5">
 
-            {/* ── IRRIGATION CONTROL ─────────────────────────────────────────── */}
+            {/* ── IRRIGATION CONTROL */}
             <SettingCard icon={Droplets} title="Irrigation Control"
-              subtitle="Valve override, automation modes & timing"
-              accent="#38bdf8"
+              subtitle="Valve override, automation modes & timing" accent="#38bdf8"
               badge={
                 <div className="flex items-center gap-2">
                   {valveConfirmed !== null && (
                     <span className="flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold mono"
-                      style={{ background: valveConfirmed ? 'rgba(56,189,248,0.1)' : 'rgba(71,85,105,0.3)', border: `1px solid ${valveConfirmed ? 'rgba(56,189,248,0.3)' : 'rgba(71,85,105,0.4)'}`, color: valveConfirmed ? '#7dd3fc' : '#64748b' }}>
+                      style={{ background: valveConfirmed ? 'rgba(56,189,248,0.1)' : 'rgba(71,85,105,0.25)', border: `1px solid ${valveConfirmed ? 'rgba(56,189,248,0.25)' : 'rgba(71,85,105,0.35)'}`, color: valveConfirmed ? '#7dd3fc' : '#64748b' }}>
                       <span className="w-1.5 h-1.5 rounded-full" style={{ background: valveConfirmed ? '#38bdf8' : '#475569', boxShadow: valveConfirmed ? '0 0 6px #38bdf8' : 'none' }} />
                       {valveConfirmed ? 'OPEN' : 'CLOSED'}
                     </span>
                   )}
                   <span className="flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold"
-                    style={{ background: wateringOn ? 'rgba(56,189,248,0.12)' : settings.irrigationActive ? 'rgba(16,185,129,0.12)' : 'rgba(71,85,105,0.3)', color: wateringOn ? '#7dd3fc' : settings.irrigationActive ? '#6ee7b7' : '#64748b' }}>
+                    style={{ background: wateringOn ? 'rgba(56,189,248,0.1)' : settings.irrigationActive ? 'rgba(16,185,129,0.1)' : 'rgba(71,85,105,0.25)', color: wateringOn ? '#7dd3fc' : settings.irrigationActive ? '#6ee7b7' : '#64748b' }}>
                     {wateringOn ? '💧 Running' : settings.irrigationActive ? '✅ Armed' : '⏸ Idle'}
                   </span>
                 </div>
               }>
 
-              <PipelineValvePanel
-                isOpen={wateringOn}
-                isRunning={wateringOn}
-                timer={waterTimer}
-                duration={settings.wateringDuration}
-                onToggle={setWateringOn}
-                isReadOnly={isReadOnly}
-              />
+              <PipelineValvePanel isOpen={wateringOn} isRunning={wateringOn} timer={waterTimer} duration={settings.wateringDuration} onToggle={setWateringOn} isReadOnly={isReadOnly} />
 
               <SettingRow label="Auto-Irrigation System" sublabel="Enable automated soil moisture control">
                 <Toggle checked={settings.irrigationActive} onChange={v => set('irrigationActive', v)} color="#38bdf8" readOnly={isReadOnly} />
               </SettingRow>
 
-              <div className="space-y-2.5">
-                <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Irrigation Mode</p>
+              <div className="space-y-2">
+                <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Irrigation Mode</p>
                 <div className="grid grid-cols-3 gap-2">
                   {(['manual', 'auto', 'scheduled'] as IrrigationMode[]).map(mode => (
                     <button key={mode} onClick={() => !isReadOnly && set('irrigationMode', mode)} disabled={isReadOnly}
-                      className="py-2.5 px-3 rounded-xl text-xs font-bold capitalize transition-all disabled:cursor-not-allowed relative overflow-hidden"
+                      className="py-2.5 px-3 rounded-xl text-xs font-bold capitalize transition-all disabled:cursor-not-allowed"
                       style={{
-                        background: settings.irrigationMode === mode ? 'rgba(2,132,199,0.2)' : 'rgba(30,41,59,0.6)',
+                        background: settings.irrigationMode === mode ? 'rgba(2,132,199,0.18)' : 'rgba(30,45,62,0.5)',
                         border: `1px solid ${settings.irrigationMode === mode ? '#0ea5e9' : 'rgba(71,85,105,0.3)'}`,
                         color: settings.irrigationMode === mode ? '#7dd3fc' : '#64748b',
-                        boxShadow: settings.irrigationMode === mode ? '0 0 16px rgba(14,165,233,0.2)' : 'none',
                         opacity: isReadOnly ? 0.5 : 1,
                       }}>
                       {mode === 'manual' ? '🖐 Manual' : mode === 'auto' ? '⚡ Auto' : '🕐 Scheduled'}
@@ -801,11 +650,11 @@ Schema: { "tips": [{ "type": "info"|"warning"|"success", "text": "<max 20 words>
 
               {settings.irrigationMode === 'scheduled' && (
                 <div className="space-y-2">
-                  <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Scheduled Time</p>
+                  <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Scheduled Time</p>
                   <input type="time" value={settings.scheduledTime}
                     onChange={e => !isReadOnly && set('scheduledTime', e.target.value)} disabled={isReadOnly}
-                    className="mono px-4 py-2.5 rounded-xl text-sm outline-none transition-all disabled:opacity-40"
-                    style={{ background: 'rgba(30,41,59,0.7)', border: '1px solid rgba(71,85,105,0.35)', color: '#e2e8f0' }} />
+                    className="mono px-4 py-2.5 rounded-xl text-sm outline-none disabled:opacity-40"
+                    style={{ background: 'rgba(30,45,62,0.7)', border: '1px solid rgba(71,85,105,0.35)', color: '#e2e8f0' }} />
                   {aiOptTime && (
                     <p className="text-xs text-emerald-400 flex items-center gap-1.5">
                       <Brain className="w-3 h-3" /> AI recommends: <strong className="mono">{aiOptTime}</strong>
@@ -815,9 +664,8 @@ Schema: { "tips": [{ "type": "info"|"warning"|"success", "text": "<max 20 words>
               )}
             </SettingCard>
 
-            {/* ── SENSOR THRESHOLDS ──────────────────────────────────────────── */}
-            <SettingCard icon={Sliders} title="Sensor Thresholds"
-              subtitle="Alert and automation trigger boundaries" accent="#a78bfa">
+            {/* ── SENSOR THRESHOLDS */}
+            <SettingCard icon={Sliders} title="Sensor Thresholds" subtitle="Alert and automation trigger boundaries" accent="#a78bfa">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-5">
                 <SliderRow label="Min Moisture" value={settings.moistureMin} min={10} max={50} unit="%" onChange={v => set('moistureMin', v)} color="#a78bfa" readOnly={isReadOnly} />
                 <SliderRow label="Max Moisture" value={settings.moistureMax} min={50} max={95} unit="%" onChange={v => set('moistureMax', v)} color="#a78bfa" readOnly={isReadOnly} />
@@ -828,27 +676,24 @@ Schema: { "tips": [{ "type": "info"|"warning"|"success", "text": "<max 20 words>
               </div>
             </SettingCard>
 
-            {/* ── NOTIFICATIONS ──────────────────────────────────────────────── */}
-            <SettingCard icon={Bell} title="Alerts & Notifications"
-              subtitle="Control how and when you receive farm alerts" accent="#f59e0b">
-              <div className="space-y-2.5">
-                <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Alert Level</p>
+            {/* ── NOTIFICATIONS */}
+            <SettingCard icon={Bell} title="Alerts & Notifications" subtitle="Control how and when you receive farm alerts" accent="#f59e0b">
+              <div className="space-y-2">
+                <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Alert Level</p>
                 <div className="flex gap-2 flex-wrap">
                   {(['all', 'critical', 'none'] as AlertLevel[]).map(level => (
                     <button key={level} onClick={() => setSettings(s => ({ ...s, alertLevel: level }))}
                       className="px-4 py-2 rounded-xl text-xs font-bold transition-all"
                       style={{
-                        background: settings.alertLevel === level ? 'rgba(217,119,6,0.2)' : 'rgba(30,41,59,0.6)',
+                        background: settings.alertLevel === level ? 'rgba(217,119,6,0.15)' : 'rgba(30,45,62,0.5)',
                         border: `1px solid ${settings.alertLevel === level ? '#f59e0b' : 'rgba(71,85,105,0.3)'}`,
                         color: settings.alertLevel === level ? '#fbbf24' : '#64748b',
-                        boxShadow: settings.alertLevel === level ? '0 0 14px rgba(245,158,11,0.2)' : 'none',
                       }}>
                       {level === 'all' ? '🔔 All' : level === 'critical' ? '🚨 Critical' : '🔇 Muted'}
                     </button>
                   ))}
                 </div>
               </div>
-
               <div className="space-y-3 pt-1">
                 <SettingRow label="Push Notifications" sublabel="Browser & mobile push">
                   <Toggle checked={settings.pushEnabled} onChange={v => setSettings(s => ({ ...s, pushEnabled: v }))} color="#f59e0b" />
@@ -865,13 +710,12 @@ Schema: { "tips": [{ "type": "info"|"warning"|"success", "text": "<max 20 words>
               </div>
             </SettingCard>
 
-            {/* ── SYSTEM ─────────────────────────────────────────────────────── */}
-            <SettingCard icon={Database} title="System & Connectivity"
-              subtitle="Sync intervals, storage and data retention" accent="#10b981"
+            {/* ── SYSTEM */}
+            <SettingCard icon={Database} title="System & Connectivity" subtitle="Sync intervals, storage and data retention" accent="#10b981"
               badge={
                 !isAdmin && (
                   <span className="flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold"
-                    style={{ background: 'rgba(168,85,247,0.1)', border: '1px solid rgba(168,85,247,0.25)', color: '#d8b4fe' }}>
+                    style={{ background: 'rgba(168,85,247,0.1)', border: '1px solid rgba(168,85,247,0.2)', color: '#d8b4fe' }}>
                     <Shield className="w-3 h-3" /> Admin
                   </span>
                 )
@@ -881,195 +725,124 @@ Schema: { "tips": [{ "type": "info"|"warning"|"success", "text": "<max 20 words>
             </SettingCard>
           </div>
 
-          {/* ── RIGHT COLUMN ───────────────────────────────────────────────────── */}
+          {/* ── RIGHT COLUMN */}
           <div className="space-y-5">
 
-            {/* ── SPRINKLER GARDEN SCENE ─────────────────────────────────────── */}
-            <div className="rounded-2xl border overflow-hidden"
+            {/* ── SPRINKLER GARDEN SCENE */}
+            <div className="rounded-3xl overflow-hidden"
               style={{
-                background: wateringOn
-                  ? 'linear-gradient(160deg, rgba(8,47,73,0.95) 0%, rgba(5,30,50,0.98) 100%)'
-                  : 'linear-gradient(160deg, rgba(22,32,46,0.95) 0%, rgba(15,24,36,0.98) 100%)',
-                borderColor: wateringOn ? 'rgba(56,189,248,0.3)' : 'rgba(71,85,105,0.25)',
+                background: wateringOn ? 'rgba(8,35,55,0.8)' : 'rgba(40,55,74,0.7)',
+                border: `1px solid ${wateringOn ? 'rgba(56,189,248,0.28)' : 'rgba(71,85,105,0.45)'}`,
+                backdropFilter: 'blur(12px)',
                 transition: 'all 0.8s ease',
               }}>
-
-              <div className="h-0.5 w-full" style={{ background: wateringOn ? 'linear-gradient(90deg, #38bdf8, #38bdf840, transparent)' : 'linear-gradient(90deg, #475569, #47556940, transparent)' }} />
-
-              <div className="flex items-center justify-between px-5 py-3.5 border-b"
-                style={{
-                  borderLeftWidth: 3, borderLeftStyle: 'solid',
-                  borderLeftColor: wateringOn ? '#38bdf8' : '#475569',
-                  borderBottomColor: wateringOn ? 'rgba(56,189,248,0.15)' : 'rgba(71,85,105,0.2)',
-                  background: wateringOn ? 'linear-gradient(90deg, rgba(56,189,248,0.06), transparent)' : 'transparent',
-                }}>
+              <div className="flex items-center justify-between px-5 py-4"
+                style={{ borderBottom: `1px solid ${wateringOn ? 'rgba(56,189,248,0.15)' : 'rgba(71,85,105,0.3)'}` }}>
                 <div className="flex items-center gap-3">
                   <div className="w-9 h-9 rounded-xl flex items-center justify-center"
-                    style={{ background: wateringOn ? 'rgba(56,189,248,0.15)' : 'rgba(71,85,105,0.2)', border: `1px solid ${wateringOn ? 'rgba(56,189,248,0.3)' : 'rgba(71,85,105,0.3)'}` }}>
+                    style={{ background: wateringOn ? 'rgba(56,189,248,0.15)' : 'rgba(71,85,105,0.2)', border: `1px solid ${wateringOn ? 'rgba(56,189,248,0.28)' : 'rgba(71,85,105,0.3)'}` }}>
                     <Droplets className="w-4 h-4" style={{ color: wateringOn ? '#38bdf8' : '#64748b' }} />
                   </div>
                   <div>
-                    <h3 className="font-bold text-sm text-slate-100">Field Irrigation View</h3>
+                    <h3 className="font-semibold text-sm text-slate-200">Field Irrigation View</h3>
                     <p className="text-[11px] mt-0.5" style={{ color: wateringOn ? '#7dd3fc' : '#475569' }}>
                       {wateringOn ? 'Sprinklers active · water flowing' : 'System idle · valve closed'}
                     </p>
                   </div>
                 </div>
                 <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold mono"
-                  style={{ background: wateringOn ? 'rgba(56,189,248,0.12)' : 'rgba(71,85,105,0.2)', border: `1px solid ${wateringOn ? 'rgba(56,189,248,0.3)' : 'rgba(71,85,105,0.3)'}`, color: wateringOn ? '#7dd3fc' : '#475569' }}>
+                  style={{ background: wateringOn ? 'rgba(56,189,248,0.1)' : 'rgba(71,85,105,0.2)', border: `1px solid ${wateringOn ? 'rgba(56,189,248,0.25)' : 'rgba(71,85,105,0.3)'}`, color: wateringOn ? '#7dd3fc' : '#475569' }}>
                   <span className="w-1.5 h-1.5 rounded-full" style={{ background: wateringOn ? '#38bdf8' : '#475569', boxShadow: wateringOn ? '0 0 6px #38bdf8' : 'none', animation: wateringOn ? 'pulse 1.5s infinite' : 'none' }} />
                   {wateringOn ? 'LIVE' : 'IDLE'}
                 </div>
               </div>
 
               <div className="px-4 pt-4 pb-5">
-                <svg viewBox="0 0 300 220" className="w-full" style={{ height: 220 }}>
+                <svg viewBox="0 0 300 220" className="w-full" style={{ height: 210 }}>
                   <defs>
-                    <linearGradient id="skyGrad" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="0%" stopColor={wateringOn ? '#0c2d4a' : '#0f1824'} />
-                      <stop offset="100%" stopColor={wateringOn ? '#0a3d2e' : '#1a2535'} />
+                    <linearGradient id="skyGrad2" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0%" stopColor={wateringOn ? '#0c2d4a' : '#1a2738'} />
+                      <stop offset="100%" stopColor={wateringOn ? '#0a3d2e' : '#243447'} />
                     </linearGradient>
-                    <linearGradient id="groundGrad" x1="0" y1="0" x2="0" y2="1">
+                    <linearGradient id="groundGrad2" x1="0" y1="0" x2="0" y2="1">
                       <stop offset="0%" stopColor={wateringOn ? '#14532d' : '#1c3a28'} />
                       <stop offset="100%" stopColor={wateringOn ? '#166534' : '#14532d'} />
                     </linearGradient>
-                    <linearGradient id="dropGrad" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="0%" stopColor="#7dd3fc" stopOpacity="0.9" />
-                      <stop offset="100%" stopColor="#0ea5e9" stopOpacity="0.6" />
+                    <linearGradient id="dropGrad2" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0%" stopColor="#7dd3fc" stopOpacity="0.9" /><stop offset="100%" stopColor="#0ea5e9" stopOpacity="0.6" />
                     </linearGradient>
-                    <linearGradient id="leafGrad1" x1="0" y1="0" x2="1" y2="1">
-                      <stop offset="0%" stopColor="#22c55e" />
-                      <stop offset="100%" stopColor="#16a34a" />
+                    <linearGradient id="leafGrad3" x1="0" y1="0" x2="1" y2="1">
+                      <stop offset="0%" stopColor="#22c55e" /><stop offset="100%" stopColor="#16a34a" />
                     </linearGradient>
-                    <linearGradient id="leafGrad2" x1="0" y1="0" x2="1" y2="1">
-                      <stop offset="0%" stopColor="#4ade80" />
-                      <stop offset="100%" stopColor="#15803d" />
+                    <linearGradient id="leafGrad4" x1="0" y1="0" x2="1" y2="1">
+                      <stop offset="0%" stopColor="#4ade80" /><stop offset="100%" stopColor="#15803d" />
                     </linearGradient>
                   </defs>
-
-                  <rect width="300" height="220" fill="url(#skyGrad)" />
-
-                  {!wateringOn && [
-                    [20,15],[50,25],[80,10],[120,20],[160,8],[200,18],[240,12],[270,22]
-                  ].map(([x,y],i) => (
-                    <circle key={i} cx={x} cy={y} r="1" fill="white" opacity={0.15 + i*0.04} />
-                  ))}
-
-                  <rect x="0" y="165" width="300" height="55" fill="url(#groundGrad)" />
+                  <rect width="300" height="220" fill="url(#skyGrad2)" />
+                  <rect x="0" y="165" width="300" height="55" fill="url(#groundGrad2)" />
                   <rect x="0" y="165" width="300" height="3" fill={wateringOn ? '#4ade80' : '#1e4d35'} opacity="0.6" />
 
-                  <line x1="52" y1="167" x2="52" y2="130" stroke={wateringOn ? '#16a34a' : '#14532d'} strokeWidth="3" strokeLinecap="round" />
-                  <ellipse cx="52" cy="138" rx="18" ry="10" fill="url(#leafGrad1)" transform="rotate(-20 52 138)" opacity={wateringOn ? 1 : 0.5} />
-                  <ellipse cx="52" cy="138" rx="18" ry="10" fill="url(#leafGrad2)" transform="rotate(20 52 138)" opacity={wateringOn ? 0.9 : 0.4} />
-                  <ellipse cx="52" cy="127" rx="14" ry="9" fill="url(#leafGrad1)" opacity={wateringOn ? 1 : 0.5} />
-                  {wateringOn && <>
-                    <circle cx="44" cy="133" r="5" fill="#ef4444" opacity="0.9" />
-                    <circle cx="60" cy="131" r="4" fill="#f97316" opacity="0.85" />
-                    <circle cx="52" cy="124" r="3.5" fill="#ef4444" opacity="0.8" />
-                  </>}
+                  {/* plants */}
+                  {[52, 105, 200, 258].map((x, pi) => (
+                    <g key={pi}>
+                      <line x1={x} y1="167" x2={x} y2={x === 105 ? 115 : x === 200 ? 125 : x === 258 ? 140 : 130}
+                        stroke={wateringOn ? '#16a34a' : '#14532d'} strokeWidth="3" strokeLinecap="round" />
+                      <ellipse cx={x} cy={x === 105 ? 122 : x === 200 ? 130 : x === 258 ? 144 : 138}
+                        rx={x === 200 ? 20 : 18} ry={x === 200 ? 11 : 10}
+                        fill="url(#leafGrad3)" opacity={wateringOn ? 1 : 0.5} />
+                      <ellipse cx={x} cy={x === 105 ? 122 : x === 200 ? 130 : x === 258 ? 144 : 138}
+                        rx={x === 200 ? 16 : 14} ry={x === 200 ? 9 : 8}
+                        fill="url(#leafGrad4)" transform={`rotate(-15 ${x} ${x === 200 ? 130 : 138})`} opacity={wateringOn ? 0.9 : 0.4} />
+                    </g>
+                  ))}
 
-                  <line x1="105" y1="167" x2="105" y2="115" stroke={wateringOn ? '#16a34a' : '#14532d'} strokeWidth="3" strokeLinecap="round" />
-                  <ellipse cx="105" cy="122" rx="16" ry="10" fill="url(#leafGrad1)" opacity={wateringOn ? 1 : 0.45} />
-                  <ellipse cx="98" cy="133" rx="14" ry="8" fill="url(#leafGrad2)" transform="rotate(-15 98 133)" opacity={wateringOn ? 0.9 : 0.4} />
-                  <ellipse cx="113" cy="131" rx="14" ry="8" fill="url(#leafGrad1)" transform="rotate(15 113 131)" opacity={wateringOn ? 0.9 : 0.4} />
-                  {wateringOn && <>
-                    <circle cx="105" cy="115" r="4" fill="#fbbf24" opacity="0.9" />
-                    <circle cx="99" cy="127" r="3" fill="#fbbf24" opacity="0.8" />
-                  </>}
-
-                  <line x1="200" y1="167" x2="200" y2="125" stroke={wateringOn ? '#15803d' : '#14532d'} strokeWidth="3" strokeLinecap="round" />
-                  <ellipse cx="200" cy="130" rx="20" ry="11" fill="url(#leafGrad2)" opacity={wateringOn ? 1 : 0.45} />
-                  <ellipse cx="190" cy="140" rx="15" ry="8" fill="url(#leafGrad1)" transform="rotate(-20 190 140)" opacity={wateringOn ? 0.85 : 0.35} />
-                  <ellipse cx="210" cy="140" rx="15" ry="8" fill="url(#leafGrad2)" transform="rotate(20 210 140)" opacity={wateringOn ? 0.85 : 0.35} />
-                  <ellipse cx="200" cy="122" rx="12" ry="8" fill="url(#leafGrad1)" opacity={wateringOn ? 1 : 0.4} />
-                  {wateringOn && <>
-                    <circle cx="193" cy="135" r="4.5" fill="#ef4444" opacity="0.9" />
-                    <circle cx="207" cy="134" r="3.5" fill="#ef4444" opacity="0.85" />
-                  </>}
-
-                  <line x1="258" y1="167" x2="258" y2="140" stroke={wateringOn ? '#16a34a' : '#14532d'} strokeWidth="3" strokeLinecap="round" />
-                  <ellipse cx="258" cy="144" rx="17" ry="10" fill="url(#leafGrad1)" opacity={wateringOn ? 1 : 0.5} />
-                  <ellipse cx="248" cy="150" rx="12" ry="7" fill="url(#leafGrad2)" transform="rotate(-10 248 150)" opacity={wateringOn ? 0.9 : 0.4} />
-                  <ellipse cx="268" cy="150" rx="12" ry="7" fill="url(#leafGrad1)" transform="rotate(10 268 150)" opacity={wateringOn ? 0.9 : 0.4} />
-
-                  <rect x="147" y="148" width="6" height="20" rx="2" fill={wateringOn ? '#0369a1' : '#334155'} />
-                  <rect x="140" y="165" width="20" height="5" rx="2" fill={wateringOn ? '#0284c7' : '#475569'} />
-                  <rect x="144" y="138" width="12" height="12" rx="3" fill={wateringOn ? '#0ea5e9' : '#334155'}
-                    style={{ filter: wateringOn ? 'drop-shadow(0 0 6px rgba(56,189,248,0.6))' : 'none' }} />
-                  <ellipse cx="150" cy="137" rx="5" ry="3" fill={wateringOn ? '#38bdf8' : '#475569'} />
+                  {/* sprinkler head */}
+                  <rect x="147" y="148" width="6" height="20" rx="2" fill={wateringOn ? '#0369a1' : '#2a3d52'} />
+                  <rect x="140" y="165" width="20" height="5" rx="2" fill={wateringOn ? '#0284c7' : '#3d5068'} />
+                  <rect x="144" y="138" width="12" height="12" rx="3" fill={wateringOn ? '#0ea5e9' : '#2a3d52'}
+                    style={{ filter: wateringOn ? 'drop-shadow(0 0 5px rgba(56,189,248,0.5))' : 'none' }} />
                   <circle cx="150" cy="135" r="2.5" fill={wateringOn ? '#7dd3fc' : '#64748b'}
                     style={{ animation: wateringOn ? 'pulse 1s infinite' : 'none' }} />
 
                   {wateringOn && <>
-                    <path d="M 150 135 Q 100 80 55 155" fill="none" stroke="#38bdf8" strokeWidth="1.5" strokeDasharray="4,3" opacity="0.5">
+                    <path d="M 150 135 Q 100 80 55 155" fill="none" stroke="#38bdf8" strokeWidth="1.5" strokeDasharray="4,3" opacity="0.45">
                       <animate attributeName="stroke-dashoffset" from="0" to="-56" dur="1.2s" repeatCount="indefinite" />
                     </path>
-                    <path d="M 150 135 Q 90 70 42 148" fill="none" stroke="#7dd3fc" strokeWidth="1" strokeDasharray="3,4" opacity="0.35">
-                      <animate attributeName="stroke-dashoffset" from="0" to="-56" dur="1.5s" begin="0.2s" repeatCount="indefinite" />
-                    </path>
-                    <path d="M 150 135 Q 205 80 252 155" fill="none" stroke="#38bdf8" strokeWidth="1.5" strokeDasharray="4,3" opacity="0.5">
+                    <path d="M 150 135 Q 205 80 252 155" fill="none" stroke="#38bdf8" strokeWidth="1.5" strokeDasharray="4,3" opacity="0.45">
                       <animate attributeName="stroke-dashoffset" from="0" to="-56" dur="1.2s" begin="0.1s" repeatCount="indefinite" />
                     </path>
-                    <path d="M 150 135 Q 215 68 262 148" fill="none" stroke="#7dd3fc" strokeWidth="1" strokeDasharray="3,4" opacity="0.35">
-                      <animate attributeName="stroke-dashoffset" from="0" to="-56" dur="1.5s" begin="0.3s" repeatCount="indefinite" />
-                    </path>
-
                     {[
-                      { cx: 75,  startY: 110, endY: 167, dur: '1.1s', begin: '0s'    },
-                      { cx: 58,  startY: 130, endY: 167, dur: '0.9s', begin: '0.3s'  },
-                      { cx: 90,  startY: 105, endY: 167, dur: '1.3s', begin: '0.6s'  },
-                      { cx: 68,  startY: 118, endY: 167, dur: '1.0s', begin: '0.15s' },
-                      { cx: 45,  startY: 142, endY: 167, dur: '0.7s', begin: '0.45s' },
-                      { cx: 228, startY: 110, endY: 167, dur: '1.1s', begin: '0.1s'  },
-                      { cx: 245, startY: 130, endY: 167, dur: '0.9s', begin: '0.4s'  },
-                      { cx: 213, startY: 105, endY: 167, dur: '1.3s', begin: '0.7s'  },
-                      { cx: 235, startY: 118, endY: 167, dur: '1.0s', begin: '0.25s' },
-                      { cx: 257, startY: 142, endY: 167, dur: '0.7s', begin: '0.55s' },
+                      { cx: 75, startY: 110, endY: 167, dur: '1.1s', begin: '0s' },
+                      { cx: 58, startY: 130, endY: 167, dur: '0.9s', begin: '0.3s' },
+                      { cx: 228, startY: 110, endY: 167, dur: '1.1s', begin: '0.1s' },
+                      { cx: 245, startY: 130, endY: 167, dur: '0.9s', begin: '0.4s' },
                     ].map((d, i) => (
-                      <ellipse key={i} cx={d.cx} cy={d.startY} rx="1.5" ry="3" fill="url(#dropGrad)">
+                      <ellipse key={i} cx={d.cx} cy={d.startY} rx="1.5" ry="3" fill="url(#dropGrad2)">
                         <animate attributeName="cy" values={`${d.startY};${d.endY}`} dur={d.dur} begin={d.begin} repeatCount="indefinite" />
                         <animate attributeName="opacity" values="0.9;0.2" dur={d.dur} begin={d.begin} repeatCount="indefinite" />
                       </ellipse>
-                    ))}
-
-                    <ellipse cx="150" cy="168" rx="90" ry="4" fill="#0ea5e9" opacity="0.12">
-                      <animate attributeName="rx" values="70;95;70" dur="3s" repeatCount="indefinite" />
-                      <animate attributeName="opacity" values="0.08;0.18;0.08" dur="3s" repeatCount="indefinite" />
-                    </ellipse>
-
-                    {[
-                      { cx: 138, cy: 128 }, { cx: 162, cy: 126 }, { cx: 132, cy: 120 },
-                      { cx: 168, cy: 122 }, { cx: 145, cy: 115 }, { cx: 155, cy: 118 },
-                    ].map((p, i) => (
-                      <circle key={i} cx={p.cx} cy={p.cy} r="1.2" fill="#bae6fd" opacity="0.5">
-                        <animate attributeName="opacity" values="0;0.7;0" dur={`${0.8 + i*0.2}s`} begin={`${i*0.13}s`} repeatCount="indefinite" />
-                        <animate attributeName="r" values="1;2.5;1" dur={`${0.8 + i*0.2}s`} begin={`${i*0.13}s`} repeatCount="indefinite" />
-                      </circle>
                     ))}
                   </>}
 
                   {[30,70,120,170,220,270].map((x,i) => (
                     <g key={i}>
-                      <line x1={x-4} y1="165" x2={x-6} y2={wateringOn ? 153 : 158} stroke={wateringOn ? '#4ade80' : '#1e4d35'} strokeWidth="2" strokeLinecap="round" />
-                      <line x1={x}   y1="165" x2={x}   y2={wateringOn ? 150 : 156} stroke={wateringOn ? '#22c55e' : '#166534'} strokeWidth="2" strokeLinecap="round" />
-                      <line x1={x+4} y1="165" x2={x+6} y2={wateringOn ? 153 : 158} stroke={wateringOn ? '#4ade80' : '#1e4d35'} strokeWidth="2" strokeLinecap="round" />
+                      <line x1={x} y1="165" x2={x} y2={wateringOn ? 153 : 157} stroke={wateringOn ? '#22c55e' : '#166534'} strokeWidth="2" strokeLinecap="round" />
                     </g>
                   ))}
-
-                  <text x="150" y="212" textAnchor="middle" fontSize="9" fontFamily="'JetBrains Mono', monospace"
-                    fill={wateringOn ? '#38bdf8' : '#334155'} fontWeight="700" letterSpacing="1">
+                  <text x="150" y="210" textAnchor="middle" fontSize="8.5" fontFamily="'Space Grotesk', monospace"
+                    fill={wateringOn ? '#38bdf8' : '#2d3f55'} fontWeight="700" letterSpacing="0.5">
                     {wateringOn ? '— SPRINKLER ACTIVE —' : '— SYSTEM IDLE —'}
                   </text>
                 </svg>
 
-                <div className="flex items-center justify-between mt-2 px-1">
+                <div className="flex items-center justify-between mt-1 px-1">
                   <div className="flex items-center gap-1.5 text-xs" style={{ color: wateringOn ? '#7dd3fc' : '#475569' }}>
                     <Droplets className="w-3.5 h-3.5" />
                     <span>{wateringOn ? 'Water flowing to all plots' : 'No water flow detected'}</span>
                   </div>
                   {wateringOn && waterTimer > 0 && (
                     <span className="mono text-xs font-bold px-2.5 py-1 rounded-lg"
-                      style={{ background: 'rgba(56,189,248,0.12)', color: '#38bdf8', border: '1px solid rgba(56,189,248,0.2)' }}>
+                      style={{ background: 'rgba(56,189,248,0.1)', color: '#38bdf8', border: '1px solid rgba(56,189,248,0.18)' }}>
                       {Math.floor(waterTimer/60).toString().padStart(2,'0')}:{(waterTimer%60).toString().padStart(2,'0')}
                     </span>
                   )}
@@ -1077,28 +850,17 @@ Schema: { "tips": [{ "type": "info"|"warning"|"success", "text": "<max 20 words>
               </div>
             </div>
 
-            {/* ── DISPLAY & THEME ────────────────────────────────────────────── */}
+            {/* ── DISPLAY & THEME */}
             <SettingCard icon={Sun} title="Display & Theme" subtitle="Visual appearance" accent="#fbbf24">
-              <div className="relative rounded-xl overflow-hidden p-4 transition-all duration-500"
+              <div className="relative rounded-2xl overflow-hidden p-4 transition-all duration-500"
                 style={{
-                  background: isDark
-                    ? 'linear-gradient(135deg, #0f172a, #1e293b)'
-                    : 'linear-gradient(135deg, #fef9c3, #e0f2fe)',
-                  border: `1px solid ${isDark ? 'rgba(71,85,105,0.4)' : 'rgba(251,191,36,0.4)'}`,
+                  background: isDark ? 'linear-gradient(135deg, #1a2738, #243447)' : 'linear-gradient(135deg, #fef9c3, #e0f2fe)',
+                  border: `1px solid ${isDark ? 'rgba(71,85,105,0.35)' : 'rgba(251,191,36,0.4)'}`,
                 }}>
-                <div className="absolute inset-0 pointer-events-none overflow-hidden">
-                  {isDark ? (
-                    [[10,10],[25,20],[40,8],[65,18],[80,12],[90,22]].map(([x,y],i) => (
-                      <div key={i} className="absolute rounded-full bg-white" style={{ left: `${x}%`, top: `${y}%`, width: i%2===0?2:3, height: i%2===0?2:3, opacity: 0.2 + i*0.05 }} />
-                    ))
-                  ) : (
-                    <div className="absolute top-2 right-6 w-20 h-8 bg-white/50 rounded-full blur-md" />
-                  )}
-                </div>
-                <div className="relative flex items-center justify-between gap-4">
+                <div className="flex items-center justify-between gap-4">
                   <div className="flex items-center gap-3">
                     <div className="w-9 h-9 rounded-full flex items-center justify-center"
-                      style={{ background: isDark ? 'rgba(71,85,105,0.5)' : '#fef3c7' }}>
+                      style={{ background: isDark ? 'rgba(71,85,105,0.4)' : '#fef3c7' }}>
                       {isDark ? <Moon className="w-4 h-4 text-blue-300" /> : <Sun className="w-4 h-4 text-amber-500" />}
                     </div>
                     <div>
@@ -1114,15 +876,15 @@ Schema: { "tips": [{ "type": "info"|"warning"|"success", "text": "<max 20 words>
                 <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Presets</p>
                 <div className="grid grid-cols-2 gap-2">
                   {[
-                    { label: 'Forest',  from: '#052e16', to: '#166534', accent: '#10b981' },
-                    { label: 'Ocean',   from: '#0c1a2e', to: '#0c4a6e', accent: '#38bdf8' },
-                    { label: 'Desert',  from: '#2d1b00', to: '#92400e', accent: '#f59e0b' },
-                    { label: 'Slate',   from: '#0f172a', to: '#1e293b', accent: '#94a3b8' },
+                    { label: 'Forest', from: '#052e16', to: '#166534', accent: '#10b981' },
+                    { label: 'Ocean',  from: '#0c1a2e', to: '#0c4a6e', accent: '#38bdf8' },
+                    { label: 'Desert', from: '#2d1b00', to: '#92400e', accent: '#f59e0b' },
+                    { label: 'Slate',  from: '#1a2738', to: '#243447', accent: '#94a3b8' },
                   ].map(preset => (
                     <button key={preset.label}
-                      className="relative overflow-hidden rounded-xl h-12 transition-all hover:scale-[1.03] active:scale-95 border border-transparent hover:border-white/20"
+                      className="relative overflow-hidden rounded-xl h-12 transition-all hover:scale-[1.03] active:scale-95 border border-transparent hover:border-white/15"
                       style={{ background: `linear-gradient(135deg, ${preset.from}, ${preset.to})` }}>
-                      <span className="absolute bottom-1.5 left-2.5 text-[11px] font-bold text-white/70">{preset.label}</span>
+                      <span className="absolute bottom-1.5 left-2.5 text-[11px] font-bold text-white/60">{preset.label}</span>
                       <div className="absolute top-1.5 right-1.5 w-2.5 h-2.5 rounded-full" style={{ background: preset.accent }} />
                     </button>
                   ))}
@@ -1130,11 +892,11 @@ Schema: { "tips": [{ "type": "info"|"warning"|"success", "text": "<max 20 words>
               </div>
             </SettingCard>
 
-            {/* ── AI IRRIGATION TIPS ─────────────────────────────────────────── */}
+            {/* ── AI IRRIGATION TIPS */}
             <SettingCard icon={Brain} title="AI Irrigation Tips" subtitle={aiSubtitle} accent="#a78bfa"
               badge={
                 <button onClick={fetchAITips} disabled={aiLoading} title="Refresh tips"
-                  className="p-2 rounded-xl text-slate-500 hover:bg-slate-700/60 hover:text-slate-200 transition-all disabled:opacity-40">
+                  className="p-2 rounded-xl text-slate-500 hover:bg-slate-700/40 hover:text-slate-200 transition-all disabled:opacity-40">
                   <RefreshCw className={cn('w-4 h-4', aiLoading && 'animate-spin')} />
                 </button>
               }>
@@ -1145,7 +907,7 @@ Schema: { "tips": [{ "type": "info"|"warning"|"success", "text": "<max 20 words>
                 </div>
               ) : aiError ? (
                 <div className="p-3 rounded-xl text-xs text-red-300"
-                  style={{ background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.2)' }}>
+                  style={{ background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.18)' }}>
                   ⚠️ {aiError}
                 </div>
               ) : aiTips.length > 0 ? (
@@ -1161,7 +923,7 @@ Schema: { "tips": [{ "type": "info"|"warning"|"success", "text": "<max 20 words>
                   })}
                   {aiWeeklyEst > 0 && (
                     <div className="flex items-center gap-2 p-3 rounded-xl mt-1"
-                      style={{ background: 'rgba(56,189,248,0.06)', border: '1px solid rgba(56,189,248,0.15)' }}>
+                      style={{ background: 'rgba(56,189,248,0.06)', border: '1px solid rgba(56,189,248,0.14)' }}>
                       <Gauge className="w-4 h-4 text-sky-400 flex-shrink-0" />
                       <p className="text-xs text-slate-400">Weekly estimate: <strong className="text-sky-300 mono">{aiWeeklyEst} L</strong></p>
                     </div>
@@ -1169,22 +931,18 @@ Schema: { "tips": [{ "type": "info"|"warning"|"success", "text": "<max 20 words>
                 </div>
               ) : (
                 <div className="flex flex-col items-center justify-center py-8 gap-2 text-center">
-                  <Brain className="w-8 h-8 text-slate-700" />
+                  <Brain className="w-8 h-8 text-slate-600" />
                   <p className="text-xs text-slate-500">Click <RefreshCw className="w-3 h-3 inline mx-0.5" /> to generate tips</p>
                 </div>
               )}
             </SettingCard>
 
-            {/* ── DEVICE INFO ─────────────────────────────────────────────────── */}
+            {/* ── DEVICE INFO */}
             <SettingCard icon={Radio} title="Device Info" subtitle="ESP32 sensor node" accent="#34d399"
               badge={
                 <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold mono"
-                  style={{ background: `${esp32Cfg.dot}15`, border: `1px solid ${esp32Cfg.dot}35`, color: esp32Cfg.text }}>
-                  <span className="w-1.5 h-1.5 rounded-full" style={{
-                    background: esp32Cfg.dot,
-                    boxShadow: esp32Status.status === 'online' ? `0 0 6px ${esp32Cfg.dot}` : 'none',
-                    animation: esp32Status.status === 'online' ? 'pulse 2s infinite' : 'none',
-                  }} />
+                  style={{ background: `${esp32Cfg.dot}12`, border: `1px solid ${esp32Cfg.dot}28`, color: esp32Cfg.text }}>
+                  <span className="w-1.5 h-1.5 rounded-full" style={{ background: esp32Cfg.dot, boxShadow: esp32Status.status === 'online' ? `0 0 6px ${esp32Cfg.dot}` : 'none', animation: esp32Status.status === 'online' ? 'pulse 2s infinite' : 'none' }} />
                   {esp32Cfg.label}
                 </div>
               }>
@@ -1213,10 +971,10 @@ Schema: { "tips": [{ "type": "info"|"warning"|"success", "text": "<max 20 words>
           </div>
         </div>
 
-        {/* ── FOOTER ─────────────────────────────────────────────────────────── */}
-        <div className="flex items-center justify-between text-xs py-2" style={{ borderTop: '1px solid rgba(71,85,105,0.15)', paddingTop: '1.5rem' }}>
+        {/* ── FOOTER */}
+        <div className="flex items-center justify-between text-xs py-4" style={{ borderTop: '1px solid rgba(71,85,105,0.2)' }}>
           <div className="flex items-center gap-1.5 text-slate-600">
-            <Info className="w-3.5 h-3.5" />
+            <Info className="w-3.5 h-3.5 flex-shrink-0" />
             {isReadOnly ? 'View-only — contact admin for Gardener access.' : 'Changes apply immediately. AI tips cached locally, refreshed on demand.'}
           </div>
           <span className="text-slate-700 mono">SmartFarm v1.0 · Kenya</span>
