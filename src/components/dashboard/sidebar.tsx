@@ -13,9 +13,9 @@ import { subscribeToESP32Status, type ESP32StatusResult } from "@/lib/firebase";
 
 // ─── Nav Item ────────────────────────────────────────────────────────────────
 function SidebarItem({
-  href, icon: Icon, label, collapsed,
+  href, icon: Icon, label, collapsed, onNavigate,
 }: {
-  href: string; icon: React.ElementType; label: string; collapsed?: boolean;
+  href: string; icon: React.ElementType; label: string; collapsed?: boolean; onNavigate?: () => void;
 }) {
   const pathname = usePathname();
   const active = pathname === href;
@@ -24,6 +24,7 @@ function SidebarItem({
     <li className="px-3 py-0.5">
       <Link
         href={href}
+        onClick={onNavigate}
         className={clsx(
           "relative flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200 group overflow-hidden",
           active
@@ -107,6 +108,13 @@ export default function Sidebar() {
     status: "no_connection",
     lastSync: "Connecting...",
   });
+
+  const pathname = usePathname();
+
+  // ✅ Auto-close mobile sidebar whenever the route changes
+  useEffect(() => {
+    setMobileOpen(false);
+  }, [pathname]);
 
   useEffect(() => {
     const unsubscribe = subscribeToESP32Status(setEsp32Status);
@@ -205,6 +213,8 @@ export default function Sidebar() {
                 icon={item.icon}
                 label={item.label}
                 collapsed={!isExpanded}
+                // ✅ Also close immediately on tap (handles same-page re-clicks)
+                onNavigate={isMobile ? () => setMobileOpen(false) : undefined}
               />
             ))}
           </ul>
