@@ -111,7 +111,6 @@ export default function Sidebar() {
 
   const pathname = usePathname();
 
-  // ✅ Auto-close mobile sidebar whenever the route changes
   useEffect(() => {
     setMobileOpen(false);
   }, [pathname]);
@@ -213,20 +212,31 @@ export default function Sidebar() {
                 icon={item.icon}
                 label={item.label}
                 collapsed={!isExpanded}
-                // ✅ Also close immediately on tap (handles same-page re-clicks)
                 onNavigate={isMobile ? () => setMobileOpen(false) : undefined}
               />
             ))}
+
+            {/* ── ESP32 Status — mobile only, below Billing ── */}
+            {isMobile && (
+              <li className="px-3 pt-3 pb-1">
+                <div className="mx-1 mb-2 h-px bg-gradient-to-r from-transparent via-slate-600/60 to-transparent" />
+                <div className="px-3">
+                  <ESP32StatusBadge esp32Status={esp32Status} collapsed={false} />
+                </div>
+              </li>
+            )}
           </ul>
         </nav>
 
-        {/* ── Footer ── */}
-        <div className="flex-shrink-0">
-          <div className="mx-4 h-px bg-gradient-to-r from-transparent via-slate-600/60 to-transparent mb-4" />
-          <div className="px-5 pb-6">
-            <ESP32StatusBadge esp32Status={esp32Status} collapsed={!isExpanded} />
+        {/* ── Footer (desktop only) ── */}
+        {!isMobile && (
+          <div className="flex-shrink-0">
+            <div className="mx-4 h-px bg-gradient-to-r from-transparent via-slate-600/60 to-transparent mb-4" />
+            <div className="px-5 pb-6">
+              <ESP32StatusBadge esp32Status={esp32Status} collapsed={!isExpanded} />
+            </div>
           </div>
-        </div>
+        )}
       </div>
     );
   };
@@ -255,12 +265,9 @@ export default function Sidebar() {
           borderColor: "rgba(255,255,255,0.06)",
         }}
       >
-        {/* Glowing right edge */}
         <div className="absolute inset-y-0 right-0 w-px bg-gradient-to-b from-transparent via-emerald-500/20 to-transparent pointer-events-none" />
-        {/* Ambient top blob */}
         <div className="absolute -top-20 -left-10 w-64 h-64 rounded-full pointer-events-none"
           style={{ background: "radial-gradient(circle, rgba(16,185,129,0.07) 0%, transparent 70%)" }} />
-
         <SidebarContent />
       </aside>
 
