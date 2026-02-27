@@ -296,7 +296,7 @@ function PlantPerformanceContent() {
     try {
       const systemCtx = `You are an expert AI agronomist. Respond ONLY with valid JSON — no prose, no markdown fences.
 Schema: {"overallScore":<0-100>,"status":<"thriving"|"good"|"stressed"|"critical">,"headline":<10 words max>,"summary":<2 sentences>,"actions":[{"priority":"high"|"medium"|"low","text":<12 words max>}],"forecast":<1 sentence>}`;
-      const prompt = `Crop: ${plot.cropType} ${plot.variety} — ${plot.name}, Kenya highlands.
+      const prompt = `Crop: ${plot.cropType} ${plot.variety} — ${plot.name}
 Sensors: Moisture:${s.moisture.toFixed(1)}% Temp:${s.temperature.toFixed(1)}°C Humidity:${s.humidity.toFixed(1)}% pH:${s.ph.toFixed(1)} N:${s.nitrogen} P:${s.phosphorus} K:${s.potassium} mg/kg. JSON report.`;
       const raw    = await callGroqAI(prompt, systemCtx);
       const report: AIReport = JSON.parse(raw.replace(/```json|```/g, '').trim());
