@@ -572,14 +572,7 @@ Schema: { "tips": [{ "type": "info"|"warning"|"success", "text": "<max 20 words>
             <RotateCcw className="w-4 h-4" />
             <span className="hidden sm:inline">Reset</span>
           </button>
-          <button onClick={handleSave} disabled={isReadOnly}
-            className="flex items-center gap-2 px-5 py-2 rounded-xl text-sm font-bold text-white transition-all disabled:opacity-40 hover:brightness-110"
-            style={{
-              background: saved ? 'linear-gradient(135deg, #059669, #047857)' : 'linear-gradient(135deg, #10b981, #059669)',
-              boxShadow: saved || isReadOnly ? 'none' : '0 4px 16px rgba(16,185,129,0.2)',
-            }}>
-            {saved ? <><CheckCircle className="w-4 h-4" /> Saved!</> : <><Save className="w-4 h-4" /> Save Changes</>}
-          </button>
+
         </div>
       </header>
 
@@ -588,11 +581,19 @@ Schema: { "tips": [{ "type": "info"|"warning"|"success", "text": "<max 20 words>
 
         {/* Page heading */}
         <div className="pt-6 pb-2">
-          <div className="flex items-center gap-2 mb-2">
+          <div className="flex items-center justify-between gap-2 mb-2">
             <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-semibold bg-emerald-500/15 text-emerald-400 border border-emerald-500/25">
               <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
               FARM CONFIGURATION
             </span>
+            <button onClick={handleSave} disabled={isReadOnly}
+              className="flex items-center gap-2 px-5 py-2 rounded-xl text-sm font-bold text-white transition-all disabled:opacity-40 hover:brightness-110"
+              style={{
+                background: saved ? 'linear-gradient(135deg, #059669, #047857)' : 'linear-gradient(135deg, #10b981, #059669)',
+                boxShadow: saved || isReadOnly ? 'none' : '0 4px 16px rgba(16,185,129,0.2)',
+              }}>
+              {saved ? <><CheckCircle className="w-4 h-4" /> Saved!</> : <><Save className="w-4 h-4" /> Save Changes</>}
+            </button>
           </div>
           <h1 className="section-title text-3xl md:text-4xl font-bold text-slate-100 mb-1">Farm Settings</h1>
           <p className="text-slate-400 text-sm">Configure irrigation, alerts, and system preferences</p>
