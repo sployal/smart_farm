@@ -866,7 +866,7 @@ export default function SmartFarmDashboard() {
               </div>
               <div className="flex-1">
                 <h3 className="font-semibold text-slate-100 text-sm">AI Insights</h3>
-                <p className="text-[11px] text-slate-400">Groq · LLaMA 3.3 70B</p>
+                <p className="text-[11px] text-slate-400">LLaMA 3.3 70B</p>
               </div>
               <span className="flex items-center gap-1 px-2 py-0.5 bg-emerald-500/20 rounded-full text-[10px] font-bold text-emerald-400 border border-emerald-500/25">
                 <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />LIVE

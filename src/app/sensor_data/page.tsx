@@ -11,7 +11,7 @@ import {
   CheckCircle, AlertTriangle, Zap, RefreshCw,
   ArrowUpRight, ArrowDownRight, Minus, Target, Eye, Menu,
   Activity, TrendingUp, TrendingDown, Wifi, WifiOff,
-  ChevronRight, Info, Shield, BarChart2
+  ChevronRight, Info, Shield, BarChart2, Cpu
 } from 'lucide-react';
 import { format } from 'date-fns';
 import clsx, { type ClassValue } from 'clsx';
@@ -32,7 +32,6 @@ type SensorConfig = {
   unit: string;
   icon: React.ElementType;
   color: string;
-  colorDim: string;
   optimalMin: number;
   optimalMax: number;
   criticalMin: number;
@@ -48,7 +47,6 @@ const SENSOR_BASES = [
     unit: '°C',
     icon: Thermometer,
     color: '#f97316',
-    colorDim: '#f9731608',
     optimalMin: 18, optimalMax: 28,
     criticalMin: 10, criticalMax: 38,
     description:
@@ -59,8 +57,7 @@ const SENSOR_BASES = [
     label: 'Relative Humidity',
     unit: '%',
     icon: Waves,
-    color: '#06b6d4',
-    colorDim: '#06b6d408',
+    color: '#0891b2',
     optimalMin: 55, optimalMax: 80,
     criticalMin: 30, criticalMax: 95,
     description:
@@ -72,7 +69,6 @@ const SENSOR_BASES = [
     unit: '%',
     icon: Droplets,
     color: '#3b82f6',
-    colorDim: '#3b82f608',
     optimalMin: 40, optimalMax: 70,
     criticalMin: 20, criticalMax: 85,
     description:
@@ -84,7 +80,6 @@ const SENSOR_BASES = [
     unit: 'pH',
     icon: FlaskConical,
     color: '#a78bfa',
-    colorDim: '#a78bfa08',
     optimalMin: 6.0, optimalMax: 7.0,
     criticalMin: 4.5, criticalMax: 8.5,
     description:
@@ -179,21 +174,14 @@ function analyze(cfg: SensorConfig, data: DataPoint[]): Analysis {
   return { status, trend, trendPct, avg, min, max, insights, recommendation: recs[cfg.key][status] };
 }
 
-// ── Shared card style — matching plant performance page ───────────────────────
-const card: React.CSSProperties = {
-  background: 'rgba(40,55,74,0.7)',
-  border: '1px solid rgba(71,85,105,0.45)',
-  backdropFilter: 'blur(12px)',
-};
-
 // ── Custom Tooltip ─────────────────────────────────────────────────────────────
 const ChartTooltip = ({ active, payload, label, color, unit }: any) => {
   if (!active || !payload?.length) return null;
   return (
     <div className="border rounded-xl px-4 py-3 shadow-2xl text-sm pointer-events-none"
-      style={{ background: 'rgba(26,39,56,0.97)', backdropFilter: 'blur(12px)', borderColor: 'rgba(71,85,105,0.5)' }}>
+      style={{ background: 'rgba(15,24,36,0.97)', backdropFilter: 'blur(16px)', borderColor: 'rgba(71,85,105,0.5)' }}>
       <p className="text-slate-400 text-[11px] font-mono mb-1.5 uppercase tracking-wider">{label}</p>
-      <p className="font-bold text-xl tabular-nums mono" style={{ color }}>
+      <p className="font-bold text-xl tabular-nums stat-number" style={{ color }}>
         {payload[0].value?.toFixed(2)}<span className="text-sm font-medium text-slate-400 ml-1">{unit}</span>
       </p>
     </div>
@@ -222,7 +210,7 @@ function SensorSection({ cfg, range }: { cfg: SensorConfig; range: TimeRange }) 
 
   if (!analysis || loading) {
     return (
-      <div className="py-16 flex items-center justify-center gap-3">
+      <div className="card rounded-2xl py-16 flex items-center justify-center gap-3">
         <div className="w-5 h-5 rounded-full border-2 border-t-transparent animate-spin"
           style={{ borderColor: `${cfg.color}40`, borderTopColor: cfg.color }} />
         <span className="text-slate-400 text-sm font-medium">Loading {cfg.label} data...</span>
@@ -234,227 +222,217 @@ function SensorSection({ cfg, range }: { cfg: SensorConfig; range: TimeRange }) 
 
   const statusConfig = {
     optimal: {
-      label: 'Optimal', badge: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/25',
-      glow: 'rgba(16,185,129,0.05)', icon: CheckCircle, dot: 'bg-emerald-400'
+      label: 'Optimal',
+      badge: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/25',
+      icon: CheckCircle,
+      dot: 'bg-emerald-400'
     },
     warning: {
-      label: 'Suboptimal', badge: 'bg-amber-500/10 text-amber-400 border-amber-500/25',
-      glow: 'rgba(245,158,11,0.05)', icon: AlertTriangle, dot: 'bg-amber-400'
+      label: 'Suboptimal',
+      badge: 'bg-amber-500/10 text-amber-400 border-amber-500/25',
+      icon: AlertTriangle,
+      dot: 'bg-amber-400'
     },
     critical: {
-      label: 'Critical', badge: 'bg-red-500/10 text-red-400 border-red-500/25',
-      glow: 'rgba(239,68,68,0.06)', icon: Zap, dot: 'bg-red-400'
+      label: 'Critical',
+      badge: 'bg-red-500/10 text-red-400 border-red-500/25',
+      icon: Zap,
+      dot: 'bg-red-400'
     },
   };
   const st = statusConfig[analysis.status];
   const StatusIcon = st.icon;
 
   const trendInfo = {
-    rising:  { icon: ArrowUpRight,  label: `+${Math.abs(analysis.trendPct)}%`, color: 'text-emerald-400', bg: 'bg-emerald-500/10 border-emerald-500/20' },
-    falling: { icon: ArrowDownRight, label: `${analysis.trendPct}%`,           color: 'text-red-400',     bg: 'bg-red-500/10 border-red-500/20'         },
-    stable:  { icon: Minus,          label: 'Stable',                          color: 'text-slate-400',   bg: 'bg-slate-500/10 border-slate-500/20'      },
+    rising:  { icon: ArrowUpRight,   label: `+${Math.abs(analysis.trendPct)}%`, color: 'text-emerald-400', bg: 'bg-emerald-500/10 border-emerald-500/20' },
+    falling: { icon: ArrowDownRight, label: `${analysis.trendPct}%`,            color: 'text-red-400',     bg: 'bg-red-500/10 border-red-500/20'         },
+    stable:  { icon: Minus,          label: 'Stable',                           color: 'text-slate-400',   bg: 'bg-slate-500/10 border-slate-500/20'     },
   }[analysis.trend];
   const TrendIcon = trendInfo.icon;
 
-  // Gauge bar
-  const range_span = cfg.criticalMax - cfg.criticalMin;
-  const val_pct    = Math.min(100, Math.max(0, ((cfg.currentValue - cfg.criticalMin) / range_span) * 100));
+  const range_span  = cfg.criticalMax - cfg.criticalMin;
+  const val_pct     = Math.min(100, Math.max(0, ((cfg.currentValue - cfg.criticalMin) / range_span) * 100));
   const opt_min_pct = ((cfg.optimalMin - cfg.criticalMin) / range_span) * 100;
   const opt_max_pct = ((cfg.optimalMax - cfg.criticalMin) / range_span) * 100;
 
   return (
-    <div className="py-10 relative">
-      {/* Soft ambient glow */}
-      <div className="absolute top-0 right-0 w-[500px] h-[300px] pointer-events-none"
-        style={{ background: `radial-gradient(ellipse at top right, ${cfg.color}04 0%, transparent 70%)` }} />
+    <div className="card card-glow-green rounded-2xl overflow-hidden transition-all duration-300">
+      {/* Colored top accent */}
+      <div className="h-0.5 w-full" style={{ background: `linear-gradient(90deg, ${cfg.color}, ${cfg.color}30, transparent)` }} />
 
-      {/* ── Card ── */}
-      <div className="relative rounded-3xl overflow-hidden" style={card}>
-
-        {/* Colored accent line */}
-        <div className="h-0.5 w-full"
-          style={{ background: `linear-gradient(90deg, ${cfg.color}, ${cfg.color}40, transparent)` }} />
-
-        <div className="p-6 md:p-8">
-
-          {/* ── Header ── */}
-          <div className="flex flex-col sm:flex-row sm:items-start gap-5 mb-8">
-            {/* Icon */}
-            <div className="relative flex-shrink-0">
-              <div className="w-14 h-14 rounded-2xl flex items-center justify-center"
-                style={{ background: `${cfg.color}12`, border: `1px solid ${cfg.color}22`, boxShadow: `0 0 24px ${cfg.color}0c` }}>
-                <Icon className="w-7 h-7" style={{ color: cfg.color }} />
-              </div>
-              <span className={cn("absolute -bottom-1 -right-1 w-4 h-4 rounded-full border-2 animate-pulse", st.dot)}
-                style={{ borderColor: '#1a2738' }} />
+      <div className="p-5 md:p-7">
+        {/* ── Header ── */}
+        <div className="flex flex-col sm:flex-row sm:items-start gap-5 mb-7">
+          {/* Icon */}
+          <div className="relative flex-shrink-0">
+            <div className="w-12 h-12 rounded-xl flex items-center justify-center"
+              style={{ backgroundColor: `${cfg.color}12`, border: `1px solid ${cfg.color}25` }}>
+              <Icon className="w-6 h-6" style={{ color: cfg.color }} />
             </div>
-
-            {/* Labels */}
-            <div className="flex-1 min-w-0">
-              <div className="flex flex-wrap items-center gap-2.5 mb-2">
-                <h2 className="text-2xl font-bold tracking-tight text-slate-100 mono">{cfg.label}</h2>
-                <span className={cn('inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-semibold border', st.badge)}>
-                  <StatusIcon className="w-3 h-3" />{st.label}
-                </span>
-                <span className={cn("inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-semibold border", trendInfo.bg, trendInfo.color)}>
-                  <TrendIcon className="w-3.5 h-3.5" />{trendInfo.label}
-                </span>
-              </div>
-              <p className="text-slate-400 text-sm leading-relaxed max-w-2xl">{cfg.description}</p>
-            </div>
-
-            {/* Live value */}
-            <div className="flex-shrink-0 sm:text-right">
-              <div className="mono text-5xl font-bold tabular-nums leading-none" style={{ color: cfg.color }}>
-                {cfg.currentValue}
-                <span className="text-lg font-medium text-slate-400 ml-1">{cfg.unit}</span>
-              </div>
-              <div className="flex sm:justify-end items-center gap-1.5 mt-2">
-                <span className="w-1.5 h-1.5 rounded-full animate-pulse" style={{ backgroundColor: cfg.color }} />
-                <span className="text-[11px] font-semibold text-slate-500 uppercase tracking-widest">Live Reading</span>
-              </div>
-            </div>
+            <span className={cn("absolute -bottom-1 -right-1 w-3.5 h-3.5 rounded-full border-2 animate-pulse", st.dot)}
+              style={{ borderColor: '#0f1824' }} />
           </div>
 
-          {/* ── Gauge bar ── */}
-          <div className="mb-8">
-            <div className="flex justify-between text-[11px] text-slate-500 mb-2 font-mono">
-              <span>Critical Low {cfg.criticalMin}{cfg.unit}</span>
-              <span>Optimal {cfg.optimalMin}–{cfg.optimalMax}{cfg.unit}</span>
-              <span>Critical High {cfg.criticalMax}{cfg.unit}</span>
+          {/* Labels */}
+          <div className="flex-1 min-w-0">
+            <div className="flex flex-wrap items-center gap-2 mb-2">
+              <h2 className="section-title text-xl font-bold text-slate-100">{cfg.label}</h2>
+              <span className={cn('inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-semibold border', st.badge)}>
+                <StatusIcon className="w-3 h-3" />{st.label}
+              </span>
+              <span className={cn("inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-semibold border", trendInfo.bg, trendInfo.color)}>
+                <TrendIcon className="w-3.5 h-3.5" />{trendInfo.label}
+              </span>
             </div>
-            <div className="relative h-3 rounded-full overflow-visible"
-              style={{ background: 'rgba(71,85,105,0.25)' }}>
-              {/* Optimal zone highlight */}
-              <div className="absolute top-0 bottom-0 rounded-full opacity-15"
-                style={{ left: `${opt_min_pct}%`, width: `${opt_max_pct - opt_min_pct}%`, backgroundColor: cfg.color }} />
-              {/* Optimal zone border */}
-              <div className="absolute top-0 bottom-0 border-l border-r border-dashed"
-                style={{ left: `${opt_min_pct}%`, width: `${opt_max_pct - opt_min_pct}%`, borderColor: `${cfg.color}45` }} />
-              {/* Track fill */}
-              <div className="h-full rounded-full transition-all duration-700 opacity-35"
-                style={{ width: `${val_pct}%`, background: `linear-gradient(90deg, ${cfg.color}55, ${cfg.color})` }} />
-              {/* Value indicator */}
-              <div className="absolute top-1/2 -translate-y-1/2 w-5 h-5 rounded-full border-2 border-white shadow-lg transition-all duration-700 -translate-x-1/2"
-                style={{ left: `${val_pct}%`, backgroundColor: cfg.color, boxShadow: `0 0 10px ${cfg.color}55` }} />
-            </div>
+            <p className="text-slate-400 text-sm leading-relaxed max-w-2xl">{cfg.description}</p>
           </div>
 
-          {/* ── Stats strip ── */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-8">
-            {[
-              { l: 'Average',      v: `${analysis.avg}${cfg.unit}`, sub: `${range} mean`  },
-              { l: 'Minimum',      v: `${analysis.min}${cfg.unit}`, sub: 'period low'      },
-              { l: 'Maximum',      v: `${analysis.max}${cfg.unit}`, sub: 'period high'     },
-              { l: 'Optimal Band', v: `${cfg.optimalMin}–${cfg.optimalMax}`, sub: cfg.unit },
-            ].map((s, i) => (
-              <div key={i} className="rounded-2xl p-3.5 border"
-                style={{ background: 'rgba(51,65,85,0.3)', borderColor: 'rgba(71,85,105,0.3)' }}>
-                <div className="text-[10px] font-semibold text-slate-500 uppercase tracking-widest mb-1">{s.l}</div>
-                <div className="mono text-lg font-bold text-slate-100">{s.v}</div>
-                <div className="text-[11px] text-slate-500 mt-0.5">{s.sub}</div>
+          {/* Live value */}
+          <div className="flex-shrink-0 sm:text-right">
+            <div className="stat-number text-5xl font-bold tabular-nums leading-none" style={{ color: cfg.color }}>
+              {cfg.currentValue}
+              <span className="text-base font-medium text-slate-400 ml-1.5">{cfg.unit}</span>
+            </div>
+            <div className="flex sm:justify-end items-center gap-1.5 mt-2">
+              <span className="w-1.5 h-1.5 rounded-full animate-pulse" style={{ backgroundColor: cfg.color }} />
+              <span className="text-[11px] font-semibold text-slate-500 uppercase tracking-widest">Live Reading</span>
+            </div>
+          </div>
+        </div>
+
+        {/* ── Gauge bar ── */}
+        <div className="mb-7">
+          <div className="flex justify-between text-[11px] text-slate-500 mb-2 stat-number">
+            <span>Critical Low {cfg.criticalMin}{cfg.unit}</span>
+            <span>Optimal {cfg.optimalMin}–{cfg.optimalMax}{cfg.unit}</span>
+            <span>Critical High {cfg.criticalMax}{cfg.unit}</span>
+          </div>
+          <div className="relative h-2.5 rounded-full overflow-visible"
+            style={{ background: 'rgba(30,41,59,0.8)' }}>
+            {/* Optimal zone */}
+            <div className="absolute top-0 bottom-0 rounded-full opacity-20"
+              style={{ left: `${opt_min_pct}%`, width: `${opt_max_pct - opt_min_pct}%`, backgroundColor: cfg.color }} />
+            <div className="absolute top-0 bottom-0 border-l border-r border-dashed"
+              style={{ left: `${opt_min_pct}%`, width: `${opt_max_pct - opt_min_pct}%`, borderColor: `${cfg.color}40` }} />
+            {/* Fill */}
+            <div className="h-full rounded-full transition-all duration-700 opacity-40"
+              style={{ width: `${val_pct}%`, background: `linear-gradient(90deg, ${cfg.color}55, ${cfg.color})` }} />
+            {/* Indicator dot */}
+            <div className="absolute top-1/2 -translate-y-1/2 w-4 h-4 rounded-full border-2 border-slate-900 shadow-lg transition-all duration-700 -translate-x-1/2"
+              style={{ left: `${val_pct}%`, backgroundColor: cfg.color, boxShadow: `0 0 12px ${cfg.color}60` }} />
+          </div>
+        </div>
+
+        {/* ── Stats strip ── */}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-7">
+          {[
+            { l: 'Average',      v: `${analysis.avg}${cfg.unit}`, sub: `${range} mean`  },
+            { l: 'Minimum',      v: `${analysis.min}${cfg.unit}`, sub: 'period low'      },
+            { l: 'Maximum',      v: `${analysis.max}${cfg.unit}`, sub: 'period high'     },
+            { l: 'Optimal Band', v: `${cfg.optimalMin}–${cfg.optimalMax}`, sub: cfg.unit },
+          ].map((s, i) => (
+            <div key={i} className="rounded-xl p-3.5 border"
+              style={{ background: 'rgba(15,24,36,0.6)', borderColor: 'rgba(71,85,105,0.25)' }}>
+              <div className="text-[10px] font-semibold text-slate-500 uppercase tracking-widest mb-1">{s.l}</div>
+              <div className="stat-number text-base font-bold text-slate-100">{s.v}</div>
+              <div className="text-[11px] text-slate-500 mt-0.5">{s.sub}</div>
+            </div>
+          ))}
+        </div>
+
+        {/* ── Chart ── */}
+        <div className="w-full h-[240px] sm:h-[280px] mb-4">
+          <ResponsiveContainer width="100%" height="100%">
+            <AreaChart data={data} margin={{ top: 8, right: 4, left: -18, bottom: 0 }}>
+              <defs>
+                <linearGradient id={`grad-${cfg.key}`} x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stopColor={cfg.color} stopOpacity={0.25} />
+                  <stop offset="95%" stopColor={cfg.color} stopOpacity={0} />
+                </linearGradient>
+              </defs>
+              <CartesianGrid strokeDasharray="3 3" stroke="rgba(71,85,105,0.2)" vertical={false} />
+              <ReferenceLine y={cfg.optimalMax} stroke={cfg.color} strokeDasharray="4 4" strokeOpacity={0.4}
+                label={{ value: `↑ ${cfg.optimalMax}${cfg.unit}`, fill: cfg.color, fontSize: 10, position: 'insideTopRight', opacity: 0.6 }} />
+              <ReferenceLine y={cfg.optimalMin} stroke={cfg.color} strokeDasharray="4 4" strokeOpacity={0.4}
+                label={{ value: `↓ ${cfg.optimalMin}${cfg.unit}`, fill: cfg.color, fontSize: 10, position: 'insideBottomRight', opacity: 0.6 }} />
+              <XAxis dataKey="time" stroke="#475569"
+                tick={{ fill: '#64748b', fontSize: 11 }}
+                tickLine={false} axisLine={false}
+                interval={Math.floor(data.length / 7)} />
+              <YAxis stroke="#475569"
+                tick={{ fill: '#64748b', fontSize: 11 }}
+                tickLine={false} axisLine={false}
+                tickFormatter={v => `${v}${cfg.unit}`} />
+              <Tooltip content={(props: any) => <ChartTooltip {...props} color={cfg.color} unit={cfg.unit} />} />
+              <Area type="monotone" dataKey="value" stroke={cfg.color} strokeWidth={2.5}
+                fill={`url(#grad-${cfg.key})`} dot={false} isAnimationActive={false}
+                activeDot={{ r: 5, fill: cfg.color, stroke: '#0f1824', strokeWidth: 3 }} />
+            </AreaChart>
+          </ResponsiveContainer>
+        </div>
+
+        {/* Chart legend */}
+        <div className="flex items-center gap-6 mb-7 pl-1">
+          <div className="flex items-center gap-2 text-xs text-slate-500">
+            <span className="w-6 h-0.5 rounded-full" style={{ backgroundColor: cfg.color }} />
+            {cfg.label}
+          </div>
+          <div className="flex items-center gap-2 text-xs text-slate-500">
+            <span className="w-6 inline-block" style={{ borderTop: `1.5px dashed ${cfg.color}75` }} />
+            Optimal range
+          </div>
+        </div>
+
+        {/* ── Analysis + Recommendation ── */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+          {/* Analysis */}
+          <div className="rounded-xl p-5 border"
+            style={{ background: 'rgba(15,24,36,0.6)', borderColor: 'rgba(71,85,105,0.25)' }}>
+            <div className="flex items-center gap-2.5 mb-4">
+              <div className="w-7 h-7 rounded-lg flex items-center justify-center"
+                style={{ backgroundColor: `${cfg.color}12`, border: `1px solid ${cfg.color}22` }}>
+                <Eye className="w-3.5 h-3.5" style={{ color: cfg.color }} />
               </div>
-            ))}
-          </div>
-
-          {/* ── Chart ── */}
-          <div className="w-full h-[260px] sm:h-[320px] mb-3">
-            <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={data} margin={{ top: 8, right: 4, left: -18, bottom: 0 }}>
-                <defs>
-                  <linearGradient id={`grad-${cfg.key}`} x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stopColor={cfg.color} stopOpacity={0.28} />
-                    <stop offset="100%" stopColor={cfg.color} stopOpacity={0.02} />
-                  </linearGradient>
-                </defs>
-                <CartesianGrid stroke="rgba(71,85,105,0.2)" strokeDasharray="0" vertical={false} />
-                <ReferenceLine y={cfg.optimalMax} stroke={cfg.color} strokeDasharray="4 4" strokeOpacity={0.45}
-                  label={{ value: `↑ ${cfg.optimalMax}${cfg.unit}`, fill: cfg.color, fontSize: 10, position: 'insideTopRight', opacity: 0.65 }} />
-                <ReferenceLine y={cfg.optimalMin} stroke={cfg.color} strokeDasharray="4 4" strokeOpacity={0.45}
-                  label={{ value: `↓ ${cfg.optimalMin}${cfg.unit}`, fill: cfg.color, fontSize: 10, position: 'insideBottomRight', opacity: 0.65 }} />
-                <XAxis dataKey="time" stroke="transparent"
-                  tick={{ fill: '#64748b', fontSize: 11, fontFamily: 'monospace' }}
-                  tickLine={false} axisLine={false}
-                  interval={Math.floor(data.length / 7)} />
-                <YAxis stroke="transparent"
-                  tick={{ fill: '#64748b', fontSize: 11, fontFamily: 'monospace' }}
-                  tickLine={false} axisLine={false}
-                  tickFormatter={v => `${v}${cfg.unit}`} />
-                <Tooltip content={(props: any) => <ChartTooltip {...props} color={cfg.color} unit={cfg.unit} />} />
-                <Area type="monotone" dataKey="value" stroke={cfg.color} strokeWidth={2.5}
-                  fill={`url(#grad-${cfg.key})`} dot={false} isAnimationActive={false}
-                  activeDot={{ r: 5, fill: cfg.color, stroke: '#1a2738', strokeWidth: 3 }} />
-              </AreaChart>
-            </ResponsiveContainer>
-          </div>
-
-          {/* Chart legend */}
-          <div className="flex items-center gap-6 mb-8 pl-1">
-            <div className="flex items-center gap-2 text-xs text-slate-500">
-              <span className="w-6 h-0.5 rounded-full" style={{ backgroundColor: cfg.color }} />
-              {cfg.label}
+              <span className="text-[11px] font-semibold text-slate-400 uppercase tracking-widest">Analysis</span>
             </div>
-            <div className="flex items-center gap-2 text-xs text-slate-500">
-              <span className="w-6 inline-block" style={{ borderTop: `1.5px dashed ${cfg.color}75` }} />
-              Optimal range
-            </div>
+            <ul className="space-y-3">
+              {analysis.insights.map((insight, i) => (
+                <li key={i} className="flex gap-3 text-sm text-slate-300 leading-relaxed">
+                  <span className="mt-2 w-1.5 h-1.5 rounded-full flex-shrink-0"
+                    style={{ backgroundColor: i === 2 ? cfg.color : 'rgba(71,85,105,0.5)' }} />
+                  {insight}
+                </li>
+              ))}
+            </ul>
           </div>
 
-          {/* ── Analysis + Recommendation ── */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
-            {/* Analysis */}
-            <div className="rounded-2xl p-5 border"
-              style={{ background: 'rgba(51,65,85,0.3)', borderColor: 'rgba(71,85,105,0.3)' }}>
-              <div className="flex items-center gap-2 mb-4">
-                <div className="w-7 h-7 rounded-xl flex items-center justify-center"
-                  style={{ background: `${cfg.color}12`, border: `1px solid ${cfg.color}22` }}>
-                  <Eye className="w-3.5 h-3.5" style={{ color: cfg.color }} />
+          {/* Recommendation */}
+          <div className="rounded-xl p-5 border"
+            style={{ background: 'rgba(15,24,36,0.6)', borderColor: 'rgba(71,85,105,0.25)' }}>
+            <div className="flex items-center gap-2.5 mb-4">
+              <div className="w-7 h-7 rounded-lg flex items-center justify-center"
+                style={{ backgroundColor: `${cfg.color}12`, border: `1px solid ${cfg.color}22` }}>
+                <Target className="w-3.5 h-3.5" style={{ color: cfg.color }} />
+              </div>
+              <span className="text-[11px] font-semibold text-slate-400 uppercase tracking-widest">Recommendation</span>
+            </div>
+            <p className="text-sm text-slate-200 leading-relaxed mb-5">{analysis.recommendation}</p>
+            <div className="grid grid-cols-3 gap-2.5">
+              {[
+                { l: 'Optimal',    v: `${cfg.optimalMin}–${cfg.optimalMax}${cfg.unit}`, c: cfg.color  },
+                { l: 'Crit. Low',  v: `${cfg.criticalMin}${cfg.unit}`,                  c: '#f87171'  },
+                { l: 'Crit. High', v: `${cfg.criticalMax}${cfg.unit}`,                  c: '#f87171'  },
+              ].map((item, i) => (
+                <div key={i} className="rounded-xl p-2.5 text-center border"
+                  style={{ background: 'rgba(30,41,59,0.6)', borderColor: 'rgba(71,85,105,0.25)' }}>
+                  <div className="text-[10px] text-slate-500 uppercase tracking-wider mb-1">{item.l}</div>
+                  <div className="text-sm font-bold tabular-nums stat-number" style={{ color: item.c }}>{item.v}</div>
                 </div>
-                <span className="text-[11px] font-semibold text-slate-400 uppercase tracking-widest">Analysis</span>
-              </div>
-              <ul className="space-y-3.5">
-                {analysis.insights.map((insight, i) => (
-                  <li key={i} className="flex gap-3 text-sm text-slate-300 leading-relaxed">
-                    <span className="mt-2 w-1.5 h-1.5 rounded-full flex-shrink-0"
-                      style={{ backgroundColor: i === 2 ? cfg.color : 'rgba(71,85,105,0.6)' }} />
-                    {insight}
-                  </li>
-                ))}
-              </ul>
-            </div>
-
-            {/* Recommendation */}
-            <div className="rounded-2xl p-5 border"
-              style={{ background: 'rgba(51,65,85,0.3)', borderColor: 'rgba(71,85,105,0.3)' }}>
-              <div className="flex items-center gap-2 mb-4">
-                <div className="w-7 h-7 rounded-xl flex items-center justify-center"
-                  style={{ background: `${cfg.color}12`, border: `1px solid ${cfg.color}22` }}>
-                  <Target className="w-3.5 h-3.5" style={{ color: cfg.color }} />
-                </div>
-                <span className="text-[11px] font-semibold text-slate-400 uppercase tracking-widest">Recommendation</span>
-              </div>
-              <p className="text-sm text-slate-200 leading-relaxed mb-5">{analysis.recommendation}</p>
-              <div className="grid grid-cols-3 gap-3">
-                {[
-                  { l: 'Optimal',   v: `${cfg.optimalMin}–${cfg.optimalMax}${cfg.unit}`, c: cfg.color  },
-                  { l: 'Crit. Low', v: `${cfg.criticalMin}${cfg.unit}`,                  c: '#f87171'  },
-                  { l: 'Crit. High',v: `${cfg.criticalMax}${cfg.unit}`,                  c: '#f87171'  },
-                ].map((item, i) => (
-                  <div key={i} className="rounded-xl p-2.5 text-center border"
-                    style={{ background: 'rgba(40,55,74,0.5)', borderColor: 'rgba(71,85,105,0.25)' }}>
-                    <div className="text-[10px] text-slate-500 uppercase tracking-wider mb-1">{item.l}</div>
-                    <div className="text-sm font-bold tabular-nums mono" style={{ color: item.c }}>{item.v}</div>
-                  </div>
-                ))}
-              </div>
+              ))}
             </div>
           </div>
         </div>
       </div>
-
-      {/* Divider between sensors */}
-      <div className="mt-8 h-px mx-4"
-        style={{ background: `linear-gradient(to right, transparent, ${cfg.color}18, rgba(71,85,105,0.2), transparent)` }} />
     </div>
   );
 }
@@ -462,9 +440,9 @@ function SensorSection({ cfg, range }: { cfg: SensorConfig; range: TimeRange }) 
 // ─── Page ─────────────────────────────────────────────────────────────────────
 export default function SensorDataPage() {
   const router = useRouter();
-  const [range, setRange]       = useState<TimeRange>('24h');
+  const [range, setRange] = useState<TimeRange>('24h');
   const [refreshKey, setRefreshKey] = useState(0);
-  const [now, setNow]           = useState<Date | null>(null);
+  const [now, setNow] = useState<Date | null>(null);
   const [isConnected, setIsConnected] = useState(false);
   const [lastSync, setLastSync] = useState('—');
 
@@ -511,106 +489,106 @@ export default function SensorDataPage() {
 
   return (
     <div className="min-h-screen text-slate-100"
-      style={{ background: '#1a2738', fontFamily: "'DM Sans', system-ui, sans-serif" }}>
+      style={{ background: '#0f1824', fontFamily: "'DM Sans', system-ui, sans-serif" }}>
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600;9..40,700&family=Space+Grotesk:wght@400;500;600;700&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,300&family=Space+Grotesk:wght@400;500;600;700&display=swap');
         * { box-sizing: border-box; }
         ::-webkit-scrollbar { width: 4px; height: 4px; }
-        ::-webkit-scrollbar-track { background: #1a2738; }
+        ::-webkit-scrollbar-track { background: #0f1824; }
         ::-webkit-scrollbar-thumb { background: #334155; border-radius: 2px; }
-        .mono { font-family: 'Space Grotesk', monospace; }
+        .card { background: rgba(30,41,59,0.6); border: 1px solid rgba(71,85,105,0.35); backdrop-filter: blur(12px); }
+        .card-glow-green:hover { box-shadow: 0 0 40px rgba(16,185,129,0.06); border-color: rgba(16,185,129,0.18); }
+        .section-title { font-family: 'Space Grotesk', sans-serif; }
+        .stat-number { font-family: 'Space Grotesk', monospace; }
       `}</style>
 
-      {/* Ambient blobs — same as plant performance page */}
+      {/* Ambient blobs — same as dashboard */}
       <div className="fixed inset-0 pointer-events-none overflow-hidden z-0">
-        <div className="absolute -top-40 right-0 w-[600px] h-[600px] rounded-full opacity-[0.06] blur-[120px]"
-          style={{ background: '#10b981' }} />
-        <div className="absolute top-1/3 -left-40 w-[500px] h-[500px] rounded-full opacity-[0.04] blur-[100px]"
-          style={{ background: '#06b6d4' }} />
-        <div className="absolute bottom-0 right-1/4 w-[400px] h-[400px] rounded-full opacity-[0.03] blur-[100px]"
-          style={{ background: '#a78bfa' }} />
+        <div className="absolute -top-40 -right-40 w-[600px] h-[600px] rounded-full"
+          style={{ background: 'radial-gradient(circle, rgba(16,185,129,0.04) 0%, transparent 70%)' }} />
+        <div className="absolute top-1/2 -left-40 w-[400px] h-[400px] rounded-full"
+          style={{ background: 'radial-gradient(circle, rgba(59,130,246,0.03) 0%, transparent 70%)' }} />
+        <div className="absolute -bottom-40 right-1/3 w-[500px] h-[500px] rounded-full"
+          style={{ background: 'radial-gradient(circle, rgba(168,85,247,0.02) 0%, transparent 70%)' }} />
       </div>
 
-      {/* ── Topbar ── */}
-      <header className="relative z-40 sticky top-0 h-14 border-b flex items-center justify-between px-5 md:px-8 gap-4"
-        style={{ background: 'rgba(26,39,56,0.88)', backdropFilter: 'blur(20px)', borderColor: 'rgba(71,85,105,0.3)' }}>
+      {/* ── Header — matches dashboard exactly ── */}
+      <header className="relative z-40 sticky top-0 h-16 border-b flex items-center justify-between px-4 md:px-6 gap-4"
+        style={{ background: 'rgba(15,24,36,0.85)', backdropFilter: 'blur(20px)', borderColor: 'rgba(71,85,105,0.3)' }}>
+
+        <button onClick={() => document.dispatchEvent(new CustomEvent('toggleMobileMenu'))}
+          className="lg:hidden p-2 rounded-lg hover:bg-slate-800 text-slate-400 transition-colors">
+          <Menu className="w-5 h-5" />
+        </button>
 
         <div className="flex items-center gap-3">
-          <button onClick={() => document.dispatchEvent(new CustomEvent('toggleMobileMenu'))}
-            className="lg:hidden p-2 rounded-lg hover:bg-slate-700/50 text-slate-400 transition-colors">
-            <Menu className="w-5 h-5" />
-          </button>
-
-          {/* Connection pill */}
-          <div className={cn(
-            "flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-semibold border transition-all",
-            isConnected
-              ? "bg-emerald-500/10 border-emerald-500/25 text-emerald-400"
-              : "bg-red-500/10 border-red-500/25 text-red-400"
-          )}>
+          <div className={cn("flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-semibold border",
+            isConnected ? "bg-emerald-500/10 border-emerald-500/30 text-emerald-400" : "bg-red-500/10 border-red-500/30 text-red-400")}>
             <span className="relative flex h-2 w-2">
               <span className={cn("animate-ping absolute inline-flex h-full w-full rounded-full opacity-75", isConnected ? "bg-emerald-400" : "bg-red-400")} />
               <span className={cn("relative inline-flex rounded-full h-2 w-2", isConnected ? "bg-emerald-400" : "bg-red-400")} />
             </span>
-            {isConnected ? 'Live' : 'Offline'}
+            <span>{isConnected ? 'Live' : 'Offline'}</span>
           </div>
 
-          <div className="hidden sm:flex items-center gap-2 text-sm text-slate-400">
-            <span className="text-slate-600">/</span>
-            <span className="font-medium text-slate-300">Sensor Analytics</span>
+          <div className="hidden sm:flex items-center gap-2 text-sm text-slate-400 border-l border-slate-800 pl-3">
+            <span className="font-semibold text-slate-200">Sensor Analytics</span>
             {lastSync !== '—' && (
-              <span className="hidden md:block text-[11px] text-slate-500 mono">· {lastSync}</span>
+              <span className="hidden md:block text-[11px] text-slate-500 stat-number">· synced {lastSync}</span>
             )}
           </div>
         </div>
 
-        <div className="flex items-center gap-2.5">
+        <div className="flex items-center gap-2.5 ml-auto">
           {/* Time range selector */}
           <div className="flex items-center gap-1 rounded-xl p-1 border"
-            style={{ background: 'rgba(40,55,74,0.6)', borderColor: 'rgba(71,85,105,0.35)' }}>
+            style={{ background: 'rgba(30,41,59,0.6)', borderColor: 'rgba(71,85,105,0.35)' }}>
             {ranges.map(r => (
               <button key={r} onClick={() => setRange(r)}
-                className={cn(
-                  "px-3 py-1.5 rounded-lg text-[11px] font-semibold uppercase tracking-wider transition-all",
+                className={cn("px-3 py-1.5 rounded-lg text-xs font-semibold uppercase tracking-wider transition-all",
                   range === r
-                    ? "bg-emerald-500 text-white shadow-lg shadow-emerald-500/20"
-                    : "text-slate-400 hover:text-slate-200 hover:bg-slate-700/50"
-                )}>
+                    ? "bg-emerald-500 text-white shadow-md shadow-emerald-500/20"
+                    : "text-slate-400 hover:text-slate-200 hover:bg-slate-700")}>
                 {r}
               </button>
             ))}
           </div>
           <button onClick={refresh}
-            className="p-2.5 rounded-xl border hover:bg-slate-700/50 text-slate-400 hover:text-slate-200 transition-all active:scale-95"
-            style={{ borderColor: 'rgba(71,85,105,0.35)', background: 'rgba(40,55,74,0.5)' }}>
+            className="p-2.5 rounded-xl hover:bg-slate-800 text-slate-400 transition-all active:scale-95 border"
+            style={{ borderColor: 'rgba(71,85,105,0.35)' }}>
             <RefreshCw className="w-4 h-4" />
           </button>
         </div>
       </header>
 
       {/* ── Main content ── */}
-      <div className="relative z-10 px-5 md:px-8 lg:px-12 max-w-[1280px] mx-auto" key={refreshKey}>
+      <div className="relative z-10 p-4 md:p-6 max-w-[1400px] mx-auto space-y-5" key={refreshKey}>
 
         {/* Page heading */}
-        <div className="pt-10 pb-6">
+        <div className="pt-2 pb-2">
           <div className="flex items-center gap-2 mb-3">
-            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/22">
+            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-semibold bg-emerald-500/15 text-emerald-400 border border-emerald-500/25">
               <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-              LIVE SENSORS
+              LIVE MONITORING
             </span>
-            <span className="text-xs text-slate-500">Plot A — Tomatoes · ESP32-Node1</span>
+            <span className="text-xs text-slate-500">ESP32-Node1 · Realtime DB</span>
           </div>
-          <h1 className="mono text-4xl md:text-5xl font-bold tracking-tight text-slate-100 mb-3">
+          <h1 className="section-title text-3xl md:text-4xl font-bold text-slate-100 mb-2">
             Sensor Analytics
           </h1>
-          <p className="text-slate-400 text-base max-w-xl leading-relaxed">
+          <p className="text-slate-400 text-sm max-w-xl leading-relaxed">
             Real-time readings and historical trend analysis across all monitored environmental parameters.
           </p>
         </div>
 
         {/* ── Quick status strip ── */}
-        <div className="rounded-3xl border p-4 mb-2"
-          style={{ background: 'rgba(40,55,74,0.7)', backdropFilter: 'blur(12px)', borderColor: 'rgba(71,85,105,0.45)' }}>
+        <div className="card rounded-2xl p-4">
+          <div className="flex items-center justify-between mb-3">
+            <h2 className="section-title text-sm font-semibold text-slate-400 uppercase tracking-widest">Current Readings</h2>
+            <span className="text-xs text-slate-500 flex items-center gap-1.5">
+              <Cpu className="w-3 h-3" /> {now ? format(now, 'HH:mm:ss · d MMM yyyy') : '—'}
+            </span>
+          </div>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
             {SENSORS.map(cfg => {
               const isOptimal  = cfg.currentValue >= cfg.optimalMin  && cfg.currentValue <= cfg.optimalMax;
@@ -620,15 +598,15 @@ export default function SensorDataPage() {
               const statusColor = isCritical ? '#f87171' : isOptimal ? '#34d399' : '#fbbf24';
               return (
                 <div key={cfg.key}
-                  className="flex items-center gap-3 p-3 rounded-2xl border transition-all hover:scale-[1.01]"
-                  style={{ background: 'rgba(51,65,85,0.35)', borderColor: `${cfg.color}20` }}>
+                  className="flex items-center gap-3 p-3.5 rounded-xl border transition-all hover:scale-[1.01] cursor-default"
+                  style={{ background: 'rgba(15,24,36,0.6)', borderColor: `${cfg.color}20` }}>
                   <div className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0"
-                    style={{ background: `${cfg.color}12`, border: `1px solid ${cfg.color}20` }}>
+                    style={{ backgroundColor: `${cfg.color}12`, border: `1px solid ${cfg.color}22` }}>
                     <Icon className="w-4 h-4" style={{ color: cfg.color }} />
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="text-[11px] text-slate-500 uppercase tracking-wider font-semibold truncate">{cfg.label}</div>
-                    <div className="mono text-lg font-bold leading-tight" style={{ color: cfg.color }}>
+                    <div className="stat-number text-lg font-bold leading-tight" style={{ color: cfg.color }}>
                       {cfg.currentValue}<span className="text-xs font-medium text-slate-400 ml-0.5">{cfg.unit}</span>
                     </div>
                   </div>
@@ -644,7 +622,7 @@ export default function SensorDataPage() {
           <SensorSection key={`${cfg.key}-${refreshKey}`} cfg={cfg} range={range} />
         ))}
 
-        <p className="pb-10 text-xs text-slate-600 text-center mono">
+        <p className="pb-6 text-xs text-slate-600 text-center stat-number">
           ESP32 · Firebase Realtime DB · {now ? format(now, 'PPpp') : '—'}
         </p>
       </div>

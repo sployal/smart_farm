@@ -12,7 +12,7 @@ import {
   Leaf, Droplets, Thermometer, Waves, FlaskConical,
   Sprout, Brain, TrendingUp, AlertTriangle, CheckCircle,
   Zap, Sun, Wind, RefreshCw, ChevronRight, Activity,
-  BarChart3, Info, ArrowUp, ArrowDown, Minus, Menu
+  BarChart3, Info, ArrowUp, ArrowDown, Minus, Menu, Cpu
 } from 'lucide-react';
 
 // ---------------------------------------------------------------------------
@@ -105,12 +105,12 @@ function cn(...c: (string | undefined | false | null)[]) { return c.filter(Boole
 
 function buildRadarData(s: SensorData) {
   return [
-    { subject: 'Moisture',    A: Math.min(100, (s.moisture / 70) * 100),   fullMark: 100 },
+    { subject: 'Moisture',    A: Math.min(100, (s.moisture / 70) * 100),    fullMark: 100 },
     { subject: 'Temperature', A: Math.min(100, (s.temperature / 30) * 100), fullMark: 100 },
-    { subject: 'Humidity',    A: Math.min(100, (s.humidity / 80) * 100),   fullMark: 100 },
-    { subject: 'pH',          A: Math.min(100, ((s.ph - 4) / 4) * 100),    fullMark: 100 },
-    { subject: 'Nitrogen',    A: Math.min(100, (s.nitrogen / 90) * 100),   fullMark: 100 },
-    { subject: 'Potassium',   A: Math.min(100, (s.potassium / 250) * 100), fullMark: 100 },
+    { subject: 'Humidity',    A: Math.min(100, (s.humidity / 80) * 100),    fullMark: 100 },
+    { subject: 'pH',          A: Math.min(100, ((s.ph - 4) / 4) * 100),     fullMark: 100 },
+    { subject: 'Nitrogen',    A: Math.min(100, (s.nitrogen / 90) * 100),    fullMark: 100 },
+    { subject: 'Potassium',   A: Math.min(100, (s.potassium / 250) * 100),  fullMark: 100 },
   ];
 }
 function buildTimeline() {
@@ -122,7 +122,7 @@ function buildTimeline() {
 }
 
 // ---------------------------------------------------------------------------
-// Plant SVG — original, unchanged
+// Plant SVG — unchanged
 // ---------------------------------------------------------------------------
 function PlantAnimation({ status, moisture, health }: { status: HealthStatus; moisture: number; health: number }) {
   const color  = healthMeta[status].color;
@@ -219,7 +219,7 @@ function PlantAnimation({ status, moisture, health }: { status: HealthStatus; mo
         )}
       </svg>
       <div className="absolute top-2 right-2 text-center" style={{ color }}>
-        <div className="text-3xl font-black tabular-nums leading-none">{health}</div>
+        <div className="text-3xl font-black tabular-nums leading-none stat-number">{health}</div>
         <div className="text-[10px] font-semibold uppercase tracking-widest opacity-70">score</div>
       </div>
     </div>
@@ -227,24 +227,23 @@ function PlantAnimation({ status, moisture, health }: { status: HealthStatus; mo
 }
 
 // ---------------------------------------------------------------------------
-// Metric Pill — original style, slightly lighter card bg
+// Metric Pill — dashboard card style
 // ---------------------------------------------------------------------------
 function MetricPill({ icon: Icon, label, value, unit, trend, color }: {
   icon: React.ElementType; label: string; value: number | string;
   unit: string; trend?: 'up' | 'down' | 'stable'; color: string;
 }) {
   return (
-    <div className="flex items-center justify-between rounded-xl px-4 py-3 gap-3 hover:border-slate-500 transition-all group"
-      style={{ background: 'rgba(51,65,85,0.35)', border: '1px solid rgba(71,85,105,0.4)' }}>
+    <div className="card rounded-xl px-4 py-3 flex items-center justify-between gap-3 hover:border-slate-600 transition-all group">
       <div className="flex items-center gap-3">
         <div className="w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0"
-          style={{ background: `${color}18`, border: `1px solid ${color}30` }}>
+          style={{ backgroundColor: `${color}15`, border: `1px solid ${color}25` }}>
           <Icon className="w-4 h-4" style={{ color }} />
         </div>
         <span className="text-slate-300 text-sm font-medium">{label}</span>
       </div>
       <div className="flex items-center gap-2">
-        <span className="text-slate-100 font-bold tabular-nums">
+        <span className="text-slate-100 font-bold tabular-nums stat-number">
           {typeof value === 'number' ? value.toFixed(1) : value}
           <span className="text-slate-400 text-xs ml-1 font-normal">{unit}</span>
         </span>
@@ -356,83 +355,103 @@ Sensors: Moisture:${s.moisture.toFixed(1)}% Temp:${s.temperature.toFixed(1)}°C 
 
   const timestampLabel = lastRefresh ? `Refreshed ${lastRefresh.toLocaleTimeString()}` : aiReport ? 'Loaded from cache' : '';
 
-  // Shared card style — slightly lighter than dark but NOT white
-  const card = {
-    background: 'rgba(40,55,74,0.7)',
-    border: '1px solid rgba(71,85,105,0.45)',
-    backdropFilter: 'blur(12px)',
-  } as React.CSSProperties;
-
-  const cardHeader = {
-    borderBottom: '1px solid rgba(71,85,105,0.3)',
-  } as React.CSSProperties;
-
   return (
-    <div className="min-h-screen text-slate-100" style={{ background: '#1a2738', fontFamily: "'DM Sans', system-ui, sans-serif" }}>
+    <div className="min-h-screen text-slate-100" style={{ background: '#0f1824', fontFamily: "'DM Sans', system-ui, sans-serif" }}>
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600;9..40,700&family=Space+Grotesk:wght@400;500;600;700&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,300&family=Space+Grotesk:wght@400;500;600;700&display=swap');
         * { box-sizing: border-box; }
-        ::-webkit-scrollbar { width: 4px; }
-        ::-webkit-scrollbar-track { background: #1a2738; }
+        ::-webkit-scrollbar { width: 4px; height: 4px; }
+        ::-webkit-scrollbar-track { background: #0f1824; }
         ::-webkit-scrollbar-thumb { background: #334155; border-radius: 2px; }
+        .card { background: rgba(30,41,59,0.6); border: 1px solid rgba(71,85,105,0.35); backdrop-filter: blur(12px); }
+        .card-hover:hover { box-shadow: 0 0 40px rgba(16,185,129,0.06); border-color: rgba(16,185,129,0.18); }
+        .shimmer { background: linear-gradient(90deg, rgba(255,255,255,0) 0%, rgba(255,255,255,0.03) 50%, rgba(255,255,255,0) 100%); background-size: 200% 100%; animation: shimmer 2s infinite; }
+        @keyframes shimmer { from { background-position: -200% 0; } to { background-position: 200% 0; } }
         @keyframes float { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-5px)} }
         .float { animation: float 4s ease-in-out infinite; }
-        .mono { font-family: 'Space Grotesk', monospace; }
+        .section-title { font-family: 'Space Grotesk', sans-serif; }
+        .stat-number { font-family: 'Space Grotesk', monospace; }
       `}</style>
 
-      {/* Ambient blobs only, no grid */}
+      {/* Ambient blobs — identical to dashboard */}
       <div className="fixed inset-0 pointer-events-none overflow-hidden z-0">
-        <div className="absolute -top-40 -right-40 w-[600px] h-[600px] rounded-full opacity-[0.07] blur-[120px] transition-colors duration-1000"
-          style={{ background: meta.color }} />
-        <div className="absolute bottom-0 left-0 w-[400px] h-[400px] rounded-full opacity-[0.04] blur-[100px]"
-          style={{ background: '#06b6d4' }} />
+        <div className="absolute -top-40 -right-40 w-[600px] h-[600px] rounded-full transition-colors duration-1000"
+          style={{ background: `radial-gradient(circle, ${meta.color}06 0%, transparent 70%)` }} />
+        <div className="absolute top-1/2 -left-40 w-[400px] h-[400px] rounded-full"
+          style={{ background: 'radial-gradient(circle, rgba(59,130,246,0.03) 0%, transparent 70%)' }} />
+        <div className="absolute -bottom-40 right-1/3 w-[500px] h-[500px] rounded-full"
+          style={{ background: 'radial-gradient(circle, rgba(168,85,247,0.02) 0%, transparent 70%)' }} />
       </div>
 
-      <div className="relative z-10 p-4 sm:p-6 lg:p-8 max-w-[1400px] mx-auto space-y-6">
+      {/* ── Header — matches dashboard ── */}
+      <header className="relative z-40 sticky top-0 h-16 border-b flex items-center justify-between px-4 md:px-6 gap-4"
+        style={{ background: 'rgba(15,24,36,0.85)', backdropFilter: 'blur(20px)', borderColor: 'rgba(71,85,105,0.3)' }}>
 
-        {/* ── Header ──────────────────────────────────────────────────── */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-          <div className="flex items-center gap-2">
-            <button type="button" onClick={() => document.dispatchEvent(new CustomEvent('toggleMobileMenu'))}
-              className="lg:hidden p-2 rounded-lg hover:bg-slate-700/50 text-slate-400 transition-colors flex-shrink-0">
-              <Menu className="w-5 h-5" />
-            </button>
-            <div>
-              <div className="flex items-center gap-2 text-slate-500 text-sm mb-1">
-                <Sprout className="w-4 h-4" />
-                <button onClick={() => router.push('/dashboard')} className="hover:text-slate-300 transition-colors">Farm Dashboard</button>
-                <ChevronRight className="w-3 h-3" />
-                <span style={{ color: meta.color }} className="font-medium">Plant Performance</span>
-              </div>
-              <h1 className="mono text-2xl sm:text-3xl font-bold text-slate-100 tracking-tight">
-                {activePlot?.name} · {activePlot?.cropType}
-              </h1>
-              <p className="text-slate-400 text-sm mt-1">
-                {activePlot?.variety} · {activePlot?.area} · Real-time diagnostics
-              </p>
-            </div>
-          </div>
-          <button onClick={() => activePlot && fetchAIReport(activePlot, true)} disabled={aiLoading || !activePlot}
-            className={cn('flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold transition-all border',
-              'disabled:opacity-50 disabled:cursor-not-allowed hover:border-slate-500')}
-            style={{ background: 'rgba(51,65,85,0.5)', borderColor: 'rgba(71,85,105,0.5)', color: '#cbd5e1' }}>
-            <RefreshCw className={cn('w-4 h-4', aiLoading && 'animate-spin')} style={{ color: meta.color }} />
-            {aiLoading ? 'Analyzing…' : 'Refresh AI Report'}
-          </button>
+        <button type="button" onClick={() => document.dispatchEvent(new CustomEvent('toggleMobileMenu'))}
+          className="lg:hidden p-2 rounded-lg hover:bg-slate-800 text-slate-400 transition-colors flex-shrink-0">
+          <Menu className="w-5 h-5" />
+        </button>
+
+        <div className="flex items-center gap-2 text-sm text-slate-500">
+          <Sprout className="w-4 h-4" />
+          <button onClick={() => router.push('/dashboard')} className="hover:text-slate-300 transition-colors">Farm Dashboard</button>
+          <ChevronRight className="w-3 h-3" />
+          <span style={{ color: meta.color }} className="font-semibold">Plant Performance</span>
         </div>
 
-        {/* ── Plant + AI Report ────────────────────────────────────────── */}
+        <div className="flex items-center gap-3 ml-auto">
+          {/* Live pill */}
+          <div className="flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-semibold border"
+            style={{ backgroundColor: `${meta.color}12`, borderColor: `${meta.color}30`, color: meta.color }}>
+            <span className="relative flex h-2 w-2">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full opacity-75" style={{ backgroundColor: meta.color }} />
+              <span className="relative inline-flex rounded-full h-2 w-2" style={{ backgroundColor: meta.color }} />
+            </span>
+            <span className="hidden sm:inline">{meta.label}</span>
+          </div>
+
+          <button onClick={() => activePlot && fetchAIReport(activePlot, true)} disabled={aiLoading || !activePlot}
+            className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold transition-all border disabled:opacity-50 disabled:cursor-not-allowed hover:bg-slate-800"
+            style={{ background: 'rgba(30,41,59,0.6)', borderColor: 'rgba(71,85,105,0.35)', color: '#cbd5e1' }}>
+            <RefreshCw className={cn('w-4 h-4', aiLoading && 'animate-spin')} style={{ color: meta.color }} />
+            <span className="hidden sm:inline">{aiLoading ? 'Analyzing…' : 'Refresh AI'}</span>
+          </button>
+        </div>
+      </header>
+
+      {/* ── Main content ── */}
+      <div className="relative z-10 p-4 md:p-6 max-w-[1400px] mx-auto space-y-5">
+
+        {/* Page heading */}
+        <div className="pt-2 pb-1">
+          <div className="flex items-center gap-2 mb-2">
+            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-semibold bg-emerald-500/15 text-emerald-400 border border-emerald-500/25">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+              REAL-TIME DIAGNOSTICS
+            </span>
+            <span className="text-xs text-slate-500">LLaMA 3.3 70B</span>
+          </div>
+          <h1 className="section-title text-3xl md:text-4xl font-bold text-slate-100 mb-1">
+            {activePlot?.name} · <span style={{ color: meta.color }}>{activePlot?.cropType}</span>
+          </h1>
+          <p className="text-slate-400 text-sm">{activePlot?.variety} · {activePlot?.area} · AI-powered plant health analysis</p>
+        </div>
+
+        {/* ── Plant + AI Report ── */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
 
           {/* Plant card */}
-          <div className="rounded-3xl overflow-hidden" style={card}>
-            <div className="p-4 flex items-center justify-between" style={cardHeader}>
+          <div className="card card-hover rounded-2xl overflow-hidden transition-all duration-300">
+            {/* Colored accent line */}
+            <div className="h-0.5 w-full" style={{ background: `linear-gradient(90deg, ${meta.color}, ${meta.color}30, transparent)` }} />
+
+            <div className="p-4 flex items-center justify-between border-b" style={{ borderColor: 'rgba(71,85,105,0.25)' }}>
               <div className="flex items-center gap-2">
                 <Leaf className="w-4 h-4" style={{ color: meta.color }} />
-                <span className="font-semibold text-sm text-slate-200">Live Plant Monitor</span>
+                <span className="section-title font-semibold text-sm text-slate-200">Live Plant Monitor</span>
               </div>
-              <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-semibold"
-                style={{ background: `${meta.color}18`, border: `1px solid ${meta.color}35`, color: meta.color }}>
+              <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-semibold border"
+                style={{ backgroundColor: `${meta.color}12`, borderColor: `${meta.color}30`, color: meta.color }}>
                 <span className="w-1.5 h-1.5 rounded-full animate-pulse inline-block" style={{ background: meta.color }} />
                 {meta.label}
               </div>
@@ -442,18 +461,21 @@ Sensors: Moisture:${s.moisture.toFixed(1)}% Temp:${s.temperature.toFixed(1)}°C 
               <PlantAnimation status={status} moisture={sensorData.moisture} health={healthScore} />
             </div>
 
-            <div className="px-5 pb-5 pt-3 space-y-2.5">
+            <div className="px-5 pb-5 pt-3 space-y-3">
               {[
-                { label: 'Soil Moisture', value: sensorData.moisture, max: 100, unit: '%', gradient: 'linear-gradient(90deg,#0369a1,#38bdf8)', track: 'rgba(56,189,248,0.12)' },
-                { label: 'Temperature',   value: sensorData.temperature, max: 40, unit: '°C', gradient: 'linear-gradient(90deg,#f59e0b,#ef4444)', track: 'rgba(249,115,22,0.12)' },
+                { label: 'Soil Moisture', value: sensorData.moisture, max: 100, unit: '%', gradient: 'linear-gradient(90deg,#0369a1,#38bdf8)', track: 'rgba(30,41,59,0.8)' },
+                { label: 'Temperature',   value: sensorData.temperature, max: 40, unit: '°C', gradient: 'linear-gradient(90deg,#f59e0b,#ef4444)', track: 'rgba(30,41,59,0.8)' },
               ].map(m => (
                 <div key={m.label}>
                   <div className="flex justify-between text-xs mb-1.5">
                     <span className="text-slate-400">{m.label}</span>
-                    <span className="font-semibold text-slate-200">{m.value.toFixed(1)}{m.unit}</span>
+                    <span className="font-semibold stat-number text-slate-200">{m.value.toFixed(1)}{m.unit}</span>
                   </div>
                   <div className="h-2 rounded-full overflow-hidden" style={{ background: m.track }}>
-                    <div className="h-full rounded-full transition-all duration-1000" style={{ width: `${(m.value / m.max) * 100}%`, background: m.gradient }} />
+                    <div className="h-full rounded-full transition-all duration-1000 relative overflow-hidden"
+                      style={{ width: `${(m.value / m.max) * 100}%`, background: m.gradient }}>
+                      <div className="absolute inset-0 shimmer" />
+                    </div>
                   </div>
                 </div>
               ))}
@@ -461,24 +483,26 @@ Sensors: Moisture:${s.moisture.toFixed(1)}% Temp:${s.temperature.toFixed(1)}°C 
           </div>
 
           {/* AI Report card */}
-          <div className="lg:col-span-2 rounded-3xl overflow-hidden flex flex-col" style={card}>
-            <div className="p-4 flex items-center justify-between" style={cardHeader}>
+          <div className="lg:col-span-2 card card-hover rounded-2xl overflow-hidden flex flex-col transition-all duration-300">
+            <div className="h-0.5 w-full" style={{ background: 'linear-gradient(90deg, #7c3aed, #7c3aed30, transparent)' }} />
+
+            <div className="p-4 flex items-center justify-between border-b" style={{ borderColor: 'rgba(71,85,105,0.25)' }}>
               <div className="flex items-center gap-2">
                 <Brain className="w-4 h-4 text-violet-400" />
-                <span className="font-semibold text-sm text-slate-200">AI Crop Diagnosis</span>
+                <span className="section-title font-semibold text-sm text-slate-200">AI Crop Diagnosis</span>
               </div>
-              {timestampLabel && <span className="text-[10px] text-slate-500">{timestampLabel}</span>}
+              {timestampLabel && <span className="text-[10px] text-slate-500 stat-number">{timestampLabel}</span>}
             </div>
 
             <div className="flex-1 p-5">
               {aiLoading ? (
                 <div className="flex flex-col items-center justify-center h-full gap-4 py-12">
                   <div className="w-12 h-12 rounded-full border-2 border-t-transparent animate-spin"
-                    style={{ borderColor: `${meta.color}30`, borderTopColor: meta.color }} />
+                    style={{ borderColor: `${meta.color}25`, borderTopColor: meta.color }} />
                   <p className="text-slate-400 text-sm animate-pulse">Analyzing plant health…</p>
                 </div>
               ) : aiError ? (
-                <div className="flex items-center gap-3 p-4 bg-red-500/10 border border-red-500/20 rounded-2xl">
+                <div className="flex items-center gap-3 p-4 bg-red-500/10 border border-red-500/20 rounded-xl">
                   <AlertTriangle className="w-5 h-5 text-red-400 flex-shrink-0" />
                   <p className="text-sm text-red-300">{aiError}</p>
                 </div>
@@ -487,7 +511,7 @@ Sensors: Moisture:${s.moisture.toFixed(1)}% Temp:${s.temperature.toFixed(1)}°C 
                   <div className="flex items-start gap-4">
                     <div className="relative flex-shrink-0">
                       <svg viewBox="0 0 80 80" className="w-20 h-20">
-                        <circle cx="40" cy="40" r="34" fill="none" stroke="#1e293b" strokeWidth="7" />
+                        <circle cx="40" cy="40" r="34" fill="none" stroke="rgba(30,41,59,0.8)" strokeWidth="7" />
                         <circle cx="40" cy="40" r="34" fill="none" stroke={meta.color} strokeWidth="7"
                           strokeLinecap="round"
                           strokeDasharray={`${(aiReport.overallScore / 100) * 213.6} 213.6`}
@@ -499,18 +523,18 @@ Sensors: Moisture:${s.moisture.toFixed(1)}% Temp:${s.temperature.toFixed(1)}°C 
                       </svg>
                     </div>
                     <div className="flex-1">
-                      <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold mb-2"
-                        style={{ background: `${meta.color}18`, color: meta.color, border: `1px solid ${meta.color}30` }}>
+                      <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold mb-2 border"
+                        style={{ backgroundColor: `${meta.color}12`, color: meta.color, borderColor: `${meta.color}30` }}>
                         <Activity className="w-3 h-3" />
                         {aiReport.status.charAt(0).toUpperCase() + aiReport.status.slice(1)}
                       </div>
-                      <h2 className="text-lg font-black text-slate-100 leading-tight mb-1">{aiReport.headline}</h2>
+                      <h2 className="section-title text-lg font-black text-slate-100 leading-tight mb-1">{aiReport.headline}</h2>
                       <p className="text-slate-400 text-sm leading-relaxed">{aiReport.summary}</p>
                     </div>
                   </div>
 
                   <div className="space-y-2">
-                    <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">Recommended Actions</p>
+                    <p className="text-xs font-semibold text-slate-500 uppercase tracking-widest mb-2">Recommended Actions</p>
                     {aiReport.actions.map((action, i) => (
                       <div key={i} className={cn('flex items-center gap-3 px-4 py-3 rounded-xl text-sm', priorityStyle[action.priority])}>
                         <span className="w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold bg-white/10 flex-shrink-0">{i + 1}</span>
@@ -532,7 +556,7 @@ Sensors: Moisture:${s.moisture.toFixed(1)}% Temp:${s.temperature.toFixed(1)}°C 
               ) : (
                 <div className="flex flex-col items-center justify-center h-full gap-4 py-12">
                   <div className="w-12 h-12 rounded-full border-2 border-t-transparent animate-spin"
-                    style={{ borderColor: `${meta.color}30`, borderTopColor: meta.color }} />
+                    style={{ borderColor: `${meta.color}25`, borderTopColor: meta.color }} />
                   <p className="text-slate-400 text-sm animate-pulse">Loading plot data…</p>
                 </div>
               )}
@@ -540,43 +564,46 @@ Sensors: Moisture:${s.moisture.toFixed(1)}% Temp:${s.temperature.toFixed(1)}°C 
           </div>
         </div>
 
-        {/* ── Sensor metrics ───────────────────────────────────────────── */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-          <MetricPill icon={Droplets}     label="Soil Moisture"  value={sensorData.moisture}    unit="%" trend="stable" color="#0891b2" />
-          <MetricPill icon={Thermometer}  label="Temperature"    value={sensorData.temperature} unit="°C" trend="down"  color="#f97316" />
-          <MetricPill icon={Waves}        label="Humidity"        value={sensorData.humidity}    unit="%" trend="stable" color="#6366f1" />
-          <MetricPill icon={FlaskConical} label="Soil pH"         value={sensorData.ph}          unit="pH" trend="stable" color="#a78bfa" />
-          <MetricPill icon={Zap}          label="Nitrogen (N)"    value={sensorData.nitrogen}    unit="mg/kg" trend="down" color="#ef4444" />
-          <MetricPill icon={Leaf}         label="Phosphorus (P)"  value={sensorData.phosphorus}  unit="mg/kg" trend="up"   color="#10b981" />
-          <MetricPill icon={Sun}          label="Potassium (K)"   value={sensorData.potassium}   unit="mg/kg" trend="up"   color="#f59e0b" />
-          <MetricPill icon={Wind}         label="Health Score"    value={healthScore}            unit="/100"  color={meta.color} />
+        {/* ── Sensor metrics ── */}
+        <div>
+          <h2 className="section-title text-sm font-semibold text-slate-400 uppercase tracking-widest mb-3">Live Sensor Readings</h2>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+            <MetricPill icon={Droplets}     label="Soil Moisture"  value={sensorData.moisture}    unit="%" trend="stable" color="#0891b2" />
+            <MetricPill icon={Thermometer}  label="Temperature"    value={sensorData.temperature} unit="°C" trend="down"  color="#f97316" />
+            <MetricPill icon={Waves}        label="Humidity"        value={sensorData.humidity}    unit="%" trend="stable" color="#6366f1" />
+            <MetricPill icon={FlaskConical} label="Soil pH"         value={sensorData.ph}          unit="pH" trend="stable" color="#a78bfa" />
+            <MetricPill icon={Zap}          label="Nitrogen (N)"    value={sensorData.nitrogen}    unit="mg/kg" trend="down" color="#ef4444" />
+            <MetricPill icon={Leaf}         label="Phosphorus (P)"  value={sensorData.phosphorus}  unit="mg/kg" trend="up"   color="#10b981" />
+            <MetricPill icon={Sun}          label="Potassium (K)"   value={sensorData.potassium}   unit="mg/kg" trend="up"   color="#f59e0b" />
+            <MetricPill icon={Wind}         label="Health Score"    value={healthScore}            unit="/100"  color={meta.color} />
+          </div>
         </div>
 
-        {/* ── Charts ───────────────────────────────────────────────────── */}
+        {/* ── Charts ── */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
 
-          <div className="rounded-3xl p-5" style={card}>
+          <div className="card card-hover rounded-2xl p-5 transition-all duration-300">
             <div className="flex items-center gap-2 mb-4">
               <BarChart3 className="w-4 h-4" style={{ color: meta.color }} />
-              <h3 className="font-semibold text-sm text-slate-200">Nutrient & Condition Profile</h3>
+              <h3 className="section-title font-semibold text-sm text-slate-200">Nutrient & Condition Profile</h3>
             </div>
             <div className="h-64">
               <ResponsiveContainer width="100%" height="100%">
                 <RadarChart data={radarData} cx="50%" cy="50%" outerRadius="70%">
-                  <PolarGrid stroke="rgba(71,85,105,0.35)" />
+                  <PolarGrid stroke="rgba(71,85,105,0.3)" />
                   <PolarAngleAxis dataKey="subject" tick={{ fill: '#94a3b8', fontSize: 12, fontWeight: 500 }} />
                   <PolarRadiusAxis domain={[0, 100]} tick={false} axisLine={false} />
-                  <Radar name="Current" dataKey="A" stroke={meta.color} fill={meta.color} fillOpacity={0.14} strokeWidth={2} />
+                  <Radar name="Current" dataKey="A" stroke={meta.color} fill={meta.color} fillOpacity={0.12} strokeWidth={2} />
                 </RadarChart>
               </ResponsiveContainer>
             </div>
           </div>
 
-          <div className="rounded-3xl p-5" style={card}>
+          <div className="card card-hover rounded-2xl p-5 transition-all duration-300">
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center gap-2">
                 <TrendingUp className="w-4 h-4 text-emerald-400" />
-                <h3 className="font-semibold text-sm text-slate-200">14-Day Growth Trend</h3>
+                <h3 className="section-title font-semibold text-sm text-slate-200">14-Day Growth Trend</h3>
               </div>
               <div className="flex items-center gap-3 text-xs text-slate-500">
                 <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-emerald-400 inline-block" /> Height</span>
@@ -594,45 +621,47 @@ Sensors: Moisture:${s.moisture.toFixed(1)}% Temp:${s.temperature.toFixed(1)}°C 
                       <stop offset="0%" stopColor="#a78bfa" stopOpacity={0.2} /><stop offset="95%" stopColor="#a78bfa" stopOpacity={0} />
                     </linearGradient>
                   </defs>
-                  <CartesianGrid strokeDasharray="3 3" stroke="rgba(71,85,105,0.2)" vertical={false} />
+                  <CartesianGrid strokeDasharray="3 3" stroke="rgba(71,85,105,0.25)" vertical={false} />
                   <XAxis dataKey="day" stroke="#475569" tick={{ fill: '#64748b', fontSize: 11 }} tickLine={false} axisLine={false} />
                   <YAxis stroke="#475569" tick={{ fill: '#64748b', fontSize: 11 }} tickLine={false} axisLine={false} />
-                  <Tooltip contentStyle={{ background: '#243447', border: '1px solid rgba(71,85,105,0.5)', borderRadius: 10, color: '#f1f5f9', fontSize: 12 }} cursor={{ stroke: '#334155' }} />
-                  <Area type="monotone" dataKey="height" name="Height (cm)" stroke="#10b981" fill="url(#gradH)" strokeWidth={2} dot={false} activeDot={{ r: 4, fill: '#10b981' }} />
-                  <Area type="monotone" dataKey="health" name="Health Score" stroke="#a78bfa" fill="url(#gradHlth)" strokeWidth={2} dot={false} activeDot={{ r: 4, fill: '#a78bfa' }} />
+                  <Tooltip contentStyle={{ backgroundColor: '#1e293b', border: '1px solid rgba(71,85,105,0.5)', borderRadius: '10px', color: '#f1f5f9', fontSize: '12px' }} cursor={{ stroke: '#334155' }} />
+                  <Area type="monotone" dataKey="height" name="Height (cm)" stroke="#10b981" fill="url(#gradH)" strokeWidth={2.5} dot={false} activeDot={{ r: 4, fill: '#10b981' }} />
+                  <Area type="monotone" dataKey="health" name="Health Score" stroke="#a78bfa" fill="url(#gradHlth)" strokeWidth={2.5} dot={false} activeDot={{ r: 4, fill: '#a78bfa' }} />
                 </AreaChart>
               </ResponsiveContainer>
             </div>
           </div>
         </div>
 
-        {/* ── Checklist ────────────────────────────────────────────────── */}
-        <div className="rounded-3xl p-5" style={card}>
-          <div className="flex items-center gap-2 mb-5">
+        {/* ── Checklist ── */}
+        <div className="card rounded-2xl p-5">
+          <div className="flex items-center gap-2 mb-4">
             <CheckCircle className="w-4 h-4 text-emerald-400" />
-            <h3 className="font-semibold text-sm text-slate-200">Optimal Conditions Checklist</h3>
+            <h3 className="section-title font-semibold text-sm text-slate-200">Optimal Conditions Checklist</h3>
           </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
             {[
               { label: 'Soil Moisture (35–70%)',  val: sensorData.moisture,    ok: sensorData.moisture >= 35    && sensorData.moisture <= 70    },
               { label: 'Temperature (18–30°C)',    val: sensorData.temperature, ok: sensorData.temperature >= 18 && sensorData.temperature <= 30 },
               { label: 'Humidity (45–80%)',        val: sensorData.humidity,    ok: sensorData.humidity >= 45   && sensorData.humidity <= 80    },
-              { label: 'Soil pH (6.0–7.0)',       val: sensorData.ph,          ok: sensorData.ph >= 6.0        && sensorData.ph <= 7.0         },
+              { label: 'Soil pH (6.0–7.0)',        val: sensorData.ph,          ok: sensorData.ph >= 6.0        && sensorData.ph <= 7.0         },
               { label: 'Nitrogen (>60 mg/kg)',     val: sensorData.nitrogen,    ok: sensorData.nitrogen >= 60                                   },
               { label: 'Phosphorus (>25 mg/kg)',   val: sensorData.phosphorus,  ok: sensorData.phosphorus >= 25                                 },
               { label: 'Potassium (>150 mg/kg)',   val: sensorData.potassium,   ok: sensorData.potassium >= 150                                 },
             ].map((check, i) => (
-              <div key={i} className={cn(
-                'flex items-center justify-between px-4 py-3 rounded-xl border transition-all hover:brightness-110',
-                check.ok ? 'bg-emerald-500/8 border-emerald-500/20' : 'bg-red-500/8 border-red-500/20'
-              )}>
+              <div key={i}
+                className="flex items-center justify-between px-4 py-3 rounded-xl border transition-all hover:brightness-110"
+                style={{
+                  background: check.ok ? 'rgba(16,185,129,0.06)' : 'rgba(239,68,68,0.06)',
+                  borderColor: check.ok ? 'rgba(16,185,129,0.2)' : 'rgba(239,68,68,0.2)',
+                }}>
                 <div className="flex items-center gap-2.5">
                   {check.ok
                     ? <CheckCircle className="w-4 h-4 text-emerald-400 flex-shrink-0" />
                     : <AlertTriangle className="w-4 h-4 text-red-400 flex-shrink-0" />}
                   <span className="text-sm text-slate-300">{check.label}</span>
                 </div>
-                <span className={cn('text-xs font-bold tabular-nums mono', check.ok ? 'text-emerald-400' : 'text-red-400')}>
+                <span className={cn('text-xs font-bold tabular-nums stat-number', check.ok ? 'text-emerald-400' : 'text-red-400')}>
                   {typeof check.val === 'number' ? check.val.toFixed(1) : check.val}
                 </span>
               </div>
@@ -640,8 +669,8 @@ Sensors: Moisture:${s.moisture.toFixed(1)}% Temp:${s.temperature.toFixed(1)}°C 
           </div>
         </div>
 
-        {/* ── Footer ───────────────────────────────────────────────────── */}
-        <div className="flex items-center gap-2 text-slate-600 text-xs pb-2">
+        {/* ── Footer ── */}
+        <div className="flex items-center gap-2 text-slate-600 text-xs pb-4">
           <Info className="w-3.5 h-3.5 flex-shrink-0" />
           <span>Plant animation and health indicators update in real-time from sensor data. AI diagnostics powered by Groq (llama-3.3-70b). Reports are cached locally and only refreshed on demand.</span>
         </div>
@@ -652,7 +681,7 @@ Sensors: Moisture:${s.moisture.toFixed(1)}% Temp:${s.temperature.toFixed(1)}°C 
 
 function PlantPerformanceFallback() {
   return (
-    <div className="min-h-screen flex items-center justify-center" style={{ background: '#1a2738' }}>
+    <div className="min-h-screen flex items-center justify-center" style={{ background: '#0f1824' }}>
       <div className="flex flex-col items-center gap-4">
         <div className="w-12 h-12 rounded-full border-2 border-t-transparent animate-spin"
           style={{ borderColor: 'rgba(16,185,129,0.2)', borderTopColor: '#10b981' }} />
