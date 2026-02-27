@@ -157,27 +157,12 @@ async function fbSaveSoil(plotId: string, s: Partial<SensorData>) {
   await setDoc(doc(db, 'plots', plotId, 'soil_metrics', 'current'), { ...s, recordedAt: serverTimestamp() }, { merge: true });
 }
 
-// ── Shared card style ─────────────────────────────────────────────────────────
-const cardBase: React.CSSProperties = {
-  background: 'rgba(40,55,74,0.7)',
-  border: '1px solid rgba(71,85,105,0.45)',
-  backdropFilter: 'blur(12px)',
-};
-const innerCard: React.CSSProperties = {
-  background: 'rgba(51,65,85,0.35)',
-  border: '1px solid rgba(71,85,105,0.3)',
-};
-const deepCard: React.CSSProperties = {
-  background: 'rgba(30,42,58,0.6)',
-  border: '1px solid rgba(71,85,105,0.25)',
-};
-
 // ── Mini Chart ────────────────────────────────────────────────────────────────
 const MiniChart = ({ color, data }: { color: string; data: number[] }) => (
   <div className="w-full h-full min-w-0 min-h-0">
     <ResponsiveContainer width="100%" height={64}>
       <AreaChart data={data.map((val, i) => ({ val, i }))}>
-        <Area type="monotone" dataKey="val" stroke={color} fill={color} fillOpacity={0.1} strokeWidth={2} dot={false} />
+        <Area type="monotone" dataKey="val" stroke={color} fill={color} fillOpacity={0.12} strokeWidth={2} dot={false} />
       </AreaChart>
     </ResponsiveContainer>
   </div>
@@ -192,11 +177,11 @@ const HealthGauge = ({ value, color, label }: { value: number; color: string; la
         <ResponsiveContainer width="100%" height="100%">
           <RadialBarChart cx="50%" cy="50%" innerRadius="65%" outerRadius="100%" startAngle={90} endAngle={-270} data={data}>
             <PolarAngleAxis type="number" domain={[0, 100]} angleAxisId={0} tick={false} />
-            <RadialBar background={{ fill: 'rgba(71,85,105,0.3)' }} dataKey="value" cornerRadius={8} angleAxisId={0} />
+            <RadialBar background={{ fill: '#1e293b' }} dataKey="value" cornerRadius={8} angleAxisId={0} />
           </RadialBarChart>
         </ResponsiveContainer>
         <div className="absolute inset-0 flex items-center justify-center">
-          <span className="text-sm font-semibold text-slate-100 mono">{value}%</span>
+          <span className="text-sm font-bold text-slate-100">{value}%</span>
         </div>
       </div>
       <span className="text-xs text-slate-400 mt-1 font-medium">{label}</span>
@@ -216,35 +201,32 @@ function PlotModal({ initial, saving, onSave, onClose }: {
   const crop = CROPS.find(c => c.type === f.cropType) ?? CROPS[0];
 
   return (
-    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[100] flex items-center justify-center p-4" onClick={onClose}>
-      <div className="rounded-3xl w-full max-w-lg shadow-2xl" style={cardBase} onClick={e => e.stopPropagation()}>
-        <div className="p-5 border-b flex items-center gap-3" style={{ borderColor: 'rgba(71,85,105,0.3)' }}>
+    <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-[100] flex items-center justify-center p-4" onClick={onClose}>
+      <div className="bg-slate-800 border border-slate-700 rounded-2xl w-full max-w-lg shadow-2xl" onClick={e => e.stopPropagation()}>
+        <div className="p-5 border-b border-slate-700 flex items-center gap-3">
           <span className="text-3xl">{f.emoji}</span>
           <div className="flex-1">
-            <h3 className="text-lg font-semibold text-slate-100 mono">{isNew ? 'Add New Plot' : `Edit ${f.name}`}</h3>
+            <h3 className="text-lg font-semibold text-slate-100">{isNew ? 'Add New Plot' : `Edit ${f.name}`}</h3>
             <p className="text-xs text-slate-400 mt-1">Synced to Firebase Database</p>
           </div>
-          <button onClick={onClose} className="p-2 hover:bg-slate-700/50 rounded-xl text-slate-400 transition-colors"><X className="w-4 h-4" /></button>
+          <button onClick={onClose} className="p-2 hover:bg-slate-700 rounded-lg text-slate-400"><X className="w-4 h-4" /></button>
         </div>
         <div className="p-5 space-y-4 max-h-[60vh] overflow-y-auto">
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label className="text-xs font-semibold text-slate-400 uppercase tracking-wider block mb-2">Plot Name *</label>
-              <input className="w-full rounded-xl px-3 py-2.5 text-sm text-slate-200 outline-none focus:border-emerald-500/60 transition-colors"
-                style={{ ...deepCard, border: '1px solid rgba(71,85,105,0.35)' }}
+              <input className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2.5 text-sm text-slate-200 outline-none focus:border-emerald-500"
                 value={f.name} onChange={e => setF(x => ({ ...x, name: e.target.value }))} placeholder="e.g. Plot A" />
             </div>
             <div>
               <label className="text-xs font-semibold text-slate-400 uppercase tracking-wider block mb-2">Area</label>
-              <input className="w-full rounded-xl px-3 py-2.5 text-sm text-slate-200 outline-none"
-                style={{ ...deepCard, border: '1px solid rgba(71,85,105,0.35)' }}
+              <input className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2.5 text-sm text-slate-200 outline-none focus:border-emerald-500"
                 value={f.area} onChange={e => setF(x => ({ ...x, area: e.target.value }))} placeholder="e.g. 0.5 ha" />
             </div>
           </div>
           <div>
             <label className="text-xs font-semibold text-slate-400 uppercase tracking-wider block mb-2">Crop Type *</label>
-            <select className="w-full rounded-xl px-3 py-2.5 text-sm text-slate-200 outline-none"
-              style={{ ...deepCard, border: '1px solid rgba(71,85,105,0.35)' }}
+            <select className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2.5 text-sm text-slate-200 outline-none focus:border-emerald-500"
               value={f.cropType}
               onChange={e => { const c = CROPS.find(x => x.type === e.target.value) ?? CROPS[0]; setF(x => ({ ...x, cropType: c.type, variety: c.varieties[0], emoji: c.emoji })); }}>
               {CROPS.map(c => <option key={c.type}>{c.type}</option>)}
@@ -252,8 +234,7 @@ function PlotModal({ initial, saving, onSave, onClose }: {
           </div>
           <div>
             <label className="text-xs font-semibold text-slate-400 uppercase tracking-wider block mb-2">Variety</label>
-            <select className="w-full rounded-xl px-3 py-2.5 text-sm text-slate-200 outline-none"
-              style={{ ...deepCard, border: '1px solid rgba(71,85,105,0.35)' }}
+            <select className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2.5 text-sm text-slate-200 outline-none focus:border-emerald-500"
               value={f.variety} onChange={e => setF(x => ({ ...x, variety: e.target.value }))}>
               {crop.varieties.map(v => <option key={v}>{v}</option>)}
             </select>
@@ -261,14 +242,12 @@ function PlotModal({ initial, saving, onSave, onClose }: {
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label className="text-xs font-semibold text-slate-400 uppercase tracking-wider block mb-2">Planted</label>
-              <input type="date" className="w-full rounded-xl px-3 py-2.5 text-sm text-slate-200 outline-none"
-                style={{ ...deepCard, border: '1px solid rgba(71,85,105,0.35)' }}
+              <input type="date" className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2.5 text-sm text-slate-200 outline-none focus:border-emerald-500"
                 value={f.plantedDate} onChange={e => setF(x => ({ ...x, plantedDate: e.target.value }))} />
             </div>
             <div>
               <label className="text-xs font-semibold text-slate-400 uppercase tracking-wider block mb-2">Harvest ETA</label>
-              <input type="date" className="w-full rounded-xl px-3 py-2.5 text-sm text-slate-200 outline-none"
-                style={{ ...deepCard, border: '1px solid rgba(71,85,105,0.35)' }}
+              <input type="date" className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2.5 text-sm text-slate-200 outline-none focus:border-emerald-500"
                 value={f.harvestDate} onChange={e => setF(x => ({ ...x, harvestDate: e.target.value }))} />
             </div>
           </div>
@@ -282,16 +261,15 @@ function PlotModal({ initial, saving, onSave, onClose }: {
                       ? s === 'growing' ? 'bg-emerald-500/10 border-emerald-500 text-emerald-400'
                         : s === 'dormant' ? 'bg-amber-500/10 border-amber-500 text-amber-400'
                         : 'bg-slate-500/10 border-slate-500 text-slate-400'
-                      : 'bg-transparent border-slate-700/60 text-slate-500 hover:border-slate-600')}>
+                      : 'bg-transparent border-slate-700 text-slate-500 hover:border-slate-600')}>
                   {s === 'growing' ? '🌱' : s === 'dormant' ? '💤' : '✅'} {s}
                 </button>
               ))}
             </div>
           </div>
         </div>
-        <div className="p-5 border-t flex gap-3" style={{ borderColor: 'rgba(71,85,105,0.3)' }}>
-          <button onClick={onClose} className="flex-1 px-4 py-2.5 rounded-xl font-medium text-sm text-slate-400 transition-colors hover:bg-slate-700/40"
-            style={{ border: '1px solid rgba(71,85,105,0.35)' }}>Cancel</button>
+        <div className="p-5 border-t border-slate-700 flex gap-3">
+          <button onClick={onClose} className="flex-1 px-4 py-2.5 rounded-xl font-medium text-sm bg-transparent border border-slate-700 text-slate-400 hover:bg-slate-700 transition-colors">Cancel</button>
           <button onClick={() => f.name && f.cropType && onSave(f)} disabled={saving || !f.name}
             className="flex-1 px-4 py-2.5 rounded-xl font-semibold text-sm bg-emerald-600 text-white hover:bg-emerald-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center justify-center gap-2">
             {saving ? '...' : <><Database className="w-4 h-4" /> Save Plot</>}
@@ -314,18 +292,17 @@ function SoilMetricsModal({ initial, saving, onSave, onClose }: {
     { key: 'potassium' as const, label: 'Potassium (K)', unit: 'mg/kg', min: 0, max: 800, step: 1, ideal: '150 – 300', accent: '#0891b2', icon: Wind },
   ];
   return (
-    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[100] flex items-center justify-center p-4" onClick={onClose}>
-      <div className="rounded-3xl w-full max-w-md shadow-2xl" style={cardBase} onClick={e => e.stopPropagation()}>
-        <div className="p-5 border-b flex items-center gap-3" style={{ borderColor: 'rgba(71,85,105,0.3)' }}>
-          <div className="w-10 h-10 rounded-xl flex items-center justify-center"
-            style={{ background: 'rgba(16,185,129,0.1)', border: '1px solid rgba(16,185,129,0.2)' }}>
+    <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-[100] flex items-center justify-center p-4" onClick={onClose}>
+      <div className="bg-slate-800 border border-slate-700 rounded-2xl w-full max-w-md shadow-2xl" onClick={e => e.stopPropagation()}>
+        <div className="p-5 border-b border-slate-700 flex items-center gap-3">
+          <div className="w-10 h-10 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center">
             <FlaskConical className="w-5 h-5 text-emerald-400" />
           </div>
           <div className="flex-1">
-            <h3 className="text-lg font-semibold text-slate-100 mono">Edit Soil Metrics</h3>
+            <h3 className="text-lg font-semibold text-slate-100">Edit Soil Metrics</h3>
             <p className="text-xs text-slate-400 mt-0.5">Adjust values and save to database</p>
           </div>
-          <button onClick={onClose} className="p-2 hover:bg-slate-700/50 rounded-xl text-slate-400 transition-colors"><X className="w-4 h-4" /></button>
+          <button onClick={onClose} className="p-2 hover:bg-slate-700 rounded-lg text-slate-400"><X className="w-4 h-4" /></button>
         </div>
         <div className="p-5 space-y-6 max-h-[60vh] overflow-y-auto">
           {fields.map(field => {
@@ -336,16 +313,16 @@ function SoilMetricsModal({ initial, saving, onSave, onClose }: {
               <div key={field.key} className="space-y-2">
                 <div className="flex items-start justify-between">
                   <div className="flex items-center gap-2">
-                    <div className="w-7 h-7 rounded-lg flex items-center justify-center" style={{ backgroundColor: `${field.accent}18` }}>
+                    <div className="w-7 h-7 rounded-lg flex items-center justify-center" style={{ backgroundColor: `${field.accent}20` }}>
                       <field.icon className="w-3.5 h-3.5" style={{ color: field.accent }} />
                     </div>
                     <div className="text-sm font-semibold text-slate-200">{field.label}</div>
                   </div>
                   <div className="text-right">
-                    <div className="text-lg font-bold mono" style={{ color: field.accent }}>
+                    <div className="text-lg font-bold" style={{ color: field.accent }}>
                       {field.key === 'ph' ? val.toFixed(1) : val}<span className="text-xs font-normal text-slate-400 ml-1">{field.unit}</span>
                     </div>
-                    <span className={cn("inline-block mt-1 px-2 py-0.5 rounded-full text-[10px] font-semibold",
+                    <span className={cn("inline-block mt-1 px-2 py-0.5 rounded-full text-[10px] font-bold",
                       st === 'optimal' && "bg-emerald-500/10 text-emerald-400",
                       st === 'good' && "bg-amber-500/10 text-amber-400",
                       st === 'warning' && "bg-red-500/10 text-red-400")}>
@@ -356,21 +333,19 @@ function SoilMetricsModal({ initial, saving, onSave, onClose }: {
                 <input type="range" min={field.min} max={field.max} step={field.step} value={val}
                   onChange={e => setF(prev => ({ ...prev, [field.key]: parseFloat(e.target.value) }))}
                   className="w-full h-2 rounded-full appearance-none cursor-pointer"
-                  style={{ background: `linear-gradient(to right, ${field.accent} ${pct}%, rgba(71,85,105,0.4) ${pct}%)` }} />
+                  style={{ background: `linear-gradient(to right, ${field.accent} ${pct}%, #334155 ${pct}%)` }} />
                 <div className="flex items-center justify-between gap-3">
                   <span className="text-[11px] text-slate-500">Ideal: <span className="text-slate-400 font-medium">{field.ideal} {field.unit}</span></span>
                   <input type="number" min={field.min} max={field.max} step={field.step} value={field.key === 'ph' ? val.toFixed(1) : val}
                     onChange={e => { const v = parseFloat(e.target.value); if (!isNaN(v)) setF(prev => ({ ...prev, [field.key]: v })); }}
-                    className="w-24 rounded-lg px-2 py-1.5 text-xs text-slate-200 text-right outline-none focus:border-emerald-500/60"
-                    style={{ ...deepCard, border: '1px solid rgba(71,85,105,0.35)' }} />
+                    className="w-24 bg-slate-900 border border-slate-700 rounded-lg px-2 py-1.5 text-xs text-slate-200 text-right outline-none focus:border-emerald-500" />
                 </div>
               </div>
             );
           })}
         </div>
-        <div className="p-5 border-t flex gap-3" style={{ borderColor: 'rgba(71,85,105,0.3)' }}>
-          <button onClick={onClose} className="flex-1 px-4 py-2.5 rounded-xl font-medium text-sm text-slate-400 transition-colors hover:bg-slate-700/40"
-            style={{ border: '1px solid rgba(71,85,105,0.35)' }}>Cancel</button>
+        <div className="p-5 border-t border-slate-700 flex gap-3">
+          <button onClick={onClose} className="flex-1 px-4 py-2.5 rounded-xl font-medium text-sm bg-transparent border border-slate-700 text-slate-400 hover:bg-slate-700 transition-colors">Cancel</button>
           <button onClick={() => onSave(f)} disabled={saving}
             className="flex-1 px-4 py-2.5 rounded-xl font-semibold text-sm bg-emerald-600 text-white hover:bg-emerald-500 disabled:opacity-50 transition-colors flex items-center justify-center gap-2">
             {saving ? <><RefreshCw className="w-4 h-4 animate-spin" /> Saving...</> : <><Database className="w-4 h-4" /> Save Metrics</>}
@@ -417,7 +392,7 @@ export default function SmartFarmDashboard() {
   const [isMounted, setIsMounted] = useState(false);
   const chatEndRef = useRef<HTMLDivElement>(null);
 
-  const miniChartData = Array.from({ length: 12 }, () => Math.floor(Math.random() * 30 + 50));
+  const miniChartData = Array.from({ length: 12 }, (_, i) => Math.floor(Math.random() * 30 + 50));
 
   const plot = activePlotId ? (plots.find(p => p.id === activePlotId) ?? plots[0]) : plots[0];
   const isPlotReady = Boolean(activePlotId && plot);
@@ -425,6 +400,7 @@ export default function SmartFarmDashboard() {
   const remaining = plot?.harvestDate ? daysLeft(plot.harvestDate) : null;
   const chartColor = { moisture: '#3b82f6', temperature: '#f97316', humidity: '#0891b2' }[selectedMetric];
 
+  // Derived health score (0-100)
   const healthScore = Math.round(
     (calcStatus(sensorData.temperature, 'temperature') === 'optimal' ? 25 : 10) +
     (calcStatus(sensorData.humidity, 'humidity') === 'optimal' ? 25 : 10) +
@@ -432,6 +408,7 @@ export default function SmartFarmDashboard() {
     (calcStatus(sensorData.ph, 'ph') === 'optimal' ? 25 : 10)
   );
 
+  // ── Ticker ──────────────────────────────────────────────────────────────────
   useEffect(() => {
     setIsMounted(true);
     const t = setInterval(() => setCurrentTime(new Date()), 1000);
@@ -569,6 +546,7 @@ export default function SmartFarmDashboard() {
     { id: '4', time: '10:30 AM', event: 'Offline Mode', sensor: 'Connectivity', value: 'WiFi disconnected', status: 'info' },
   ];
 
+  // Tasks mock data
   const tasks = [
     { id: 1, title: 'Apply nitrogen fertilizer to Plot A', due: 'Today', priority: 'high', done: false },
     { id: 2, title: 'Inspect Plot B for pest activity', due: 'Tomorrow', priority: 'medium', done: false },
@@ -579,47 +557,54 @@ export default function SmartFarmDashboard() {
   const [tasksDone, setTasksDone] = useState<number[]>([3]);
 
   return (
-    <div className="text-slate-100 min-h-screen" style={{ background: '#1a2738', fontFamily: "'DM Sans', system-ui, sans-serif" }}>
+    <div className="text-slate-100 min-h-screen" style={{ background: '#0f1824', fontFamily: "'DM Sans', system-ui, sans-serif" }}>
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700&family=Space+Grotesk:wght@400;500;600;700&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,300&family=Space+Grotesk:wght@400;500;600;700&display=swap');
         * { box-sizing: border-box; }
         ::-webkit-scrollbar { width: 4px; height: 4px; }
-        ::-webkit-scrollbar-track { background: #1a2738; }
+        ::-webkit-scrollbar-track { background: #1e293b; }
         ::-webkit-scrollbar-thumb { background: #334155; border-radius: 2px; }
-        .mono { font-family: 'Space Grotesk', monospace; }
-        .shimmer { background: linear-gradient(90deg, rgba(255,255,255,0) 0%, rgba(255,255,255,0.025) 50%, rgba(255,255,255,0) 100%); background-size: 200% 100%; animation: shimmer 2s infinite; }
+        .card { background: rgba(30,41,59,0.6); border: 1px solid rgba(71,85,105,0.35); backdrop-filter: blur(12px); }
+        .card-glow-green:hover { box-shadow: 0 0 40px rgba(16,185,129,0.08); border-color: rgba(16,185,129,0.2); }
+        .gradient-border { background: linear-gradient(#1e293b, #1e293b) padding-box, linear-gradient(135deg, #10b981, #06b6d4, #a78bfa) border-box; border: 1px solid transparent; }
+        .pulse-dot::before { content: ''; position: absolute; inset: -3px; border-radius: 50%; border: 2px solid currentColor; opacity: 0.4; animation: ping 1.5s cubic-bezier(0,0,0.2,1) infinite; }
+        @keyframes ping { 75%,100% { transform: scale(1.8); opacity: 0; } }
+        .shimmer { background: linear-gradient(90deg, rgba(255,255,255,0) 0%, rgba(255,255,255,0.03) 50%, rgba(255,255,255,0) 100%); background-size: 200% 100%; animation: shimmer 2s infinite; }
         @keyframes shimmer { from { background-position: -200% 0; } to { background-position: 200% 0; } }
+        .stat-number { font-family: 'Space Grotesk', monospace; }
+        .section-title { font-family: 'Space Grotesk', sans-serif; }
       `}</style>
 
-      {/* Ambient blobs */}
+      {/* Ambient background blobs */}
       <div className="fixed inset-0 pointer-events-none overflow-hidden z-0">
-        <div className="absolute -top-40 right-0 w-[600px] h-[600px] rounded-full opacity-[0.06] blur-[120px]" style={{ background: '#10b981' }} />
-        <div className="absolute top-1/2 -left-40 w-[500px] h-[500px] rounded-full opacity-[0.04] blur-[100px]" style={{ background: '#3b82f6' }} />
-        <div className="absolute -bottom-40 right-1/3 w-[500px] h-[500px] rounded-full opacity-[0.03] blur-[100px]" style={{ background: '#a855f7' }} />
+        <div className="absolute -top-40 -right-40 w-[600px] h-[600px] rounded-full" style={{ background: 'radial-gradient(circle, rgba(16,185,129,0.04) 0%, transparent 70%)' }} />
+        <div className="absolute top-1/2 -left-40 w-[400px] h-[400px] rounded-full" style={{ background: 'radial-gradient(circle, rgba(59,130,246,0.03) 0%, transparent 70%)' }} />
+        <div className="absolute -bottom-40 right-1/3 w-[500px] h-[500px] rounded-full" style={{ background: 'radial-gradient(circle, rgba(168,85,247,0.02) 0%, transparent 70%)' }} />
       </div>
 
       {/* ── Header ─────────────────────────────────────────────────────────── */}
       <header className="relative z-40 sticky top-0 h-16 border-b flex items-center justify-between px-4 md:px-6 gap-4"
-        style={{ background: 'rgba(26,39,56,0.88)', backdropFilter: 'blur(20px)', borderColor: 'rgba(71,85,105,0.3)' }}>
-        <button onClick={() => document.dispatchEvent(new CustomEvent('toggleMobileMenu'))}
-          className="lg:hidden p-2 rounded-lg hover:bg-slate-700/50 text-slate-400 transition-colors">
+        style={{ background: 'rgba(15,24,36,0.85)', backdropFilter: 'blur(20px)', borderColor: 'rgba(71,85,105,0.3)' }}>
+        <button onClick={() => document.dispatchEvent(new CustomEvent('toggleMobileMenu'))} className="lg:hidden p-2 rounded-lg hover:bg-slate-800 text-slate-400 transition-colors">
           <Menu className="w-5 h-5" />
         </button>
 
+        {/* Live clock + date */}
         <div className="hidden lg:flex flex-col leading-tight" suppressHydrationWarning>
-          <span className="mono text-emerald-400 font-semibold text-sm">{isMounted ? format(currentTime, 'HH:mm:ss') : '00:00:00'}</span>
+          <span className="stat-number text-emerald-400 font-bold text-sm">{isMounted ? format(currentTime, 'HH:mm:ss') : '00:00:00'}</span>
           <span className="text-slate-500 text-[11px]">{isMounted ? format(currentTime, 'EEEE, MMM d yyyy') : ''}</span>
         </div>
 
-        <div className="flex items-center gap-3 rounded-xl px-4 py-2 w-full sm:w-64 md:w-72"
-          style={{ ...deepCard, border: '1px solid rgba(71,85,105,0.3)' }}>
+        <div className="flex items-center gap-3 bg-slate-950/80 border border-slate-800 rounded-xl px-4 py-2 w-full sm:w-64 md:w-72"
+          style={{ borderColor: 'rgba(71,85,105,0.3)' }}>
           <Search className="w-4 h-4 text-slate-500" />
           <input type="text" placeholder="Search plots, crops..." className="bg-transparent border-none outline-none text-sm text-slate-200 w-full placeholder:text-slate-600" />
         </div>
 
         <div className="flex items-center gap-3 ml-auto">
+          {/* Connection indicator */}
           <div className={cn("flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-semibold border",
-            isConnected ? "bg-emerald-500/10 border-emerald-500/25 text-emerald-400" : "bg-red-500/10 border-red-500/25 text-red-400")}>
+            isConnected ? "bg-emerald-500/10 border-emerald-500/30 text-emerald-400" : "bg-red-500/10 border-red-500/30 text-red-400")}>
             <span className="relative flex h-2 w-2">
               <span className={cn("animate-ping absolute inline-flex h-full w-full rounded-full opacity-75", isConnected ? "bg-emerald-400" : "bg-red-400")} />
               <span className={cn("relative inline-flex rounded-full h-2 w-2", isConnected ? "bg-emerald-400" : "bg-red-400")} />
@@ -627,32 +612,31 @@ export default function SmartFarmDashboard() {
             <span className="hidden sm:inline">{isConnected ? 'Live' : 'Offline'}</span>
           </div>
 
+          {/* Plot chips */}
           <div className="hidden md:flex gap-1.5 overflow-x-auto">
             {plots.slice(0, 3).map(p => (
               <button key={p.id} onClick={() => setActivePlotId(p.id)}
                 className={cn("flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium transition-all whitespace-nowrap border",
-                  activePlotId === p.id
-                    ? "bg-emerald-500 border-emerald-500 text-white shadow-lg shadow-emerald-500/20"
-                    : "border-slate-600/60 text-slate-400 hover:border-emerald-500/40 hover:text-emerald-400")}
-                style={{ background: activePlotId === p.id ? undefined : 'rgba(40,55,74,0.5)' }}>
+                  activePlotId === p.id ? "bg-emerald-500 border-emerald-500 text-white shadow-lg shadow-emerald-500/20"
+                    : "border-slate-700 text-slate-400 hover:border-emerald-500/50 hover:text-emerald-400")}
+                style={{ background: activePlotId === p.id ? undefined : 'rgba(30,41,59,0.4)' }}>
                 <span>{p.emoji}</span><span>{p.name}</span>
               </button>
             ))}
             <button onClick={() => { setEditPlot(null); setShowModal(true); }}
-              className="flex items-center gap-1 px-3 py-1.5 rounded-full text-xs font-medium border border-dashed text-slate-400 hover:border-emerald-500/40 hover:text-emerald-400 transition-all whitespace-nowrap"
-              style={{ borderColor: 'rgba(71,85,105,0.5)', background: 'rgba(40,55,74,0.4)' }}>
+              className="flex items-center gap-1 px-3 py-1.5 rounded-full text-xs font-medium border border-dashed border-slate-700 text-slate-400 hover:border-emerald-500/50 hover:text-emerald-400 transition-all whitespace-nowrap">
               <Plus className="w-3 h-3" /> Add
             </button>
           </div>
 
-          <button onClick={() => window.location.reload()} className="p-2.5 rounded-xl hover:bg-slate-700/50 text-slate-400 transition-all"><RefreshCw className="w-4 h-4" /></button>
+          <button onClick={() => window.location.reload()} className="p-2.5 rounded-xl hover:bg-slate-800 text-slate-400 transition-all"><RefreshCw className="w-4 h-4" /></button>
 
-          <button onClick={() => router.push('/notifications')} className="relative p-2.5 rounded-xl hover:bg-slate-700/50 text-slate-400 transition-all">
+          <button onClick={() => router.push('/notifications')} className="relative p-2.5 rounded-xl hover:bg-slate-800 text-slate-400 transition-all">
             <Bell className="w-4 h-4" />
-            <span className="absolute top-0 right-0 w-4 h-4 bg-red-500 text-[10px] font-bold text-white rounded-full flex items-center justify-center border-2" style={{ borderColor: '#1a2738' }}>3</span>
+            <span className="absolute top-0 right-0 w-4 h-4 bg-red-500 text-[10px] font-bold text-white rounded-full flex items-center justify-center border-2 border-slate-900">3</span>
           </button>
 
-          <button onClick={() => router.push('/my_account')} className="flex items-center gap-2 pl-3 border-l border-slate-700/60 rounded-lg hover:bg-slate-700/40 transition-colors">
+          <button onClick={() => router.push('/my_account')} className="flex items-center gap-2 pl-3 border-l border-slate-800 rounded-lg hover:bg-slate-800/50 transition-colors">
             <div className="w-8 h-8 rounded-full bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center text-sm font-bold text-white shadow-lg shadow-emerald-500/20">
               {currentUser?.photoURL ? <img src={currentUser.photoURL} alt="" className="w-8 h-8 rounded-full object-cover" /> : initials(currentUser)}
             </div>
@@ -664,26 +648,22 @@ export default function SmartFarmDashboard() {
       {/* ── Main Content ───────────────────────────────────────────────────── */}
       <div className="relative z-10 p-4 md:p-6 max-w-[1600px] mx-auto space-y-5">
 
-        {/* ── HERO BANNER ─────────────────────────────────────────────────── */}
-        <div className="relative rounded-3xl overflow-hidden p-6 md:p-8"
-          style={{
-            background: 'linear-gradient(135deg, rgba(16,185,129,0.07) 0%, rgba(40,55,74,0.85) 50%, rgba(6,182,212,0.04) 100%)',
-            border: '1px solid rgba(71,85,105,0.45)',
-            backdropFilter: 'blur(12px)',
-          }}>
-          <div className="absolute inset-0 pointer-events-none" style={{ backgroundImage: 'radial-gradient(circle at 80% 50%, rgba(16,185,129,0.05) 0%, transparent 60%)' }} />
+        {/* ── SECTION 0: HERO BANNER ─────────────────────────────────────── */}
+        <div className="relative rounded-2xl overflow-hidden gradient-border p-6 md:p-8"
+          style={{ background: 'linear-gradient(135deg, rgba(16,185,129,0.08) 0%, rgba(15,24,36,0.95) 50%, rgba(6,182,212,0.05) 100%)' }}>
+          <div className="absolute inset-0 pointer-events-none" style={{ backgroundImage: 'radial-gradient(circle at 80% 50%, rgba(16,185,129,0.06) 0%, transparent 60%)' }} />
 
           <div className="relative flex flex-col md:flex-row md:items-center gap-6">
+            {/* Left: plot info */}
             <div className="flex-1">
               <div className="flex items-center gap-2 mb-2">
-                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-semibold border"
-                  style={{ background: 'rgba(16,185,129,0.1)', borderColor: 'rgba(16,185,129,0.25)', color: '#34d399' }}>
+                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-semibold bg-emerald-500/15 text-emerald-400 border border-emerald-500/25">
                   <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
                   LIVE MONITORING
                 </span>
                 <span className="text-xs text-slate-500">Last sync: {lastSync}</span>
               </div>
-              <h1 className="mono text-3xl md:text-4xl font-bold text-slate-100 mb-1">
+              <h1 className="section-title text-3xl md:text-4xl font-bold text-slate-100 mb-1">
                 {plot?.emoji} {plot?.name}
                 <span className="text-emerald-400"> · {plot?.cropType}</span>
               </h1>
@@ -694,13 +674,14 @@ export default function SmartFarmDashboard() {
                 </span>
               </p>
 
+              {/* Progress */}
               {plot?.plantedDate && plot?.harvestDate && (
                 <div className="mt-4 max-w-md">
                   <div className="flex justify-between text-xs text-slate-400 mb-1.5">
                     <span>Growth Progress</span>
-                    <span className="text-emerald-400 font-bold mono">{growth}%</span>
+                    <span className="text-emerald-400 font-bold stat-number">{growth}%</span>
                   </div>
-                  <div className="h-2 rounded-full overflow-hidden" style={{ background: 'rgba(71,85,105,0.3)' }}>
+                  <div className="h-2 rounded-full overflow-hidden" style={{ background: 'rgba(30,41,59,0.8)' }}>
                     <div className="h-full rounded-full transition-all duration-1000 relative overflow-hidden"
                       style={{ width: `${growth}%`, background: 'linear-gradient(90deg, #059669, #10b981, #34d399)' }}>
                       <div className="absolute inset-0 shimmer" />
@@ -715,6 +696,7 @@ export default function SmartFarmDashboard() {
               )}
             </div>
 
+            {/* Right: radial health gauges */}
             <div className="flex gap-4 md:gap-6 flex-wrap">
               <HealthGauge value={healthScore} color="#10b981" label="Farm Health" />
               <HealthGauge value={growth} color="#3b82f6" label="Growth" />
@@ -723,10 +705,11 @@ export default function SmartFarmDashboard() {
             </div>
           </div>
 
+          {/* Action buttons */}
           <div className="mt-5 flex gap-3 flex-wrap">
             <button onClick={() => { setEditPlot(plot ?? null); setShowModal(true); }}
-              className="px-4 py-2.5 rounded-xl font-medium text-sm text-slate-300 hover:bg-slate-700/50 transition-colors flex items-center gap-2"
-              style={{ ...innerCard }}>
+              className="px-4 py-2.5 rounded-xl border border-slate-700 text-slate-300 font-medium text-sm hover:bg-slate-800 transition-colors flex items-center gap-2"
+              style={{ background: 'rgba(30,41,59,0.6)' }}>
               <Edit3 className="w-4 h-4" /> Edit Plot
             </button>
             <button onClick={() => isPlotReady && router.push('/plant_performance?plotId=' + activePlotId)} disabled={!isPlotReady}
@@ -739,44 +722,38 @@ export default function SmartFarmDashboard() {
               <Bot className="w-4 h-4" /> Ask AI
             </button>
             <button onClick={() => setShowSoilModal(true)}
-              className="px-4 py-2.5 rounded-xl font-medium text-sm text-slate-300 hover:bg-slate-700/50 transition-colors flex items-center gap-2"
-              style={{ ...innerCard }}>
+              className="px-4 py-2.5 rounded-xl border border-slate-700 text-slate-300 font-medium text-sm hover:bg-slate-800 transition-colors flex items-center gap-2"
+              style={{ background: 'rgba(30,41,59,0.6)' }}>
               <FlaskConical className="w-4 h-4" /> Edit Soil
             </button>
           </div>
         </div>
 
-        {/* ── SENSOR CARDS ─────────────────────────────────────────────────── */}
+        {/* ── SECTION 1: SENSOR CARDS ───────────────────────────────────── */}
         <div>
           <div className="flex items-center justify-between mb-3">
-            <h2 className="mono text-sm font-semibold text-slate-400 uppercase tracking-widest">Live Sensors</h2>
+            <h2 className="section-title text-sm font-semibold text-slate-400 uppercase tracking-widest">Live Sensors</h2>
             <span className="text-xs text-slate-500 flex items-center gap-1.5">
               <Cpu className="w-3 h-3" /> ESP32-Node1 · synced {lastSync}
             </span>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             {[
-              { key: 'temperature' as const, label: 'Temperature', sub: 'Air temp from DHT22', icon: Thermometer, value: sensorData.temperature.toFixed(1), unit: '°C', accent: '#f97316', delta: dailyDelta.temperature, deltaDigits: 1 },
-              { key: 'humidity' as const, label: 'Air Humidity', sub: 'Relative humidity', icon: Waves, value: sensorData.humidity.toFixed(1), unit: '%', accent: '#0891b2', delta: dailyDelta.humidity, deltaDigits: 0 },
-              { key: 'moisture' as const, label: 'Soil Moisture', sub: 'Capacitive sensor', icon: Droplets, value: sensorData.moisture.toFixed(1), unit: '%', accent: '#2563eb', delta: dailyDelta.moisture, deltaDigits: 0 }
+              { key: 'temperature' as const, label: 'Temperature', sub: 'Air temp from DHT22', icon: Thermometer, value: sensorData.temperature.toFixed(1), unit: '°C', accent: '#f97316', pale: 'rgba(249,115,22,0.08)', delta: dailyDelta.temperature, deltaDigits: 1 },
+              { key: 'humidity' as const, label: 'Air Humidity', sub: 'Relative humidity', icon: Waves, value: sensorData.humidity.toFixed(1), unit: '%', accent: '#0891b2', pale: 'rgba(8,145,178,0.08)', delta: dailyDelta.humidity, deltaDigits: 0 },
+              { key: 'moisture' as const, label: 'Soil Moisture', sub: 'Capacitive sensor', icon: Droplets, value: sensorData.moisture.toFixed(1), unit: '%', accent: '#2563eb', pale: 'rgba(37,99,235,0.08)', delta: dailyDelta.moisture, deltaDigits: 0 }
             ].map(s => {
               const st = calcStatus(parseFloat(s.value), s.key);
               const stLabel = statusLabel(parseFloat(s.value), s.key);
               const deltaUp = s.delta >= 0;
               return (
                 <div key={s.key} onClick={() => setSelectedMetric(s.key)}
-                  className="rounded-3xl p-5 cursor-pointer transition-all duration-300 hover:-translate-y-1 hover:shadow-2xl hover:shadow-black/30 group relative overflow-hidden"
-                  style={{
-                    ...cardBase,
-                    borderColor: selectedMetric === s.key ? `${s.accent}50` : 'rgba(71,85,105,0.45)',
-                    boxShadow: selectedMetric === s.key ? `0 0 30px ${s.accent}10` : 'none',
-                  }}>
-                  <div className="absolute top-0 right-0 w-32 h-32 rounded-full pointer-events-none opacity-40"
+                  className="card card-glow-green rounded-2xl p-5 cursor-pointer transition-all duration-300 hover:-translate-y-1 hover:shadow-2xl hover:shadow-black/40 group relative overflow-hidden">
+                  <div className="absolute top-0 right-0 w-32 h-32 rounded-full pointer-events-none"
                     style={{ background: `radial-gradient(circle, ${s.accent}08 0%, transparent 70%)`, transform: 'translate(30%,-30%)' }} />
 
                   <div className="flex justify-between items-start mb-4 relative">
-                    <div className="w-11 h-11 rounded-xl flex items-center justify-center"
-                      style={{ background: `${s.accent}12`, border: `1px solid ${s.accent}22` }}>
+                    <div className="w-11 h-11 rounded-xl flex items-center justify-center" style={{ backgroundColor: s.pale, border: `1px solid ${s.accent}25` }}>
                       <s.icon className="w-5 h-5" style={{ color: s.accent }} />
                     </div>
                     <span className={cn("flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-semibold border",
@@ -788,7 +765,7 @@ export default function SmartFarmDashboard() {
                     </span>
                   </div>
 
-                  <div className="mono text-4xl font-bold text-slate-100 mb-0.5">
+                  <div className="stat-number text-4xl font-bold text-slate-100 mb-0.5">
                     {s.value}<span className="text-base text-slate-400 font-normal ml-1">{s.unit}</span>
                   </div>
                   <div className="text-sm font-medium text-slate-300 mb-0.5">{s.label}</div>
@@ -799,7 +776,7 @@ export default function SmartFarmDashboard() {
                     {formatSignedDelta(s.delta, s.deltaDigits)}{s.unit} from yesterday
                   </div>
 
-                  <div className="h-16 opacity-40 group-hover:opacity-70 transition-opacity">
+                  <div className="h-16 opacity-50 group-hover:opacity-80 transition-opacity">
                     <MiniChart color={s.accent} data={miniChartData} />
                   </div>
 
@@ -812,26 +789,26 @@ export default function SmartFarmDashboard() {
           </div>
         </div>
 
-        {/* ── CHART + AI INSIGHTS ──────────────────────────────────────────── */}
+        {/* ── SECTION 2: CHART + AI INSIGHTS ─────────────────────────────── */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
-          {/* Chart */}
-          <div className="lg:col-span-2 rounded-3xl p-5" style={cardBase}>
+          {/* Analytics Chart */}
+          <div className="lg:col-span-2 card rounded-2xl p-5">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-5">
               <div>
-                <h3 className="mono font-semibold text-slate-100">Environmental Trends</h3>
+                <h3 className="section-title font-semibold text-slate-100">Environmental Trends</h3>
                 <p className="text-xs text-slate-500 mt-0.5">Historical sensor data from {plot?.name}</p>
               </div>
               <div className="flex items-center gap-2 flex-wrap">
                 {(['24h', '7d', '30d'] as const).map(range => (
                   <button key={range} onClick={() => setTimeRange(range)}
-                    className={cn("px-3 py-1.5 rounded-xl text-xs font-semibold transition-all",
-                      timeRange === range ? "bg-emerald-500 text-white shadow-md shadow-emerald-500/20" : "text-slate-400 hover:text-slate-200")}
-                    style={{ background: timeRange === range ? undefined : 'rgba(51,65,85,0.4)', border: timeRange === range ? 'none' : '1px solid rgba(71,85,105,0.3)' }}>
+                    className={cn("px-3 py-1.5 rounded-lg text-xs font-semibold transition-all",
+                      timeRange === range ? "bg-emerald-500 text-white shadow-md shadow-emerald-500/20" : "text-slate-400 hover:text-slate-200 hover:bg-slate-700")}
+                    style={{ background: timeRange === range ? undefined : 'rgba(30,41,59,0.6)' }}>
                     {range.toUpperCase()}
                   </button>
                 ))}
-                <button className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-medium text-slate-400 hover:text-slate-200 transition-colors"
-                  style={{ background: 'rgba(51,65,85,0.4)', border: '1px solid rgba(71,85,105,0.3)' }}>
+                <button className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-slate-400 hover:text-slate-200 transition-colors"
+                  style={{ background: 'rgba(30,41,59,0.6)' }}>
                   <Download className="w-3.5 h-3.5" /> Export
                 </button>
               </div>
@@ -848,15 +825,15 @@ export default function SmartFarmDashboard() {
                   <AreaChart data={chartData}>
                     <defs>
                       <linearGradient id={`grad${selectedMetric}`} x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="5%" stopColor={chartColor} stopOpacity={0.22} />
+                        <stop offset="5%" stopColor={chartColor} stopOpacity={0.25} />
                         <stop offset="95%" stopColor={chartColor} stopOpacity={0} />
                       </linearGradient>
                     </defs>
-                    <CartesianGrid strokeDasharray="3 3" stroke="rgba(71,85,105,0.2)" vertical={false} />
-                    <XAxis dataKey="time" stroke="transparent" tick={{ fill: '#64748b', fontSize: 11 }} tickLine={false} axisLine={false} />
-                    <YAxis stroke="transparent" tick={{ fill: '#64748b', fontSize: 11 }} tickLine={false} axisLine={false} />
-                    <Tooltip contentStyle={{ backgroundColor: 'rgba(40,55,74,0.97)', border: '1px solid rgba(71,85,105,0.5)', borderRadius: '12px', color: '#f1f5f9', fontSize: '12px', backdropFilter: 'blur(12px)' }} />
-                    <Area type="monotone" dataKey={selectedMetric} name={selectedMetric.charAt(0).toUpperCase() + selectedMetric.slice(1)} stroke={chartColor} fillOpacity={1} fill={`url(#grad${selectedMetric})`} strokeWidth={2.5} dot={false} activeDot={{ r: 4, fill: chartColor, stroke: '#1a2738', strokeWidth: 2 }} />
+                    <CartesianGrid strokeDasharray="3 3" stroke="rgba(71,85,105,0.25)" vertical={false} />
+                    <XAxis dataKey="time" stroke="#475569" tick={{ fill: '#64748b', fontSize: 11 }} tickLine={false} axisLine={false} />
+                    <YAxis stroke="#475569" tick={{ fill: '#64748b', fontSize: 11 }} tickLine={false} axisLine={false} />
+                    <Tooltip contentStyle={{ backgroundColor: '#1e293b', border: '1px solid rgba(71,85,105,0.5)', borderRadius: '10px', color: '#f1f5f9', fontSize: '12px' }} />
+                    <Area type="monotone" dataKey={selectedMetric} name={selectedMetric.charAt(0).toUpperCase() + selectedMetric.slice(1)} stroke={chartColor} fillOpacity={1} fill={`url(#grad${selectedMetric})`} strokeWidth={2.5} dot={false} activeDot={{ r: 4, fill: chartColor }} />
                   </AreaChart>
                 </ResponsiveContainer>
               )}
@@ -869,10 +846,10 @@ export default function SmartFarmDashboard() {
                 { key: 'moisture' as const, label: 'Moisture', icon: Droplets, color: '#2563eb' }
               ].map(m => (
                 <button key={m.key} onClick={() => setSelectedMetric(m.key)}
-                  className={cn("flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold transition-all border",
+                  className={cn("flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all border",
                     selectedMetric === m.key ? "border-transparent text-white" : "text-slate-400 hover:text-slate-200")}
                   style={{
-                    backgroundColor: selectedMetric === m.key ? m.color : 'rgba(51,65,85,0.4)',
+                    backgroundColor: selectedMetric === m.key ? m.color : 'rgba(30,41,59,0.6)',
                     borderColor: selectedMetric === m.key ? 'transparent' : 'rgba(71,85,105,0.3)',
                   }}>
                   <m.icon className="w-3.5 h-3.5" />{m.label}
@@ -882,18 +859,16 @@ export default function SmartFarmDashboard() {
           </div>
 
           {/* AI Insights */}
-          <div className="rounded-3xl flex flex-col overflow-hidden" style={cardBase}>
-            <div className="p-4 flex items-center gap-3 border-b" style={{ borderColor: 'rgba(71,85,105,0.3)', background: 'rgba(16,185,129,0.06)' }}>
-              <div className="w-9 h-9 rounded-xl flex items-center justify-center"
-                style={{ background: 'rgba(16,185,129,0.12)', border: '1px solid rgba(16,185,129,0.22)' }}>
+          <div className="card rounded-2xl flex flex-col overflow-hidden">
+            <div className="p-4 flex items-center gap-3" style={{ background: 'linear-gradient(135deg, rgba(16,185,129,0.15), rgba(6,182,212,0.08))' }}>
+              <div className="w-9 h-9 rounded-xl bg-emerald-500/20 border border-emerald-500/30 flex items-center justify-center">
                 <Bot className="w-5 h-5 text-emerald-400" />
               </div>
               <div className="flex-1">
-                <h3 className="font-semibold text-slate-100 text-sm mono">AI Insights</h3>
+                <h3 className="font-semibold text-slate-100 text-sm">AI Insights</h3>
                 <p className="text-[11px] text-slate-400">Groq · LLaMA 3.3 70B</p>
               </div>
-              <span className="flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold border"
-                style={{ background: 'rgba(16,185,129,0.1)', borderColor: 'rgba(16,185,129,0.22)', color: '#34d399' }}>
+              <span className="flex items-center gap-1 px-2 py-0.5 bg-emerald-500/20 rounded-full text-[10px] font-bold text-emerald-400 border border-emerald-500/25">
                 <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />LIVE
               </span>
             </div>
@@ -901,12 +876,12 @@ export default function SmartFarmDashboard() {
             <div className="flex-1 p-3 space-y-2 overflow-y-auto" style={{ maxHeight: '280px' }}>
               {insights.map(insight => (
                 <div key={insight.id}
-                  className={cn("flex gap-2.5 p-3 rounded-2xl border-l-2 cursor-pointer transition-all hover:translate-x-0.5",
+                  className={cn("flex gap-2.5 p-3 rounded-xl border-l-2 cursor-pointer transition-all hover:translate-x-0.5",
                     insight.priority === 'high' && "border-red-500 hover:bg-red-500/5",
                     insight.priority === 'medium' && "border-amber-500 hover:bg-amber-500/5",
                     insight.priority === 'low' && "border-cyan-500 hover:bg-cyan-500/5")}
-                  style={{ background: 'rgba(51,65,85,0.3)' }}>
-                  <div className={cn("w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0",
+                  style={{ background: 'rgba(15,24,36,0.4)' }}>
+                  <div className={cn("w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0",
                     insight.priority === 'high' && "bg-red-500/10 text-red-400",
                     insight.priority === 'medium' && "bg-amber-500/10 text-amber-400",
                     insight.priority === 'low' && "bg-cyan-500/10 text-cyan-400")}>
@@ -921,9 +896,9 @@ export default function SmartFarmDashboard() {
               ))}
             </div>
 
-            <div className="p-3 border-t flex gap-2" style={{ borderColor: 'rgba(71,85,105,0.25)', background: 'rgba(51,65,85,0.2)' }}>
-              <input type="text" placeholder="Ask AI about your crops..." className="flex-1 rounded-xl px-3 py-2 text-xs text-slate-200 placeholder:text-slate-600 focus:outline-none border"
-                style={{ ...deepCard, border: '1px solid rgba(71,85,105,0.3)' }}
+            <div className="p-3 border-t flex gap-2" style={{ borderColor: 'rgba(71,85,105,0.25)', background: 'rgba(15,24,36,0.4)' }}>
+              <input type="text" placeholder="Ask AI about your crops..." className="flex-1 rounded-xl px-3 py-2 text-xs text-slate-200 placeholder:text-slate-600 focus:outline-none focus:border-emerald-500/50 border"
+                style={{ background: 'rgba(15,24,36,0.8)', borderColor: 'rgba(71,85,105,0.3)' }}
                 onClick={() => setShowChat(true)} readOnly />
               <button onClick={() => setShowChat(true)} className="w-9 h-9 rounded-xl flex items-center justify-center text-white transition-all hover:scale-105 active:scale-95"
                 style={{ background: 'linear-gradient(135deg, #059669, #0891b2)' }}>
@@ -933,19 +908,19 @@ export default function SmartFarmDashboard() {
           </div>
         </div>
 
-        {/* ── SOIL METRICS + TASKS ─────────────────────────────────────────── */}
+        {/* ── SECTION 3: SOIL METRICS + TASKS + WEATHER ─────────────────── */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
 
-          {/* Soil Quality */}
-          <div className="lg:col-span-2 rounded-3xl p-5" style={cardBase}>
+          {/* Soil Quality Metrics */}
+          <div className="lg:col-span-2 card rounded-2xl p-5">
             <div className="flex items-center justify-between mb-5">
               <div>
-                <h3 className="mono font-semibold text-slate-100">Soil Quality</h3>
+                <h3 className="section-title font-semibold text-slate-100">Soil Quality</h3>
                 <p className="text-xs text-slate-500 mt-0.5">{plot?.name} · NPK + pH readings</p>
               </div>
               <button onClick={() => setShowSoilModal(true)}
-                className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-semibold text-slate-300 hover:text-emerald-400 transition-all"
-                style={innerCard}>
+                className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-semibold text-slate-300 hover:text-emerald-400 transition-all border"
+                style={{ background: 'rgba(15,24,36,0.6)', borderColor: 'rgba(71,85,105,0.3)' }}>
                 <Edit3 className="w-3 h-3" /> Edit
               </button>
             </div>
@@ -961,7 +936,7 @@ export default function SmartFarmDashboard() {
               return (
                 <div key={row.key} className="flex items-center gap-4 py-3.5 border-b last:border-0" style={{ borderColor: 'rgba(71,85,105,0.2)' }}>
                   <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0"
-                    style={{ background: `${row.accent}12`, border: `1px solid ${row.accent}22` }}>
+                    style={{ backgroundColor: `${row.accent}15`, border: `1px solid ${row.accent}25` }}>
                     <row.icon className="w-4 h-4" style={{ color: row.accent }} />
                   </div>
                   <div className="flex-1 min-w-0">
@@ -970,17 +945,17 @@ export default function SmartFarmDashboard() {
                         <span className="text-sm font-medium text-slate-200">{row.label}</span>
                         <span className="text-xs text-slate-500 ml-2">{row.detail}</span>
                       </div>
-                      <span className="mono text-sm font-bold text-slate-100 flex-shrink-0">
+                      <span className="stat-number text-sm font-bold text-slate-100 flex-shrink-0">
                         {row.value} <span className="text-[11px] font-normal text-slate-400">{row.unit}</span>
                       </span>
                     </div>
-                    <div className="w-full h-1.5 rounded-full overflow-hidden" style={{ background: 'rgba(71,85,105,0.3)' }}>
+                    <div className="w-full h-1.5 rounded-full overflow-hidden" style={{ background: 'rgba(30,41,59,0.8)' }}>
                       <div className="h-full rounded-full transition-all duration-700"
-                        style={{ width: `${row.pct}%`, backgroundColor: row.accent, boxShadow: `0 0 6px ${row.accent}35` }} />
+                        style={{ width: `${row.pct}%`, backgroundColor: row.accent, boxShadow: `0 0 8px ${row.accent}40` }} />
                     </div>
                   </div>
                   <div className="flex flex-col items-end gap-1 min-w-[88px]">
-                    <span className={cn("px-2 py-0.5 rounded-full text-[10px] font-semibold border",
+                    <span className={cn("px-2 py-0.5 rounded-full text-[10px] font-bold border",
                       st === 'optimal' && "bg-emerald-500/10 text-emerald-400 border-emerald-500/20",
                       st === 'good' && "bg-amber-500/10 text-amber-400 border-amber-500/20",
                       st === 'warning' && "bg-red-500/10 text-red-400 border-red-500/20")}>{stLabel}</span>
@@ -991,21 +966,22 @@ export default function SmartFarmDashboard() {
             })}
           </div>
 
-          {/* Tasks */}
-          <div className="rounded-3xl p-5 flex flex-col" style={cardBase}>
+          {/* Tasks Panel */}
+          <div className="card rounded-2xl p-5 flex flex-col">
             <div className="flex items-center justify-between mb-4">
               <div>
-                <h3 className="mono font-semibold text-slate-100">Farm Tasks</h3>
+                <h3 className="section-title font-semibold text-slate-100">Farm Tasks</h3>
                 <p className="text-xs text-slate-500 mt-0.5">{tasksDone.length}/{tasks.length} completed today</p>
               </div>
-              <button className="w-8 h-8 rounded-xl flex items-center justify-center text-emerald-400 transition-colors hover:bg-emerald-500/10"
-                style={{ border: '1px solid rgba(16,185,129,0.22)', background: 'rgba(16,185,129,0.08)' }}>
+              <button className="w-8 h-8 rounded-lg flex items-center justify-center text-emerald-400 border border-emerald-500/25 hover:bg-emerald-500/10 transition-colors"
+                style={{ background: 'rgba(16,185,129,0.08)' }}>
                 <Plus className="w-4 h-4" />
               </button>
             </div>
 
+            {/* Progress */}
             <div className="mb-4">
-              <div className="h-1.5 rounded-full overflow-hidden" style={{ background: 'rgba(71,85,105,0.3)' }}>
+              <div className="h-1.5 rounded-full overflow-hidden" style={{ background: 'rgba(30,41,59,0.8)' }}>
                 <div className="h-full rounded-full bg-emerald-500 transition-all duration-500"
                   style={{ width: `${(tasksDone.length / tasks.length) * 100}%` }} />
               </div>
@@ -1014,13 +990,10 @@ export default function SmartFarmDashboard() {
             <div className="space-y-2 flex-1">
               {tasks.map(task => (
                 <div key={task.id} onClick={() => setTasksDone(prev => prev.includes(task.id) ? prev.filter(x => x !== task.id) : [...prev, task.id])}
-                  className="flex items-start gap-3 p-3 rounded-2xl cursor-pointer transition-all hover:scale-[1.01] group"
-                  style={{
-                    background: tasksDone.includes(task.id) ? 'rgba(16,185,129,0.05)' : 'rgba(51,65,85,0.3)',
-                    border: `1px solid ${tasksDone.includes(task.id) ? 'rgba(16,185,129,0.15)' : 'rgba(71,85,105,0.25)'}`,
-                  }}>
+                  className="flex items-start gap-3 p-3 rounded-xl cursor-pointer transition-all hover:scale-[1.01] group"
+                  style={{ background: tasksDone.includes(task.id) ? 'rgba(16,185,129,0.05)' : 'rgba(15,24,36,0.5)', border: `1px solid ${tasksDone.includes(task.id) ? 'rgba(16,185,129,0.15)' : 'rgba(71,85,105,0.2)'}` }}>
                   <div className={cn("w-5 h-5 rounded-md flex items-center justify-center flex-shrink-0 mt-0.5 transition-all border",
-                    tasksDone.includes(task.id) ? "bg-emerald-500 border-emerald-500" : "border-slate-600 group-hover:border-emerald-500/40")}>
+                    tasksDone.includes(task.id) ? "bg-emerald-500 border-emerald-500" : "border-slate-600 group-hover:border-emerald-500/50")}>
                     {tasksDone.includes(task.id) && <Check className="w-3 h-3 text-white" />}
                   </div>
                   <div className="flex-1 min-w-0">
@@ -1039,14 +1012,14 @@ export default function SmartFarmDashboard() {
           </div>
         </div>
 
-        {/* ── WEATHER FORECAST ─────────────────────────────────────────────── */}
+        {/* ── SECTION 4: WEATHER FORECAST ────────────────────────────────── */}
         <WeatherForecast />
 
-        {/* ── ALL PLOTS ────────────────────────────────────────────────────── */}
+        {/* ── SECTION 5: ALL PLOTS ────────────────────────────────────────── */}
         <div>
           <div className="flex items-center justify-between mb-3">
             <div>
-              <h2 className="mono font-semibold text-slate-100">All Plots</h2>
+              <h2 className="section-title font-semibold text-slate-100">All Plots</h2>
               <p className="text-xs text-slate-500 mt-0.5">{plots.length} plots registered</p>
             </div>
             <button onClick={() => { setEditPlot(null); setShowModal(true); }}
@@ -1061,12 +1034,9 @@ export default function SmartFarmDashboard() {
               const dl = p.harvestDate ? daysLeft(p.harvestDate) : null;
               return (
                 <div key={p.id} onClick={() => { setActivePlotId(p.id); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
-                  className="rounded-3xl p-4 cursor-pointer transition-all hover:-translate-y-1 hover:shadow-xl hover:shadow-black/30"
-                  style={{
-                    ...cardBase,
-                    borderColor: activePlotId === p.id ? 'rgba(16,185,129,0.5)' : 'rgba(71,85,105,0.45)',
-                    boxShadow: activePlotId === p.id ? '0 0 30px rgba(16,185,129,0.08)' : 'none',
-                  }}>
+                  className={cn("card card-glow-green rounded-2xl p-4 cursor-pointer transition-all hover:-translate-y-1 hover:shadow-xl hover:shadow-black/40",
+                    activePlotId === p.id && "gradient-border")}
+                  style={{ borderColor: activePlotId === p.id ? undefined : 'rgba(71,85,105,0.35)' }}>
                   <div className="flex items-start justify-between mb-3">
                     <div className="flex items-center gap-2.5">
                       <span className="text-2xl">{p.emoji}</span>
@@ -1076,14 +1046,14 @@ export default function SmartFarmDashboard() {
                       </div>
                     </div>
                     <div className="flex gap-1.5">
-                      <span className={cn("px-2 py-0.5 rounded-full text-[10px] font-semibold capitalize",
+                      <span className={cn("px-2 py-0.5 rounded-full text-[10px] font-bold capitalize",
                         p.status === 'growing' && "bg-emerald-500/10 text-emerald-400",
                         p.status === 'dormant' && "bg-amber-500/10 text-amber-400",
                         p.status === 'harvested' && "bg-slate-500/10 text-slate-400")}>
                         {p.status}
                       </span>
                       <button onClick={e => { e.stopPropagation(); setEditPlot(p); setShowModal(true); }}
-                        className="p-1 hover:bg-slate-700/50 rounded text-slate-400 hover:text-slate-200 transition-colors">
+                        className="p-1 hover:bg-slate-700 rounded text-slate-400 hover:text-slate-200 transition-colors">
                         <Edit3 className="w-3 h-3" />
                       </button>
                     </div>
@@ -1096,9 +1066,9 @@ export default function SmartFarmDashboard() {
                       { label: 'Planted', value: p.plantedDate || '—' },
                       { label: 'Harvest', value: p.harvestDate || '—' }
                     ].map(m => (
-                      <div key={m.label} className="rounded-xl p-2" style={deepCard}>
+                      <div key={m.label} className="rounded-lg p-2" style={{ background: 'rgba(15,24,36,0.5)' }}>
                         <div className="text-[10px] text-slate-500 uppercase">{m.label}</div>
-                        <div className="text-xs font-semibold text-slate-200 mt-0.5 mono">{m.value}</div>
+                        <div className="text-xs font-semibold text-slate-200 mt-0.5 stat-number">{m.value}</div>
                       </div>
                     ))}
                   </div>
@@ -1107,9 +1077,9 @@ export default function SmartFarmDashboard() {
                     <>
                       <div className="flex justify-between text-[11px] mb-1">
                         <span className="text-slate-500">Growth</span>
-                        <span className="text-emerald-400 font-bold mono">{g}%</span>
+                        <span className="text-emerald-400 font-bold stat-number">{g}%</span>
                       </div>
-                      <div className="h-1.5 rounded-full overflow-hidden" style={{ background: 'rgba(71,85,105,0.3)' }}>
+                      <div className="h-1.5 rounded-full overflow-hidden" style={{ background: 'rgba(30,41,59,0.8)' }}>
                         <div className="h-full rounded-full transition-all" style={{ width: `${g}%`, background: 'linear-gradient(90deg, #059669, #10b981)' }} />
                       </div>
                     </>
@@ -1124,10 +1094,10 @@ export default function SmartFarmDashboard() {
 
             {/* Add new plot card */}
             <div onClick={() => { setEditPlot(null); setShowModal(true); }}
-              className="rounded-3xl border-2 border-dashed min-h-[180px] flex flex-col items-center justify-center gap-3 cursor-pointer transition-all hover:bg-emerald-500/5 group"
-              style={{ borderColor: 'rgba(71,85,105,0.35)' }}>
-              <div className="w-10 h-10 rounded-xl border-2 border-dashed flex items-center justify-center transition-colors group-hover:border-emerald-500/40"
-                style={{ borderColor: 'rgba(71,85,105,0.4)', background: 'rgba(16,185,129,0.04)' }}>
+              className="rounded-2xl border-2 border-dashed min-h-[180px] flex flex-col items-center justify-center gap-3 cursor-pointer transition-all hover:border-emerald-500/50 hover:bg-emerald-500/5 group"
+              style={{ borderColor: 'rgba(71,85,105,0.3)' }}>
+              <div className="w-10 h-10 rounded-xl border-2 border-dashed flex items-center justify-center transition-colors group-hover:border-emerald-500/50"
+                style={{ borderColor: 'rgba(71,85,105,0.4)', background: 'rgba(16,185,129,0.05)' }}>
                 <Plus className="w-5 h-5 text-slate-500 group-hover:text-emerald-500 transition-colors" />
               </div>
               <div className="text-center">
@@ -1138,21 +1108,21 @@ export default function SmartFarmDashboard() {
           </div>
         </div>
 
-        {/* ── QUICK STATS ──────────────────────────────────────────────────── */}
+        {/* ── SECTION 6: QUICK STATS ROW ─────────────────────────────────── */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           {[
-            { icon: Leaf,     label: 'Total Plots',  value: `${plots.length}`, sub: 'Active monitoring',   color: '#10b981' },
-            { icon: Zap,      label: 'Sensor Nodes', value: '4',               sub: 'ESP32 devices',       color: '#f59e0b' },
-            { icon: Target,   label: 'Health Score', value: `${healthScore}%`, sub: 'Overall farm health', color: '#a78bfa' },
-            { icon: Calendar, label: 'Next Harvest',  value: remaining !== null ? `${remaining}d` : 'N/A', sub: plot?.cropType || 'No active plot', color: '#06b6d4' },
+            { icon: Leaf, label: 'Total Plots', value: `${plots.length}`, sub: 'Active monitoring', color: '#10b981', bg: 'rgba(16,185,129,0.08)' },
+            { icon: Zap, label: 'Sensor Nodes', value: '4', sub: 'ESP32 devices', color: '#f59e0b', bg: 'rgba(245,158,11,0.08)' },
+            { icon: Target, label: 'Health Score', value: `${healthScore}%`, sub: 'Overall farm health', color: '#a78bfa', bg: 'rgba(167,139,250,0.08)' },
+            { icon: Calendar, label: 'Next Harvest', value: remaining !== null ? `${remaining}d` : 'N/A', sub: plot?.cropType || 'No active plot', color: '#06b6d4', bg: 'rgba(6,182,212,0.08)' },
           ].map(stat => (
-            <div key={stat.label} className="rounded-3xl p-5 flex items-center gap-4 hover:-translate-y-0.5 transition-all" style={cardBase}>
+            <div key={stat.label} className="card rounded-2xl p-5 flex items-center gap-4 hover:-translate-y-0.5 transition-all">
               <div className="w-11 h-11 rounded-xl flex items-center justify-center flex-shrink-0"
-                style={{ background: `${stat.color}12`, border: `1px solid ${stat.color}22` }}>
+                style={{ backgroundColor: stat.bg, border: `1px solid ${stat.color}25` }}>
                 <stat.icon className="w-5 h-5" style={{ color: stat.color }} />
               </div>
               <div>
-                <div className="mono text-xl font-bold text-slate-100">{stat.value}</div>
+                <div className="stat-number text-xl font-bold text-slate-100">{stat.value}</div>
                 <div className="text-xs font-medium text-slate-300">{stat.label}</div>
                 <div className="text-[11px] text-slate-500">{stat.sub}</div>
               </div>
@@ -1160,11 +1130,11 @@ export default function SmartFarmDashboard() {
           ))}
         </div>
 
-        {/* ── SYSTEM LOGS ──────────────────────────────────────────────────── */}
-        <div className="rounded-3xl p-5" style={cardBase}>
+        {/* ── SECTION 7: SYSTEM LOGS ─────────────────────────────────────── */}
+        <div className="card rounded-2xl p-5">
           <div className="flex items-center justify-between mb-4">
             <div>
-              <h3 className="mono font-semibold text-slate-100">System Activity</h3>
+              <h3 className="section-title font-semibold text-slate-100">System Activity</h3>
               <p className="text-xs text-slate-500 mt-0.5">Real-time event log from all sensor nodes</p>
             </div>
             <button className="text-xs text-slate-400 hover:text-emerald-400 transition-colors flex items-center gap-1">
@@ -1182,8 +1152,8 @@ export default function SmartFarmDashboard() {
               </thead>
               <tbody>
                 {logs.map(log => (
-                  <tr key={log.id} className="border-b hover:bg-slate-700/10 transition-colors" style={{ borderColor: 'rgba(71,85,105,0.15)' }}>
-                    <td className="py-3 px-3 text-slate-400 mono text-xs">{log.time}</td>
+                  <tr key={log.id} className="border-b hover:bg-slate-800/20 transition-colors" style={{ borderColor: 'rgba(71,85,105,0.15)' }}>
+                    <td className="py-3 px-3 text-slate-400 stat-number text-xs">{log.time}</td>
                     <td className="py-3 px-3 text-slate-200 font-medium text-sm">{log.event}</td>
                     <td className="py-3 px-3 text-slate-400 text-xs">{log.sensor}</td>
                     <td className="py-3 px-3 text-slate-300 text-xs">{log.value}</td>
@@ -1220,17 +1190,17 @@ export default function SmartFarmDashboard() {
       )}
 
       {showChat && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm" onClick={() => setShowChat(false)}>
-          <div className="rounded-3xl w-full max-w-lg max-h-[600px] flex flex-col shadow-2xl overflow-hidden"
-            style={cardBase}
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm" onClick={() => setShowChat(false)}>
+          <div className="border rounded-2xl w-full max-w-lg max-h-[600px] flex flex-col shadow-2xl overflow-hidden"
+            style={{ background: '#0f1824', borderColor: 'rgba(71,85,105,0.4)' }}
             onClick={e => e.stopPropagation()}>
-            <div className="flex items-center justify-between p-4 border-b" style={{ borderColor: 'rgba(71,85,105,0.3)', background: 'rgba(51,65,85,0.3)' }}>
-              <h3 className="flex items-center gap-2 font-semibold text-slate-100 mono">
+            <div className="flex items-center justify-between p-4 border-b" style={{ borderColor: 'rgba(71,85,105,0.3)', background: 'rgba(30,41,59,0.6)' }}>
+              <h3 className="flex items-center gap-2 font-semibold text-slate-100">
                 <Bot className="w-5 h-5 text-emerald-400" /> AI Agronomist
               </h3>
-              <button onClick={() => setShowChat(false)} className="p-1 hover:bg-slate-700/50 rounded-lg text-slate-400 transition-colors"><X className="w-5 h-5" /></button>
+              <button onClick={() => setShowChat(false)} className="p-1 hover:bg-slate-700 rounded-lg text-slate-400 transition-colors"><X className="w-5 h-5" /></button>
             </div>
-            <div className="p-3 flex items-center gap-3 flex-wrap text-xs border-b" style={{ background: 'rgba(16,185,129,0.05)', borderColor: 'rgba(16,185,129,0.15)' }}>
+            <div className="p-3 flex items-center gap-3 flex-wrap text-xs border-b" style={{ background: 'rgba(16,185,129,0.06)', borderColor: 'rgba(16,185,129,0.15)' }}>
               <span className="text-lg">{plot?.emoji}</span>
               <span className="font-semibold text-emerald-400">{plot?.name} · {plot?.cropType}</span>
               <span className="text-slate-400">🌡️ {sensorData.temperature.toFixed(1)}°C</span>
@@ -1241,12 +1211,12 @@ export default function SmartFarmDashboard() {
               {messages.map(msg => (
                 <div key={msg.id} className={cn("flex gap-3", msg.role === 'user' ? "ml-auto flex-row-reverse max-w-[80%]" : "max-w-[90%]")}>
                   <div className={cn("w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0",
-                    msg.role === 'ai' ? "bg-emerald-600" : "bg-slate-600")}>
+                    msg.role === 'ai' ? "bg-emerald-600" : "bg-slate-700")}>
                     {msg.role === 'ai' ? <Bot className="w-4 h-4 text-white" /> : <User className="w-4 h-4 text-slate-300" />}
                   </div>
                   <div className={cn("p-3 rounded-2xl text-sm leading-relaxed",
                     msg.role === 'ai' ? "text-slate-200 rounded-tl-sm" : "text-white rounded-tr-sm")}
-                    style={{ background: msg.role === 'ai' ? 'rgba(51,65,85,0.5)' : 'linear-gradient(135deg, #059669, #0891b2)' }}>
+                    style={{ background: msg.role === 'ai' ? 'rgba(30,41,59,0.8)' : 'linear-gradient(135deg, #059669, #0891b2)' }}>
                     {msg.content}
                   </div>
                 </div>
@@ -1254,18 +1224,18 @@ export default function SmartFarmDashboard() {
               {isAITyping && (
                 <div className="flex gap-3 max-w-[90%]">
                   <div className="w-9 h-9 rounded-full flex items-center justify-center bg-emerald-600"><Bot className="w-4 h-4 text-white" /></div>
-                  <div className="p-3 rounded-2xl rounded-tl-sm" style={{ background: 'rgba(51,65,85,0.5)' }}>
+                  <div className="p-3 rounded-2xl rounded-tl-sm" style={{ background: 'rgba(30,41,59,0.8)' }}>
                     <div className="flex gap-1">{[0, 150, 300].map(d => <span key={d} className="w-2 h-2 bg-slate-400 rounded-full animate-bounce" style={{ animationDelay: `${d}ms` }} />)}</div>
                   </div>
                 </div>
               )}
               <div ref={chatEndRef} />
             </div>
-            <div className="p-4 border-t flex gap-2" style={{ borderColor: 'rgba(71,85,105,0.3)', background: 'rgba(51,65,85,0.2)' }}>
+            <div className="p-4 border-t flex gap-2" style={{ borderColor: 'rgba(71,85,105,0.3)', background: 'rgba(30,41,59,0.4)' }}>
               <input type="text" value={inputMessage} onChange={e => setInputMessage(e.target.value)} onKeyPress={e => e.key === 'Enter' && handleSendMessage()}
                 placeholder="Ask about your crops..." disabled={isAITyping}
                 className="flex-1 rounded-xl px-4 py-2.5 text-sm text-slate-200 placeholder:text-slate-600 focus:outline-none border disabled:opacity-50"
-                style={{ ...deepCard, border: '1px solid rgba(71,85,105,0.3)' }} />
+                style={{ background: 'rgba(15,24,36,0.8)', borderColor: 'rgba(71,85,105,0.3)' }} />
               <button onClick={handleSendMessage} disabled={isAITyping || !inputMessage.trim()}
                 className="w-10 h-10 rounded-xl flex items-center justify-center text-white transition-all hover:scale-105 active:scale-95 disabled:opacity-50"
                 style={{ background: 'linear-gradient(135deg, #059669, #0891b2)' }}>
