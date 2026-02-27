@@ -29,10 +29,13 @@ const AI_MODEL   = 'llama-3.3-70b-versatile';
 // ---------------------------------------------------------------------------
 type IrrigationMode = 'manual' | 'auto' | 'scheduled';
 type AlertLevel     = 'all' | 'critical' | 'none';
+// Sub-mode used only when irrigationMode === 'auto'
+type AutoSubMode    = 'moisture' | 'cycle';
 
 interface FarmSettings {
   irrigationActive:   boolean;
   irrigationMode:     IrrigationMode;
+  autoSubMode:        AutoSubMode;
   wateringDuration:   number;
   wateringFrequency:  number;
   scheduledTime:      string;
@@ -97,9 +100,10 @@ function cn(...c: (string | false | null | undefined)[]): string {
 // ---------------------------------------------------------------------------
 // ── PIPELINE VALVE ANIMATION
 // ---------------------------------------------------------------------------
-function PipelineValvePanel({ isOpen, isRunning, timer, duration, onToggle, isReadOnly }: {
+// NOTE: Button removed from this component — it now only shows the animation + progress.
+// The toggle button is rendered separately below the panel only in manual mode.
+function PipelineValvePanel({ isOpen, isRunning, timer, duration }: {
   isOpen: boolean; isRunning: boolean; timer: number; duration: number;
-  onToggle: (v: boolean) => void; isReadOnly: boolean;
 }) {
   const progress = duration > 0 ? 1 - (timer / (duration * 60)) : 0;
   return (
@@ -120,7 +124,7 @@ function PipelineValvePanel({ isOpen, isRunning, timer, duration, onToggle, isRe
           <div>
             <h4 className="font-bold text-slate-100 text-sm">Irrigation Valve</h4>
             <p className="text-xs mt-0.5" style={{ color: isOpen ? '#7dd3fc' : '#64748b' }}>
-              {isOpen ? (timer > 0 ? `Running · ${Math.floor(timer/60).toString().padStart(2,'0')}:${(timer%60).toString().padStart(2,'0')} left` : 'Valve open') : 'Valve closed · tap to start'}
+              {isOpen ? (timer > 0 ? `Running · ${Math.floor(timer/60).toString().padStart(2,'0')}:${(timer%60).toString().padStart(2,'0')} left` : 'Valve open') : 'Valve closed'}
             </p>
           </div>
           <div className="flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold border"
@@ -210,18 +214,6 @@ function PipelineValvePanel({ isOpen, isRunning, timer, duration, onToggle, isRe
             </div>
           </div>
         )}
-
-        <button
-          onClick={() => !isReadOnly && onToggle(!isOpen)}
-          disabled={isReadOnly}
-          className="mt-4 w-full py-2.5 rounded-xl font-bold text-sm transition-all duration-300 disabled:opacity-40 disabled:cursor-not-allowed"
-          style={{
-            background: isOpen ? 'linear-gradient(135deg, #be123c, #e11d48)' : 'linear-gradient(135deg, #0369a1, #0284c7)',
-            boxShadow: isOpen ? '0 4px 16px rgba(225,29,72,0.2)' : '0 4px 16px rgba(2,132,199,0.2)',
-            color: '#fff',
-          }}>
-          {isOpen ? '🛑 Close Valve — Stop Irrigation' : '💧 Open Valve — Start Irrigation'}
-        </button>
       </div>
     </div>
   );
@@ -373,6 +365,7 @@ export default function SettingsPage() {
 
   const [settings, setSettings] = useState<FarmSettings>({
     irrigationActive:  false, irrigationMode:    'auto',
+    autoSubMode:       'moisture',
     wateringDuration:  20,    wateringFrequency: 12,
     scheduledTime:     '06:30',
     moistureMin: 35, moistureMax: 70,
@@ -409,7 +402,7 @@ export default function SettingsPage() {
     onValue(ref(db, 'controls/irrigationConfig'), snap => {
       if (!snap.exists()) return;
       const c = snap.val();
-      setSettings(s => ({ ...s, irrigationMode: c.mode ?? s.irrigationMode, irrigationActive: c.active ?? s.irrigationActive, wateringDuration: c.wateringDuration ?? s.wateringDuration, wateringFrequency: c.wateringFrequency ?? s.wateringFrequency, scheduledTime: c.scheduledTime ?? s.scheduledTime }));
+      setSettings(s => ({ ...s, irrigationMode: c.mode ?? s.irrigationMode, irrigationActive: c.active ?? s.irrigationActive, wateringDuration: c.wateringDuration ?? s.wateringDuration, wateringFrequency: c.wateringFrequency ?? s.wateringFrequency, scheduledTime: c.scheduledTime ?? s.scheduledTime, autoSubMode: c.autoSubMode ?? s.autoSubMode }));
     }, { onlyOnce: true });
   }, []);
 
@@ -444,7 +437,8 @@ export default function SettingsPage() {
 
   const autoRunning = useRef(false);
   const runAutoCheck = useCallback(() => {
-    if (settings.irrigationMode !== 'auto' || !settings.irrigationActive || isReadOnly) return;
+    // Only run cycle sub-mode via the timed check; moisture sub-mode is triggered by live sensor data elsewhere
+    if (settings.irrigationMode !== 'auto' || settings.autoSubMode !== 'cycle' || !settings.irrigationActive || isReadOnly) return;
     if (autoRunning.current) return;
     const db = getDatabase();
     onValue(ref(db, 'controls/lastAutoWater'), snap => {
@@ -454,7 +448,7 @@ export default function SettingsPage() {
         setTimeout(() => { setValve(false); autoRunning.current = false; }, settings.wateringDuration * 60 * 1000);
       }
     }, { onlyOnce: true });
-  }, [settings.irrigationMode, settings.irrigationActive, settings.wateringFrequency, settings.wateringDuration, isReadOnly]);
+  }, [settings.irrigationMode, settings.autoSubMode, settings.irrigationActive, settings.wateringFrequency, settings.wateringDuration, isReadOnly]);
 
   useEffect(() => {
     runAutoCheck(); const interval = setInterval(runAutoCheck, 60000); return () => clearInterval(interval);
@@ -477,10 +471,10 @@ Schema: { "tips": [{ "type": "info"|"warning"|"success", "text": "<max 20 words>
 
   const syncIrrigationConfig = (updated: FarmSettings) => {
     const db = getDatabase();
-    dbSet(ref(db, 'controls/irrigationConfig'), { mode: updated.irrigationMode, active: updated.irrigationActive, wateringDuration: updated.wateringDuration, wateringFrequency: updated.wateringFrequency, scheduledTime: updated.scheduledTime, updatedAt: Date.now() });
+    dbSet(ref(db, 'controls/irrigationConfig'), { mode: updated.irrigationMode, active: updated.irrigationActive, wateringDuration: updated.wateringDuration, wateringFrequency: updated.wateringFrequency, scheduledTime: updated.scheduledTime, autoSubMode: updated.autoSubMode, updatedAt: Date.now() });
   };
 
-  const irrigationKeys: (keyof FarmSettings)[] = ['irrigationMode','irrigationActive','wateringDuration','wateringFrequency','scheduledTime'];
+  const irrigationKeys: (keyof FarmSettings)[] = ['irrigationMode','irrigationActive','wateringDuration','wateringFrequency','scheduledTime','autoSubMode'];
   const set = <K extends keyof FarmSettings>(key: K, val: FarmSettings[K]) => {
     if (isReadOnly) return;
     setSettings(s => { const updated = { ...s, [key]: val }; if (irrigationKeys.includes(key)) syncIrrigationConfig(updated); return updated; });
@@ -631,12 +625,15 @@ Schema: { "tips": [{ "type": "info"|"warning"|"success", "text": "<max 20 words>
                 </div>
               }>
 
-              <PipelineValvePanel isOpen={wateringOn} isRunning={wateringOn} timer={waterTimer} duration={settings.wateringDuration} onToggle={setWateringOn} isReadOnly={isReadOnly} />
+              {/* ── Valve animation: shown for ALL modes ── */}
+              <PipelineValvePanel
+                isOpen={wateringOn}
+                isRunning={wateringOn}
+                timer={waterTimer}
+                duration={settings.wateringDuration}
+              />
 
-              <SettingRow label="Auto-Irrigation System" sublabel="Enable automated soil moisture control">
-                <Toggle checked={settings.irrigationActive} onChange={v => set('irrigationActive', v)} color="#38bdf8" readOnly={isReadOnly} />
-              </SettingRow>
-
+              {/* ── Mode selector ── */}
               <div className="space-y-2">
                 <p className="text-xs font-semibold text-slate-500 uppercase tracking-widest">Irrigation Mode</p>
                 <div className="grid grid-cols-3 gap-2">
@@ -655,11 +652,100 @@ Schema: { "tips": [{ "type": "info"|"warning"|"success", "text": "<max 20 words>
                 </div>
               </div>
 
-              <SliderRow label="Watering Duration" value={settings.wateringDuration} min={5} max={60} step={5} unit=" min" onChange={v => set('wateringDuration', v)} color="#38bdf8" readOnly={isReadOnly} />
-
-              {settings.irrigationMode === 'auto' && (
-                <SliderRow label="Auto-cycle Frequency" value={settings.wateringFrequency} min={2} max={48} step={2} unit=" hrs" onChange={v => set('wateringFrequency', v)} color="#38bdf8" readOnly={isReadOnly} />
+              {/* ── Open/Close toggle: only shown in manual mode, after mode selector ── */}
+              {settings.irrigationMode === 'manual' && (
+                <SettingRow label="Open Valve — Start Irrigation" sublabel={wateringOn ? 'Valve is open · water flowing' : 'Valve is closed · no flow'}>
+                  <Toggle checked={wateringOn} onChange={v => !isReadOnly && setWateringOn(v)} color="#38bdf8" readOnly={isReadOnly} />
+                </SettingRow>
               )}
+
+              {/* ── AUTO sub-options ── */}
+              {settings.irrigationMode === 'auto' && (
+                <div className="rounded-xl overflow-hidden"
+                  style={{ border: '1px solid rgba(56,189,248,0.15)', background: 'rgba(8,47,73,0.25)' }}>
+                  <div className="px-4 pt-3 pb-2">
+                    <p className="text-xs font-semibold text-sky-400 uppercase tracking-widest mb-3">Auto Mode — select one</p>
+
+                    {/* Option 1: Moisture-triggered */}
+                    <button
+                      onClick={() => !isReadOnly && set('autoSubMode', 'moisture')}
+                      disabled={isReadOnly}
+                      className="w-full mb-2 flex items-center gap-3 px-4 py-3 rounded-xl text-left transition-all disabled:cursor-not-allowed"
+                      style={{
+                        background: settings.autoSubMode === 'moisture' ? 'rgba(56,189,248,0.1)' : 'rgba(15,24,36,0.5)',
+                        border: `1px solid ${settings.autoSubMode === 'moisture' ? 'rgba(56,189,248,0.35)' : 'rgba(71,85,105,0.25)'}`,
+                        opacity: isReadOnly ? 0.5 : 1,
+                      }}>
+                      <div className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0"
+                        style={{ background: settings.autoSubMode === 'moisture' ? 'rgba(56,189,248,0.15)' : 'rgba(30,41,59,0.6)', border: `1px solid ${settings.autoSubMode === 'moisture' ? 'rgba(56,189,248,0.3)' : 'rgba(71,85,105,0.3)'}` }}>
+                        <Droplets className="w-4 h-4" style={{ color: settings.autoSubMode === 'moisture' ? '#38bdf8' : '#475569' }} />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-semibold" style={{ color: settings.autoSubMode === 'moisture' ? '#e2e8f0' : '#64748b' }}>
+                          Auto-Irrigation System
+                        </p>
+                        <p className="text-xs mt-0.5" style={{ color: settings.autoSubMode === 'moisture' ? '#7dd3fc' : '#475569' }}>
+                          Opens valve automatically when live soil moisture is very low
+                        </p>
+                      </div>
+                      <div className="w-4 h-4 rounded-full border-2 flex-shrink-0 flex items-center justify-center"
+                        style={{ borderColor: settings.autoSubMode === 'moisture' ? '#38bdf8' : '#334155' }}>
+                        {settings.autoSubMode === 'moisture' && (
+                          <div className="w-2 h-2 rounded-full" style={{ background: '#38bdf8' }} />
+                        )}
+                      </div>
+                    </button>
+
+                    {/* Option 2: Cycle-based */}
+                    <button
+                      onClick={() => !isReadOnly && set('autoSubMode', 'cycle')}
+                      disabled={isReadOnly}
+                      className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-left transition-all disabled:cursor-not-allowed"
+                      style={{
+                        background: settings.autoSubMode === 'cycle' ? 'rgba(56,189,248,0.1)' : 'rgba(15,24,36,0.5)',
+                        border: `1px solid ${settings.autoSubMode === 'cycle' ? 'rgba(56,189,248,0.35)' : 'rgba(71,85,105,0.25)'}`,
+                        opacity: isReadOnly ? 0.5 : 1,
+                      }}>
+                      <div className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0"
+                        style={{ background: settings.autoSubMode === 'cycle' ? 'rgba(56,189,248,0.15)' : 'rgba(30,41,59,0.6)', border: `1px solid ${settings.autoSubMode === 'cycle' ? 'rgba(56,189,248,0.3)' : 'rgba(71,85,105,0.3)'}` }}>
+                        <RefreshCw className="w-4 h-4" style={{ color: settings.autoSubMode === 'cycle' ? '#38bdf8' : '#475569' }} />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-semibold" style={{ color: settings.autoSubMode === 'cycle' ? '#e2e8f0' : '#64748b' }}>
+                          Auto-cycle Frequency
+                        </p>
+                        <p className="text-xs mt-0.5" style={{ color: settings.autoSubMode === 'cycle' ? '#7dd3fc' : '#475569' }}>
+                          Waters on a fixed time interval regardless of soil moisture
+                        </p>
+                      </div>
+                      <div className="w-4 h-4 rounded-full border-2 flex-shrink-0 flex items-center justify-center"
+                        style={{ borderColor: settings.autoSubMode === 'cycle' ? '#38bdf8' : '#334155' }}>
+                        {settings.autoSubMode === 'cycle' && (
+                          <div className="w-2 h-2 rounded-full" style={{ background: '#38bdf8' }} />
+                        )}
+                      </div>
+                    </button>
+                  </div>
+
+                  {/* Sub-mode specific controls */}
+                  {settings.autoSubMode === 'cycle' && (
+                    <div className="px-4 pb-4 pt-1">
+                      <SliderRow label="Auto-cycle Frequency" value={settings.wateringFrequency} min={2} max={48} step={2} unit=" hrs" onChange={v => set('wateringFrequency', v)} color="#38bdf8" readOnly={isReadOnly} />
+                    </div>
+                  )}
+
+                  {settings.autoSubMode === 'moisture' && (
+                    <div className="px-4 pb-4 pt-1">
+                      <p className="text-xs text-slate-500 flex items-center gap-1.5">
+                        <Info className="w-3 h-3 flex-shrink-0" />
+                        Valve opens when live soil moisture drops below the <span className="text-sky-400 font-semibold">Min Moisture</span> threshold set below.
+                      </p>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              <SliderRow label="Watering Duration" value={settings.wateringDuration} min={5} max={60} step={5} unit=" min" onChange={v => set('wateringDuration', v)} color="#38bdf8" readOnly={isReadOnly} />
 
               {settings.irrigationMode === 'scheduled' && (
                 <div className="space-y-2">
