@@ -6,13 +6,8 @@ import {
   Thermometer, CloudRain, CloudSnow, Cloud, Sun,
   Zap, CloudDrizzle, CloudFog, RefreshCw, MapPin,
   ChevronRight, ChevronLeft, ArrowUp, ArrowDown,
-  Search, X, Star, Trash2, Check,
+  Search, X, Star, Trash2, Check, Plus,
 } from 'lucide-react';
-
-// ── Utility ────────────────────────────────────────────────────────────────
-function cn(...classes: (string | undefined | false | null)[]) {
-  return classes.filter(Boolean).join(' ');
-}
 
 // ── Config ─────────────────────────────────────────────────────────────────
 const API_KEY = process.env.NEXT_PUBLIC_OPENWEATHER_API_KEY ?? '';
@@ -22,181 +17,123 @@ const SAVED_LOCATIONS_KEY = 'weather_saved_locations';
 
 // ── Types ──────────────────────────────────────────────────────────────────
 interface LocationData {
-  lat: number;
-  lon: number;
-  name: string;
-  country: string;
-  state?: string;
+  lat: number; lon: number; name: string; country: string; state?: string;
 }
-
 interface CurrentWeather {
-  temp: number;
-  feelsLike: number;
-  humidity: number;
-  windSpeed: number;
-  windDeg: number;
-  visibility: number;
-  pressure: number;
-  uvIndex: number;
-  condition: string;
-  description: string;
-  icon: string;
-  sunrise: number;
-  sunset: number;
-  cityName: string;
-  country: string;
-  dt: number;
+  temp: number; feelsLike: number; humidity: number; windSpeed: number; windDeg: number;
+  visibility: number; pressure: number; uvIndex: number; condition: string;
+  description: string; icon: string; sunrise: number; sunset: number;
+  cityName: string; country: string; dt: number;
 }
-
 interface HourlyPoint {
-  dt: number;
-  temp: number;
-  pop: number;
-  condition: string;
-  windSpeed: number;
-  humidity: number;
+  dt: number; temp: number; pop: number; condition: string; windSpeed: number; humidity: number;
 }
-
 interface DailyPoint {
-  dt: number;
-  tempMax: number;
-  tempMin: number;
-  pop: number;
-  condition: string;
-  description: string;
-  humidity: number;
-  windSpeed: number;
-  uvIndex: number;
+  dt: number; tempMax: number; tempMin: number; pop: number; condition: string;
+  description: string; humidity: number; windSpeed: number; uvIndex: number;
 }
 
-interface Toast {
-  type: 'success' | 'info';
-  msg: string;
+// ── Helpers ────────────────────────────────────────────────────────────────
+function WeatherIcon({ condition, size = 24, color }: { condition: string; size?: number; color?: string }) {
+  const s = { width: size, height: size, flexShrink: 0 as const, color };
+  if (condition === 'Clear') return <Sun style={s} />;
+  if (condition === 'Rain') return <CloudRain style={s} />;
+  if (condition === 'Drizzle') return <CloudDrizzle style={s} />;
+  if (condition === 'Thunderstorm') return <Zap style={s} />;
+  if (condition === 'Snow') return <CloudSnow style={s} />;
+  if (['Mist', 'Haze', 'Fog'].includes(condition)) return <CloudFog style={s} />;
+  return <Cloud style={s} />;
 }
 
-// ── Weather helpers ─────────────────────────────────────────────────────────
-function WeatherIcon({ condition, size = 24, className }: { condition: string; size?: number; className?: string }) {
-  const s = { width: size, height: size };
-  if (condition === 'Clear') return <Sun style={s} className={cn('flex-shrink-0 text-amber-400', className)} />;
-  if (condition === 'Rain') return <CloudRain style={s} className={cn('flex-shrink-0 text-cyan-400', className)} />;
-  if (condition === 'Drizzle') return <CloudDrizzle style={s} className={cn('flex-shrink-0 text-cyan-300', className)} />;
-  if (condition === 'Thunderstorm') return <Zap style={s} className={cn('flex-shrink-0 text-yellow-300', className)} />;
-  if (condition === 'Snow') return <CloudSnow style={s} className={cn('flex-shrink-0 text-slate-200', className)} />;
-  if (condition === 'Mist' || condition === 'Haze' || condition === 'Fog')
-    return <CloudFog style={s} className={cn('flex-shrink-0 text-slate-400', className)} />;
-  return <Cloud style={s} className={cn('flex-shrink-0 text-slate-300', className)} />;
+function conditionAccent(c: string) {
+  if (c === 'Clear') return '#d97706';
+  if (c === 'Rain' || c === 'Drizzle') return '#0891b2';
+  if (c === 'Thunderstorm') return '#7c3aed';
+  if (c === 'Snow') return '#64748b';
+  return '#2d6a4f';
 }
 
-function conditionGradient(condition: string) {
-  if (condition === 'Clear') return 'linear-gradient(135deg, rgba(251,191,36,0.12) 0%, rgba(245,158,11,0.06) 40%, rgba(15,24,36,0.95) 100%)';
-  if (condition === 'Rain' || condition === 'Drizzle') return 'linear-gradient(135deg, rgba(6,182,212,0.12) 0%, rgba(37,99,235,0.08) 40%, rgba(15,24,36,0.95) 100%)';
-  if (condition === 'Thunderstorm') return 'linear-gradient(135deg, rgba(124,58,237,0.15) 0%, rgba(30,27,75,0.1) 40%, rgba(15,24,36,0.95) 100%)';
-  if (condition === 'Snow') return 'linear-gradient(135deg, rgba(148,163,184,0.12) 0%, rgba(203,213,225,0.06) 40%, rgba(15,24,36,0.95) 100%)';
-  return 'linear-gradient(135deg, rgba(71,85,105,0.12) 0%, rgba(51,65,85,0.08) 40%, rgba(15,24,36,0.95) 100%)';
-}
-
-function accentColor(condition: string) {
-  if (condition === 'Clear') return '#fbbf24';
-  if (condition === 'Rain' || condition === 'Drizzle') return '#22d3ee';
-  if (condition === 'Thunderstorm') return '#a78bfa';
-  if (condition === 'Snow') return '#cbd5e1';
-  return '#94a3b8';
+function conditionIconColor(c: string) {
+  if (c === 'Clear') return '#d97706';
+  if (c === 'Rain' || c === 'Drizzle') return '#0891b2';
+  if (c === 'Thunderstorm') return '#7c3aed';
+  if (c === 'Snow') return '#64748b';
+  return '#40916c';
 }
 
 function windDirection(deg: number) {
-  const dirs = ['N', 'NE', 'E', 'SE', 'S', 'SW', 'W', 'NW'];
-  return dirs[Math.round(deg / 45) % 8];
+  return ['N', 'NE', 'E', 'SE', 'S', 'SW', 'W', 'NW'][Math.round(deg / 45) % 8];
 }
-
 function formatTime(unix: number) {
   return new Date(unix * 1000).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false });
 }
-
 function formatHour(unix: number) {
   const h = new Date(unix * 1000).getHours();
   return h === 0 ? '12 AM' : h === 12 ? '12 PM' : h < 12 ? `${h} AM` : `${h - 12} PM`;
 }
-
-function formatDayFull(unix: number) {
-  return new Date(unix * 1000).toLocaleDateString([], { weekday: 'long', month: 'short', day: 'numeric' });
-}
-
 function formatDayShort(unix: number) {
   const d = new Date(unix * 1000);
   const today = new Date();
   if (d.toDateString() === today.toDateString()) return 'Today';
-  const tomorrow = new Date();
-  tomorrow.setDate(today.getDate() + 1);
+  const tomorrow = new Date(today); tomorrow.setDate(today.getDate() + 1);
   if (d.toDateString() === tomorrow.toDateString()) return 'Tomorrow';
   return d.toLocaleDateString([], { weekday: 'short' });
 }
+function formatDayFull(unix: number) {
+  return new Date(unix * 1000).toLocaleDateString([], { weekday: 'long', month: 'short', day: 'numeric' });
+}
 
-// ── Ambient effects ─────────────────────────────────────────────────────────
-const RainDrops = () => (
-  <div className="absolute inset-0 overflow-hidden pointer-events-none opacity-20">
-    {Array.from({ length: 20 }).map((_, i) => (
-      <div key={i} className="absolute w-px rounded-full"
-        style={{
-          left: `${(i * 17 + 5) % 100}%`,
-          top: `-${(i * 7) % 20}px`,
-          height: `${(i % 3) * 6 + 8}px`,
-          background: 'linear-gradient(to bottom, transparent, #22d3ee)',
-          animationName: 'rain',
-          animationDuration: `${(i % 3) * 0.4 + 0.6}s`,
-          animationDelay: `${(i * 0.1) % 2}s`,
-          animationIterationCount: 'infinite',
-          animationTimingFunction: 'linear',
-        }} />
-    ))}
-  </div>
-);
-
-const Snowflakes = () => (
-  <div className="absolute inset-0 overflow-hidden pointer-events-none opacity-30">
-    {Array.from({ length: 15 }).map((_, i) => (
-      <div key={i} className="absolute text-white text-xs"
-        style={{
-          left: `${(i * 23 + 3) % 100}%`,
-          animationName: 'snow',
-          animationDuration: `${(i % 3) * 1 + 2}s`,
-          animationDelay: `${(i * 0.2) % 3}s`,
-          animationIterationCount: 'infinite',
-          animationTimingFunction: 'linear',
-        }}>❄</div>
-    ))}
-  </div>
-);
-
-const SunRays = () => (
-  <div className="absolute inset-0 overflow-hidden pointer-events-none">
-    <div className="absolute top-6 right-8 w-24 h-24 opacity-10"
-      style={{ background: 'radial-gradient(circle, #fbbf24 0%, transparent 70%)', animation: 'pulse 3s ease-in-out infinite' }} />
-    <div className="absolute top-4 right-6 w-36 h-36 opacity-5"
-      style={{ background: 'radial-gradient(circle, #fbbf24 0%, transparent 70%)', animation: 'pulse 3s ease-in-out infinite', animationDelay: '1s' }} />
-  </div>
-);
-
-const UVBar = ({ value }: { value: number }) => {
-  const pct = Math.min(100, (value / 11) * 100);
-  const color = value <= 2 ? '#22c55e' : value <= 5 ? '#eab308' : value <= 7 ? '#f97316' : value <= 10 ? '#ef4444' : '#a21caf';
-  const label = value <= 2 ? 'Low' : value <= 5 ? 'Moderate' : value <= 7 ? 'High' : value <= 10 ? 'Very High' : 'Extreme';
+// ── Ambient Rain — barely visible, 15% opacity ─────────────────────────────
+function AmbientRain({ intensity = 18 }: { intensity?: number }) {
   return (
-    <div className="w-full">
-      <div className="flex justify-between text-[10px] mb-1">
-        <span className="text-slate-500">UV Index</span>
-        <span className="font-bold" style={{ color }}>{value} · {label}</span>
-      </div>
-      <div className="h-1.5 rounded-full overflow-hidden" style={{ background: 'rgba(30,41,59,0.8)' }}>
-        <div className="h-full rounded-full transition-all duration-700" style={{ width: `${pct}%`, backgroundColor: color }} />
-      </div>
+    <div style={{ position: 'absolute', inset: 0, overflow: 'hidden', pointerEvents: 'none', zIndex: 0 }}>
+      {Array.from({ length: intensity }).map((_, i) => {
+        const left = `${(i * 19 + 3) % 100}%`;
+        const dur = `${0.55 + (i % 4) * 0.18}s`;
+        const delay = `${(i * 0.13) % 2.2}s`;
+        const h = 8 + (i % 3) * 5;
+        const opacity = 0.04 + (i % 3) * 0.025;
+        return (
+          <div key={i} style={{
+            position: 'absolute',
+            left,
+            top: -h,
+            width: 1,
+            height: h,
+            borderRadius: 100,
+            background: 'linear-gradient(to bottom, transparent, #0891b2)',
+            opacity,
+            animation: `sfRain ${dur} ${delay} linear infinite`,
+          }} />
+        );
+      })}
     </div>
   );
-};
+}
 
-// ── Location Search Component ───────────────────────────────────────────────
-function LocationSearch({ onSelect, accent, onClose }: {
-  onSelect: (loc: LocationData) => void;
+// ── Ambient Sun glow ───────────────────────────────────────────────────────
+function AmbientSun() {
+  return (
+    <div style={{ position: 'absolute', inset: 0, overflow: 'hidden', pointerEvents: 'none', zIndex: 0 }}>
+      <div style={{
+        position: 'absolute', top: -20, right: -20, width: 180, height: 180,
+        background: 'radial-gradient(circle, rgba(251,191,36,0.13) 0%, transparent 70%)',
+        animation: 'sfGlow 4s ease-in-out infinite',
+      }} />
+      <div style={{
+        position: 'absolute', top: 10, right: 10, width: 80, height: 80,
+        background: 'radial-gradient(circle, rgba(251,191,36,0.08) 0%, transparent 70%)',
+        animation: 'sfGlow 4s ease-in-out infinite',
+        animationDelay: '1.5s',
+      }} />
+    </div>
+  );
+}
+
+// ── Location Search overlay ────────────────────────────────────────────────
+function LocationSearch({ accent, onSelect, onClose }: {
   accent: string;
+  onSelect: (loc: LocationData) => void;
   onClose: () => void;
 }) {
   const [query, setQuery] = useState('');
@@ -210,95 +147,78 @@ function LocationSearch({ onSelect, accent, onClose }: {
 
   const search = useCallback(async (q: string) => {
     if (!q || q.length < 2) { setResults([]); return; }
-    setSearching(true);
-    setError(null);
+    setSearching(true); setError(null);
     try {
-      const res = await fetch(
-        `https://api.openweathermap.org/geo/1.0/direct?q=${encodeURIComponent(q)}&limit=6&appid=${API_KEY}`
-      );
-      if (!res.ok) throw new Error('Search failed');
+      const res = await fetch(`https://api.openweathermap.org/geo/1.0/direct?q=${encodeURIComponent(q)}&limit=6&appid=${API_KEY}`);
+      if (!res.ok) throw new Error();
       const data = await res.json();
       setResults(data);
-      if (data.length === 0) setError('No locations found. Try a different search.');
-    } catch {
-      setError('Search failed. Please try again.');
-    } finally {
-      setSearching(false);
-    }
+      if (!data.length) setError('No locations found. Try a different search.');
+    } catch { setError('Search failed. Please try again.'); }
+    finally { setSearching(false); }
   }, []);
 
   const handleInput = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const val = e.target.value;
-    setQuery(val);
+    const val = e.target.value; setQuery(val);
     if (debounceRef.current) clearTimeout(debounceRef.current);
-    debounceRef.current = setTimeout(() => search(val), 400);
+    debounceRef.current = setTimeout(() => search(val), 380);
   };
 
   return (
-    <div className="absolute inset-0 z-50 flex flex-col"
-      style={{ background: 'rgba(10,16,28,0.97)', backdropFilter: 'blur(20px)', borderRadius: 'inherit' }}>
-      <div className="p-4 border-b" style={{ borderColor: 'rgba(71,85,105,0.3)' }}>
-        <div className="flex items-center gap-2 mb-3">
-          <span className="text-sm font-semibold text-slate-200">Search Location</span>
-          <button onClick={onClose} className="ml-auto p-1.5 rounded-lg text-slate-400 hover:text-slate-200 hover:bg-slate-700 transition-all">
-            <X className="w-4 h-4" />
+    <div style={{
+      position: 'absolute', inset: 0, zIndex: 60,
+      background: 'rgba(249,245,239,0.97)', backdropFilter: 'blur(16px)',
+      borderRadius: 'inherit', display: 'flex', flexDirection: 'column',
+    }}>
+      <div style={{ padding: '18px 22px', borderBottom: '1px solid rgba(160,130,90,0.14)' }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
+          <span style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: 15, fontWeight: 600, color: '#1c1a15' }}>Search Location</span>
+          <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#9a8870', padding: 6, borderRadius: 8 }}>
+            <X size={15} />
           </button>
         </div>
-        <div className="relative">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
-          <input
-            ref={inputRef}
-            value={query}
-            onChange={handleInput}
-            placeholder="Search for a city..."
-            className="w-full pl-9 pr-4 py-2.5 rounded-xl text-sm text-slate-200 placeholder-slate-600 outline-none border"
+        <div style={{ position: 'relative' }}>
+          <Search size={14} color="#b0a088" style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)' }} />
+          <input ref={inputRef} value={query} onChange={handleInput} placeholder="Search for a city..."
             style={{
-              background: 'rgba(15,24,36,0.8)',
-              borderColor: query ? `${accent}50` : 'rgba(71,85,105,0.3)',
-              transition: 'border-color 0.2s',
-            }}
-          />
-          {searching && (
-            <RefreshCw className="absolute right-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-500 animate-spin" />
-          )}
+              width: '100%', paddingLeft: 36, paddingRight: 36, paddingTop: 10, paddingBottom: 10,
+              borderRadius: 11, fontSize: 13.5, fontFamily: "'DM Sans', sans-serif", color: '#1c1a15',
+              background: '#fff', border: `1px solid ${query ? accent + '55' : 'rgba(160,130,90,0.22)'}`,
+              outline: 'none', boxSizing: 'border-box', transition: 'border-color 0.2s',
+            }} />
+          {searching && <RefreshCw size={13} color="#b0a088" style={{ position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)', animation: 'sfSpin 1s linear infinite' }} />}
         </div>
       </div>
-
-      <div className="flex-1 overflow-y-auto p-3 space-y-1">
-        {error && !searching && (
-          <p className="text-center text-slate-500 text-xs py-6">{error}</p>
-        )}
-        {!error && results.length === 0 && !searching && query.length < 2 && (
-          <p className="text-center text-slate-600 text-xs py-6">Type at least 2 characters to search</p>
+      <div style={{ flex: 1, overflowY: 'auto', padding: '10px 14px', display: 'flex', flexDirection: 'column', gap: 5 }}>
+        {error && <p style={{ textAlign: 'center', color: '#b0a088', fontSize: 12.5, padding: '20px 0', fontFamily: "'DM Sans', sans-serif" }}>{error}</p>}
+        {!error && !results.length && !searching && query.length < 2 && (
+          <p style={{ textAlign: 'center', color: '#b0a088', fontSize: 12.5, padding: '20px 0', fontFamily: "'DM Sans', sans-serif" }}>Type at least 2 characters to search</p>
         )}
         {results.map((loc, i) => (
-          <button key={i}
-            onClick={() => onSelect({ lat: loc.lat, lon: loc.lon, name: loc.name, country: loc.country, state: loc.state })}
-            className="w-full flex items-center gap-3 p-3 rounded-xl border text-left transition-all"
-            style={{ background: 'rgba(15,24,36,0.5)', borderColor: 'rgba(71,85,105,0.2)' }}
-            onMouseEnter={e => (e.currentTarget.style.borderColor = `${accent}50`)}
-            onMouseLeave={e => (e.currentTarget.style.borderColor = 'rgba(71,85,105,0.2)')}>
-            <div className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0"
-              style={{ background: `${accent}15`, border: `1px solid ${accent}25` }}>
-              <MapPin className="w-4 h-4" style={{ color: accent }} />
+          <button key={i} onClick={() => onSelect({ lat: loc.lat, lon: loc.lon, name: loc.name, country: loc.country, state: loc.state })}
+            style={{
+              display: 'flex', alignItems: 'center', gap: 12, padding: '11px 14px',
+              borderRadius: 12, border: '1px solid rgba(160,130,90,0.18)', background: '#fff',
+              cursor: 'pointer', textAlign: 'left', width: '100%', fontFamily: "'DM Sans', sans-serif",
+              transition: 'all 0.15s',
+            }}
+            onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = '#f0faf2'; (e.currentTarget as HTMLElement).style.borderColor = `${accent}50`; }}
+            onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = '#fff'; (e.currentTarget as HTMLElement).style.borderColor = 'rgba(160,130,90,0.18)'; }}>
+            <div style={{ width: 34, height: 34, borderRadius: 9, background: `${accent}14`, border: `1px solid ${accent}22`, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+              <MapPin size={14} color={accent} />
             </div>
-            <div className="min-w-0">
-              <div className="text-sm font-semibold text-slate-200 truncate">{loc.name}</div>
-              <div className="text-xs text-slate-500 truncate">
-                {[loc.state, loc.country].filter(Boolean).join(', ')}
-              </div>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{ fontSize: 13.5, fontWeight: 600, color: '#1c1a15', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{loc.name}</div>
+              <div style={{ fontSize: 11.5, color: '#9a8870', marginTop: 1 }}>{[loc.state, loc.country].filter(Boolean).join(', ')}</div>
             </div>
-            <ChevronRight className="w-4 h-4 text-slate-600 ml-auto flex-shrink-0" />
+            <ChevronRight size={13} color="#b0a088" />
           </button>
         ))}
       </div>
-
-      <div className="p-3 border-t" style={{ borderColor: 'rgba(71,85,105,0.2)' }}>
+      <div style={{ padding: '10px 14px', borderTop: '1px solid rgba(160,130,90,0.12)' }}>
         <button onClick={() => onSelect(DEFAULT_LOCATION)}
-          className="w-full flex items-center gap-2 p-2.5 rounded-xl border text-xs text-slate-400 transition-all hover:text-slate-200"
-          style={{ background: 'rgba(15,24,36,0.4)', borderColor: 'rgba(71,85,105,0.2)' }}>
-          <MapPin className="w-3.5 h-3.5" />
-          Use default: Nairobi, Kenya
+          style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, padding: '9px', borderRadius: 11, border: '1px solid rgba(160,130,90,0.2)', background: '#f9f5ef', cursor: 'pointer', fontSize: 12.5, color: '#9a8870', fontFamily: "'DM Sans', sans-serif" }}>
+          <MapPin size={12} /> Use default: Nairobi, Kenya
         </button>
       </div>
     </div>
@@ -307,73 +227,57 @@ function LocationSearch({ onSelect, accent, onClose }: {
 
 // ── Saved Locations Panel ──────────────────────────────────────────────────
 function SavedLocationsPanel({ savedLocations, currentLocation, accent, onSelect, onDelete, onSaveCurrent, onClose }: {
-  savedLocations: LocationData[];
-  currentLocation: LocationData | null;
-  accent: string;
-  onSelect: (loc: LocationData) => void;
-  onDelete: (index: number) => void;
-  onSaveCurrent: () => void;
-  onClose: () => void;
+  savedLocations: LocationData[]; currentLocation: LocationData | null; accent: string;
+  onSelect: (loc: LocationData) => void; onDelete: (i: number) => void;
+  onSaveCurrent: () => void; onClose: () => void;
 }) {
   return (
-    <div className="absolute inset-0 z-50 flex flex-col"
-      style={{ background: 'rgba(10,16,28,0.97)', backdropFilter: 'blur(20px)', borderRadius: 'inherit' }}>
-      <div className="p-4 border-b" style={{ borderColor: 'rgba(71,85,105,0.3)' }}>
-        <div className="flex items-center gap-2">
-          <Star className="w-4 h-4" style={{ color: accent }} />
-          <span className="text-sm font-semibold text-slate-200">Saved Locations</span>
-          <button onClick={onClose} className="ml-auto p-1.5 rounded-lg text-slate-400 hover:text-slate-200 hover:bg-slate-700 transition-all">
-            <X className="w-4 h-4" />
-          </button>
-        </div>
+    <div style={{
+      position: 'absolute', inset: 0, zIndex: 60,
+      background: 'rgba(249,245,239,0.97)', backdropFilter: 'blur(16px)',
+      borderRadius: 'inherit', display: 'flex', flexDirection: 'column',
+    }}>
+      <div style={{ padding: '18px 22px', borderBottom: '1px solid rgba(160,130,90,0.14)', display: 'flex', alignItems: 'center', gap: 8 }}>
+        <Star size={14} color={accent} />
+        <span style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: 15, fontWeight: 600, color: '#1c1a15' }}>Saved Locations</span>
+        <button onClick={onClose} style={{ marginLeft: 'auto', background: 'none', border: 'none', cursor: 'pointer', color: '#9a8870', padding: 6, borderRadius: 8 }}><X size={15} /></button>
       </div>
-
-      <div className="flex-1 overflow-y-auto p-3 space-y-1">
-        {savedLocations.length === 0 && (
-          <div className="text-center py-10">
-            <Star className="w-8 h-8 text-slate-700 mx-auto mb-2" />
-            <p className="text-slate-500 text-xs">No saved locations yet.</p>
-            <p className="text-slate-600 text-xs mt-1">Save your current location to access it quickly.</p>
+      <div style={{ flex: 1, overflowY: 'auto', padding: '10px 14px', display: 'flex', flexDirection: 'column', gap: 5 }}>
+        {!savedLocations.length && (
+          <div style={{ textAlign: 'center', padding: '32px 0' }}>
+            <Star size={28} color="#d4c4a8" style={{ margin: '0 auto 8px', display: 'block' }} />
+            <p style={{ fontSize: 12.5, color: '#9a8870', fontFamily: "'DM Sans', sans-serif" }}>No saved locations yet.</p>
           </div>
         )}
         {savedLocations.map((loc, i) => {
           const isCurrent = loc.lat === currentLocation?.lat && loc.lon === currentLocation?.lon;
           return (
-            <div key={i} className="flex items-center gap-2 p-3 rounded-xl border"
-              style={{
-                background: isCurrent ? `${accent}10` : 'rgba(15,24,36,0.5)',
-                borderColor: isCurrent ? `${accent}40` : 'rgba(71,85,105,0.2)',
-              }}>
-              <button onClick={() => onSelect(loc)} className="flex-1 flex items-center gap-3 text-left min-w-0">
-                <div className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0"
-                  style={{ background: `${accent}15`, border: `1px solid ${accent}25` }}>
-                  {isCurrent
-                    ? <Check className="w-4 h-4" style={{ color: accent }} />
-                    : <MapPin className="w-4 h-4" style={{ color: accent }} />}
+            <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '11px 14px', borderRadius: 12, background: isCurrent ? `${accent}10` : '#fff', border: `1px solid ${isCurrent ? accent + '35' : 'rgba(160,130,90,0.18)'}` }}>
+              <button onClick={() => onSelect(loc)} style={{ flex: 1, display: 'flex', alignItems: 'center', gap: 10, background: 'none', border: 'none', cursor: 'pointer', textAlign: 'left', minWidth: 0 }}>
+                <div style={{ width: 32, height: 32, borderRadius: 9, background: `${accent}14`, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                  {isCurrent ? <Check size={13} color={accent} /> : <MapPin size={13} color={accent} />}
                 </div>
-                <div className="min-w-0">
-                  <div className="text-sm font-semibold text-slate-200 truncate">{loc.name}</div>
-                  <div className="text-xs text-slate-500 truncate">
+                <div style={{ minWidth: 0 }}>
+                  <div style={{ fontSize: 13.5, fontWeight: 600, color: '#1c1a15', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontFamily: "'DM Sans', sans-serif" }}>{loc.name}</div>
+                  <div style={{ fontSize: 11.5, color: '#9a8870', fontFamily: "'DM Sans', sans-serif" }}>
                     {[loc.state, loc.country].filter(Boolean).join(', ')}
                     {isCurrent && <span style={{ color: accent }}> · Active</span>}
                   </div>
                 </div>
               </button>
-              <button onClick={() => onDelete(i)}
-                className="p-1.5 rounded-lg text-slate-600 hover:text-red-400 hover:bg-red-400/10 transition-all flex-shrink-0">
-                <Trash2 className="w-3.5 h-3.5" />
+              <button onClick={() => onDelete(i)} style={{ padding: 6, borderRadius: 7, background: 'none', border: 'none', cursor: 'pointer', color: '#b0a088', transition: 'all 0.15s' }}
+                onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = '#fee2e2'; (e.currentTarget as HTMLElement).style.color = '#dc2626'; }}
+                onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'none'; (e.currentTarget as HTMLElement).style.color = '#b0a088'; }}>
+                <Trash2 size={13} />
               </button>
             </div>
           );
         })}
       </div>
-
-      <div className="p-3 border-t" style={{ borderColor: 'rgba(71,85,105,0.2)' }}>
+      <div style={{ padding: '10px 14px', borderTop: '1px solid rgba(160,130,90,0.12)' }}>
         <button onClick={onSaveCurrent}
-          className="w-full flex items-center justify-center gap-2 p-2.5 rounded-xl border text-xs font-semibold transition-all"
-          style={{ background: `${accent}15`, borderColor: `${accent}30`, color: accent }}>
-          <Star className="w-3.5 h-3.5" />
-          Save Current Location
+          style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 7, padding: '10px', borderRadius: 11, border: `1px solid ${accent}30`, background: `${accent}10`, cursor: 'pointer', fontSize: 12.5, fontWeight: 600, color: accent, fontFamily: "'DM Sans', sans-serif" }}>
+          <Star size={12} /> Save Current Location
         </button>
       </div>
     </div>
@@ -382,7 +286,6 @@ function SavedLocationsPanel({ savedLocations, currentLocation, accent, onSelect
 
 // ── Main Component ─────────────────────────────────────────────────────────
 export function WeatherForecast() {
-  // ── ALL hooks declared first, unconditionally ──────────────────────────
   const [view, setView] = useState<'today' | 'week'>('today');
   const [current, setCurrent] = useState<CurrentWeather | null>(null);
   const [hourly, setHourly] = useState<HourlyPoint[]>([]);
@@ -391,55 +294,40 @@ export function WeatherForecast() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [hourlyOffset, setHourlyOffset] = useState(0);
-  const [now] = useState(() => new Date());
   const [activeLocation, setActiveLocation] = useState<LocationData | null>(null);
   const [savedLocations, setSavedLocations] = useState<LocationData[]>([]);
   const [showSearch, setShowSearch] = useState(false);
   const [showSaved, setShowSaved] = useState(false);
-  const [saveToast, setSaveToast] = useState<Toast | null>(null);
+  const [toast, setToast] = useState<string | null>(null);
 
-  // ── fetchWeather defined BEFORE the useEffect that calls it ──────────────
   const fetchWeather = useCallback(async (lat: number, lon: number) => {
-    setLoading(true);
-    setError(null);
+    setLoading(true); setError(null);
     try {
-      const [currentRes, forecastRes] = await Promise.all([
+      const [cRes, fRes] = await Promise.all([
         fetch(`https://api.openweathermap.org/data/2.5/weather?lat=${lat}&lon=${lon}&appid=${API_KEY}&units=metric`),
         fetch(`https://api.openweathermap.org/data/2.5/forecast?lat=${lat}&lon=${lon}&appid=${API_KEY}&units=metric&cnt=40`),
       ]);
-      if (!currentRes.ok || !forecastRes.ok) throw new Error('Weather API error');
-      const [cData, fData] = await Promise.all([currentRes.json(), forecastRes.json()]);
+      if (!cRes.ok || !fRes.ok) throw new Error();
+      const [cData, fData] = await Promise.all([cRes.json(), fRes.json()]);
 
       setCurrent({
-        temp: Math.round(cData.main.temp),
-        feelsLike: Math.round(cData.main.feels_like),
-        humidity: cData.main.humidity,
-        windSpeed: Math.round((cData.wind?.speed ?? 0) * 3.6),
-        windDeg: cData.wind?.deg ?? 0,
-        visibility: Math.round((cData.visibility ?? 10000) / 1000),
-        pressure: cData.main.pressure,
-        uvIndex: 0,
+        temp: Math.round(cData.main.temp), feelsLike: Math.round(cData.main.feels_like),
+        humidity: cData.main.humidity, windSpeed: Math.round((cData.wind?.speed ?? 0) * 3.6),
+        windDeg: cData.wind?.deg ?? 0, visibility: Math.round((cData.visibility ?? 10000) / 1000),
+        pressure: cData.main.pressure, uvIndex: 0,
         condition: cData.weather?.[0]?.main ?? 'Clear',
         description: cData.weather?.[0]?.description ?? '',
         icon: cData.weather?.[0]?.icon ?? '01d',
-        sunrise: cData.sys?.sunrise ?? 0,
-        sunset: cData.sys?.sunset ?? 0,
-        cityName: cData.name ?? 'Unknown',
-        country: cData.sys?.country ?? '',
-        dt: cData.dt,
+        sunrise: cData.sys?.sunrise ?? 0, sunset: cData.sys?.sunset ?? 0,
+        cityName: cData.name ?? 'Unknown', country: cData.sys?.country ?? '', dt: cData.dt,
       });
 
       const items: any[] = fData.list ?? [];
-      setHourly(
-        items.slice(0, 16).map(item => ({
-          dt: item.dt,
-          temp: Math.round(item.main.temp),
-          pop: Math.round((item.pop ?? 0) * 100),
-          condition: item.weather?.[0]?.main ?? 'Clear',
-          windSpeed: Math.round((item.wind?.speed ?? 0) * 3.6),
-          humidity: item.main.humidity,
-        }))
-      );
+      setHourly(items.slice(0, 16).map(item => ({
+        dt: item.dt, temp: Math.round(item.main.temp), pop: Math.round((item.pop ?? 0) * 100),
+        condition: item.weather?.[0]?.main ?? 'Clear', windSpeed: Math.round((item.wind?.speed ?? 0) * 3.6),
+        humidity: item.main.humidity,
+      })));
 
       const dayMap = new Map<string, any[]>();
       items.forEach(item => {
@@ -447,550 +335,504 @@ export function WeatherForecast() {
         if (!dayMap.has(key)) dayMap.set(key, []);
         dayMap.get(key)!.push(item);
       });
-
-      setDaily(
-        Array.from(dayMap.entries())
-          .slice(0, 7)
-          .map(([, pts]) => {
-            const temps = pts.map((p: any) => p.main.temp as number);
-            const midday = pts[Math.floor(pts.length / 2)];
-            return {
-              dt: pts[0].dt,
-              tempMax: Math.round(Math.max(...temps)),
-              tempMin: Math.round(Math.min(...temps)),
-              pop: Math.round(Math.max(...pts.map((p: any) => p.pop ?? 0)) * 100),
-              condition: midday.weather?.[0]?.main ?? 'Clear',
-              description: midday.weather?.[0]?.description ?? '',
-              humidity: Math.round(pts.reduce((s: number, p: any) => s + p.main.humidity, 0) / pts.length),
-              windSpeed: Math.round(pts.reduce((s: number, p: any) => s + (p.wind?.speed ?? 0), 0) / pts.length * 3.6),
-              uvIndex: 0,
-            };
-          })
-      );
-    } catch {
-      setError('Unable to load weather data. Please check your connection.');
-    } finally {
-      setLoading(false);
-    }
-  }, []); // no deps — only uses setters which are stable
-
-  // ── Persist helpers ───────────────────────────────────────────────────────
-  const persistLocation = useCallback((loc: LocationData) => {
-    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(loc)); } catch { /* noop */ }
+      setDaily(Array.from(dayMap.entries()).slice(0, 7).map(([, pts]) => {
+        const temps = pts.map((p: any) => p.main.temp as number);
+        const midday = pts[Math.floor(pts.length / 2)];
+        return {
+          dt: pts[0].dt, tempMax: Math.round(Math.max(...temps)), tempMin: Math.round(Math.min(...temps)),
+          pop: Math.round(Math.max(...pts.map((p: any) => p.pop ?? 0)) * 100),
+          condition: midday.weather?.[0]?.main ?? 'Clear', description: midday.weather?.[0]?.description ?? '',
+          humidity: Math.round(pts.reduce((s: number, p: any) => s + p.main.humidity, 0) / pts.length),
+          windSpeed: Math.round(pts.reduce((s: number, p: any) => s + (p.wind?.speed ?? 0), 0) / pts.length * 3.6),
+          uvIndex: 0,
+        };
+      }));
+    } catch { setError('Unable to load weather data.'); }
+    finally { setLoading(false); }
   }, []);
 
-  const persistSavedLocations = useCallback((locs: LocationData[]) => {
-    try { localStorage.setItem(SAVED_LOCATIONS_KEY, JSON.stringify(locs)); } catch { /* noop */ }
-  }, []);
+  const persistLoc = useCallback((loc: LocationData) => { try { localStorage.setItem(STORAGE_KEY, JSON.stringify(loc)); } catch {} }, []);
+  const persistSaved = useCallback((locs: LocationData[]) => { try { localStorage.setItem(SAVED_LOCATIONS_KEY, JSON.stringify(locs)); } catch {} }, []);
 
-  // ── Init: load persisted location, then fetch ─────────────────────────────
   useEffect(() => {
-    // Load saved locations list
-    try {
-      const saved = JSON.parse(localStorage.getItem(SAVED_LOCATIONS_KEY) ?? '[]') as LocationData[];
-      setSavedLocations(saved);
-    } catch {
-      setSavedLocations([]);
-    }
-
-    // Determine starting location
+    try { setSavedLocations(JSON.parse(localStorage.getItem(SAVED_LOCATIONS_KEY) ?? '[]')); } catch { setSavedLocations([]); }
     let startLoc: LocationData | null = null;
-    try {
-      const stored = JSON.parse(localStorage.getItem(STORAGE_KEY) ?? 'null') as LocationData | null;
-      if (stored?.lat && stored?.lon) startLoc = stored;
-    } catch { /* noop */ }
-
-    if (startLoc) {
-      setActiveLocation(startLoc);
-      fetchWeather(startLoc.lat, startLoc.lon);
-      return;
-    }
-
+    try { const s = JSON.parse(localStorage.getItem(STORAGE_KEY) ?? 'null'); if (s?.lat && s?.lon) startLoc = s; } catch {}
+    if (startLoc) { setActiveLocation(startLoc); fetchWeather(startLoc.lat, startLoc.lon); return; }
     if (typeof navigator !== 'undefined' && navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
-        pos => {
-          const loc: LocationData = {
-            lat: pos.coords.latitude,
-            lon: pos.coords.longitude,
-            name: 'Your Location',
-            country: '',
-          };
-          setActiveLocation(loc);
-          fetchWeather(loc.lat, loc.lon);
-        },
-        () => {
-          setActiveLocation(DEFAULT_LOCATION);
-          fetchWeather(DEFAULT_LOCATION.lat, DEFAULT_LOCATION.lon);
-        },
+        pos => { const loc = { lat: pos.coords.latitude, lon: pos.coords.longitude, name: 'Your Location', country: '' }; setActiveLocation(loc); fetchWeather(loc.lat, loc.lon); },
+        () => { setActiveLocation(DEFAULT_LOCATION); fetchWeather(DEFAULT_LOCATION.lat, DEFAULT_LOCATION.lon); },
         { timeout: 6000 }
       );
-    } else {
-      setActiveLocation(DEFAULT_LOCATION);
-      fetchWeather(DEFAULT_LOCATION.lat, DEFAULT_LOCATION.lon);
-    }
-  }, [fetchWeather]); // fetchWeather is stable (no deps in its own useCallback)
+    } else { setActiveLocation(DEFAULT_LOCATION); fetchWeather(DEFAULT_LOCATION.lat, DEFAULT_LOCATION.lon); }
+  }, [fetchWeather]);
 
-  // ── Location select ───────────────────────────────────────────────────────
   const handleLocationSelect = useCallback((loc: LocationData) => {
-    setActiveLocation(loc);
-    persistLocation(loc);
-    fetchWeather(loc.lat, loc.lon);
-    setShowSearch(false);
-    setShowSaved(false);
-    setSelectedDay(0);
-    setHourlyOffset(0);
-    setView('today');
-  }, [fetchWeather, persistLocation]);
+    setActiveLocation(loc); persistLoc(loc); fetchWeather(loc.lat, loc.lon);
+    setShowSearch(false); setShowSaved(false); setSelectedDay(0); setHourlyOffset(0); setView('today');
+  }, [fetchWeather, persistLoc]);
 
-  // ── Save current location ─────────────────────────────────────────────────
-  const handleSaveCurrentLocation = useCallback(() => {
+  const handleSaveCurrent = useCallback(() => {
     if (!activeLocation) return;
-    const loc = { ...activeLocation };
-    const exists = savedLocations.some(s => s.lat === loc.lat && s.lon === loc.lon);
-    if (exists) {
-      setSaveToast({ type: 'info', msg: 'Location already saved!' });
-      setTimeout(() => setSaveToast(null), 2000);
-      return;
+    if (savedLocations.some(s => s.lat === activeLocation.lat && s.lon === activeLocation.lon)) {
+      setToast('Already saved!'); setTimeout(() => setToast(null), 2000); return;
     }
-    const updated = [...savedLocations, loc];
-    setSavedLocations(updated);
-    persistSavedLocations(updated);
-    setSaveToast({ type: 'success', msg: `${loc.name} saved!` });
-    setTimeout(() => setSaveToast(null), 2000);
-  }, [activeLocation, savedLocations, persistSavedLocations]);
+    const updated = [...savedLocations, activeLocation]; setSavedLocations(updated); persistSaved(updated);
+    setToast(`${activeLocation.name} saved!`); setTimeout(() => setToast(null), 2000);
+  }, [activeLocation, savedLocations, persistSaved]);
 
-  // ── Delete saved location ─────────────────────────────────────────────────
-  const handleDeleteSaved = useCallback((index: number) => {
-    const updated = savedLocations.filter((_, i) => i !== index);
-    setSavedLocations(updated);
-    persistSavedLocations(updated);
-  }, [savedLocations, persistSavedLocations]);
+  const handleDeleteSaved = useCallback((i: number) => {
+    const updated = savedLocations.filter((_, idx) => idx !== i); setSavedLocations(updated); persistSaved(updated);
+  }, [savedLocations, persistSaved]);
 
-  // ── Derived values ────────────────────────────────────────────────────────
-  const accent = current ? accentColor(current.condition) : '#10b981';
-  const bg = current ? conditionGradient(current.condition) : conditionGradient('Clear');
-  const tempRangeForBar = daily.length
+  const accent = current ? conditionAccent(current.condition) : '#2d6a4f';
+  const iconColor = current ? conditionIconColor(current.condition) : '#40916c';
+  const isRainy = current && (current.condition === 'Rain' || current.condition === 'Drizzle');
+  const isSunny = current && current.condition === 'Clear';
+  const tempRange = daily.length
     ? { max: Math.max(...daily.map(d => d.tempMax)), min: Math.min(...daily.map(d => d.tempMin)) }
     : { max: 35, min: 10 };
   const visibleHourly = hourly.slice(hourlyOffset, hourlyOffset + 6);
-  const selectedDayData = daily[selectedDay] ?? null;
   const displayName = activeLocation?.name ?? current?.cityName ?? 'Nairobi';
   const displayCountry = activeLocation?.country ?? current?.country ?? 'KE';
 
-  // ── Render ────────────────────────────────────────────────────────────────
+  const statusBadge = (label: string, color: string, bg: string, border: string): React.CSSProperties => ({
+    display: 'inline-flex', alignItems: 'center', padding: '3px 10px', borderRadius: 100,
+    fontSize: 11, fontWeight: 700, background: bg, color, border: `1px solid ${border}`,
+    fontFamily: "'DM Sans', sans-serif",
+  });
+
+  // card styling matching dashboard
+  const cardBase: React.CSSProperties = {
+    border: '1px solid rgba(160,130,90,0.16)',
+    borderRadius: 14,
+    boxShadow: '0 2px 8px rgba(100,70,30,0.06)',
+    background: '#fff',
+  };
+
   return (
     <>
       <style>{`
-        @keyframes rain {
-          0%   { transform: translateY(-20px) translateX(0); opacity: 0; }
+        @keyframes sfRain {
+          0%   { transform: translateY(-20px); opacity: 0; }
           10%  { opacity: 1; }
           90%  { opacity: 1; }
-          100% { transform: translateY(200px) translateX(10px); opacity: 0; }
+          100% { transform: translateY(240px); opacity: 0; }
         }
-        @keyframes snow {
-          0%   { transform: translateY(-10px); opacity: 0; }
-          10%  { opacity: 1; }
-          90%  { opacity: 1; }
-          100% { transform: translateY(200px) translateX(20px); opacity: 0; }
+        @keyframes sfGlow {
+          0%, 100% { opacity: 1; transform: scale(1); }
+          50%       { opacity: 0.5; transform: scale(1.08); }
         }
-        @keyframes float-slow {
+        @keyframes sfSpin  { to { transform: rotate(360deg); } }
+        @keyframes sfPulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.35; } }
+        @keyframes sfFloat {
           0%, 100% { transform: translateY(0); }
           50%      { transform: translateY(-6px); }
         }
-        @keyframes fade-in-up {
-          from { opacity: 0; transform: translateY(12px); }
+        @keyframes sfSlideIn {
+          from { opacity: 0; transform: translateY(8px); }
           to   { opacity: 1; transform: translateY(0); }
         }
-        @keyframes slide-down {
-          from { opacity: 0; transform: translateY(-8px); }
-          to   { opacity: 1; transform: translateY(0); }
-        }
-        @keyframes arc-draw {
-          from { stroke-dashoffset: 150; }
+        @keyframes sfArc {
+          from { stroke-dashoffset: 160; }
           to   { stroke-dashoffset: 0; }
         }
-        .weather-card-anim { animation: fade-in-up 0.5s ease-out forwards; }
-        .float-icon        { animation: float-slow 4s ease-in-out infinite; }
-        .hourly-card       { transition: transform 0.2s, border-color 0.2s; }
-        .hourly-card:hover { transform: translateY(-4px); border-color: rgba(255,255,255,0.15) !important; }
-        .day-card:hover    { transform: translateX(3px); }
-        .weather-tab       { transition: all 0.3s cubic-bezier(0.4,0,0.2,1); }
-        .stat-pill         { transition: all 0.2s ease; }
-        .stat-pill:hover   { transform: scale(1.03); }
-        .toast-anim        { animation: slide-down 0.3s ease-out; }
-        .loc-btn           { transition: all 0.2s ease; }
-        .loc-btn:hover     { transform: translateY(-1px); }
-        .sun-arc           { stroke-dasharray: 150; animation: arc-draw 1.5s ease-out forwards; }
+        .sf-float   { animation: sfFloat 4s ease-in-out infinite; }
+        .sf-spin    { animation: sfSpin 1s linear infinite; }
+        .sf-pulse   { animation: sfPulse 2s ease-in-out infinite; }
+        .sf-slidein { animation: sfSlideIn 0.4s ease-out forwards; }
+        .sf-arc     { stroke-dasharray: 160; animation: sfArc 1.6s ease-out forwards; }
+        .sf-hover-lift {
+          transition: transform 0.2s, box-shadow 0.2s, border-color 0.2s;
+        }
+        .sf-hover-lift:hover {
+          transform: translateY(-3px);
+          box-shadow: 0 8px 24px rgba(100,70,30,0.1);
+        }
+        .sf-day-row { transition: all 0.18s; }
+        .sf-day-row:hover { transform: translateX(3px); }
       `}</style>
 
-      <div className="rounded-2xl overflow-hidden weather-card-anim relative"
-        style={{ background: 'rgba(30,41,59,0.6)', border: '1px solid rgba(71,85,105,0.35)', backdropFilter: 'blur(12px)' }}>
-
-        {/* Toast */}
-        {saveToast && (
-          <div className="absolute top-3 left-1/2 -translate-x-1/2 z-50 toast-anim px-4 py-2 rounded-full text-xs font-semibold shadow-lg"
-            style={{ background: `${accent}20`, border: `1px solid ${accent}40`, color: accent }}>
-            <div className="flex items-center gap-1.5">
-              {saveToast.type === 'success' ? <Check className="w-3.5 h-3.5" /> : <Star className="w-3.5 h-3.5" />}
-              {saveToast.msg}
-            </div>
+      <div style={{ marginBottom: 22 }}>
+        {/* Section header matching dashboard style */}
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
+          <div>
+            <h2 style={{ fontWeight: 700, fontSize: 16, color: '#1c1a15', fontFamily: "'Space Grotesk', sans-serif", margin: 0 }}>Weather Forecast</h2>
+            <p style={{ fontSize: 12, color: '#9a8870', marginTop: 2, fontFamily: "'DM Sans', sans-serif" }}>
+              {displayName}, {displayCountry} · Live conditions
+            </p>
           </div>
-        )}
+          <div style={{ display: 'flex', gap: 8 }}>
+            <button onClick={() => { setShowSaved(true); setShowSearch(false); }}
+              style={{ display: 'flex', alignItems: 'center', gap: 5, padding: '7px 14px', borderRadius: 100, fontSize: 12.5, fontWeight: 500, cursor: 'pointer', fontFamily: "'DM Sans', sans-serif", border: '1px solid rgba(160,130,90,0.22)', background: '#fff', color: savedLocations.length ? accent : '#9a8870', transition: 'all 0.15s' }}>
+              <Star size={12} color={savedLocations.length ? accent : undefined} />
+              {savedLocations.length > 0 ? savedLocations.length : 'Saved'}
+            </button>
+            <button onClick={() => { setShowSearch(true); setShowSaved(false); }}
+              style={{ display: 'flex', alignItems: 'center', gap: 5, padding: '7px 14px', borderRadius: 100, fontSize: 12.5, fontWeight: 500, cursor: 'pointer', fontFamily: "'DM Sans', sans-serif", border: '1px solid rgba(160,130,90,0.22)', background: '#fff', color: '#9a8870', transition: 'all 0.15s' }}>
+              <MapPin size={12} /> Change
+            </button>
+          </div>
+        </div>
 
-        {/* Overlays */}
-        {showSearch && (
-          <LocationSearch accent={accent} onSelect={handleLocationSelect} onClose={() => setShowSearch(false)} />
-        )}
-        {showSaved && (
-          <SavedLocationsPanel
-            savedLocations={savedLocations}
-            currentLocation={activeLocation}
-            accent={accent}
-            onSelect={handleLocationSelect}
-            onDelete={handleDeleteSaved}
-            onSaveCurrent={handleSaveCurrentLocation}
-            onClose={() => setShowSaved(false)}
-          />
-        )}
+        {/* Main card */}
+        <div style={{ ...cardBase, borderRadius: 18, overflow: 'hidden', position: 'relative' }}>
 
-        {/* Loading */}
-        {loading && (
-          <div className="p-8 flex flex-col items-center justify-center gap-4" style={{ minHeight: 280 }}>
-            <div className="w-14 h-14 rounded-2xl flex items-center justify-center"
-              style={{ background: 'rgba(16,185,129,0.1)', border: '1px solid rgba(16,185,129,0.2)' }}>
-              <RefreshCw className="w-7 h-7 text-emerald-400 animate-spin" />
+          {/* Toast */}
+          {toast && (
+            <div className="sf-slidein" style={{
+              position: 'absolute', top: 14, left: '50%', transform: 'translateX(-50%)', zIndex: 70,
+              padding: '6px 16px', borderRadius: 100, fontSize: 12, fontWeight: 700,
+              background: `${accent}18`, border: `1px solid ${accent}40`, color: accent,
+              display: 'flex', alignItems: 'center', gap: 6, whiteSpace: 'nowrap',
+              fontFamily: "'DM Sans', sans-serif", boxShadow: '0 4px 16px rgba(100,70,30,0.12)',
+            }}>
+              <Check size={11} /> {toast}
             </div>
-            <div className="text-center">
-              <p className="text-slate-300 font-semibold">Fetching weather data...</p>
-              <p className="text-slate-500 text-xs mt-1">{displayName}</p>
-            </div>
-            <div className="w-full max-w-md space-y-2 mt-2">
-              {[0.8, 0.6, 0.4].map((op, i) => (
-                <div key={i} className="h-8 rounded-xl" style={{ background: `rgba(30,41,59,${op})` }} />
+          )}
+
+          {showSearch && <LocationSearch accent={accent} onSelect={handleLocationSelect} onClose={() => setShowSearch(false)} />}
+          {showSaved && (
+            <SavedLocationsPanel
+              savedLocations={savedLocations} currentLocation={activeLocation} accent={accent}
+              onSelect={handleLocationSelect} onDelete={handleDeleteSaved}
+              onSaveCurrent={handleSaveCurrent} onClose={() => setShowSaved(false)}
+            />
+          )}
+
+          {/* Loading state */}
+          {loading && (
+            <div style={{ padding: '48px 24px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 16 }}>
+              <div style={{ width: 48, height: 48, borderRadius: 14, background: '#f0faf2', border: '1px solid rgba(45,106,79,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <RefreshCw size={22} color="#2d6a4f" className="sf-spin" />
+              </div>
+              <div style={{ textAlign: 'center' }}>
+                <p style={{ fontSize: 14, fontWeight: 600, color: '#1c1a15', fontFamily: "'Space Grotesk', sans-serif" }}>Fetching weather data…</p>
+                <p style={{ fontSize: 12, color: '#9a8870', marginTop: 3, fontFamily: "'DM Sans', sans-serif" }}>{displayName}</p>
+              </div>
+              {[0.7, 0.5, 0.3].map((op, i) => (
+                <div key={i} style={{ width: '80%', height: 28, borderRadius: 10, background: `rgba(237,228,211,${op})` }} />
               ))}
             </div>
-          </div>
-        )}
+          )}
 
-        {/* Error */}
-        {!loading && error && (
-          <div className="p-8 flex flex-col items-center justify-center gap-3 text-center" style={{ minHeight: 200 }}>
-            <CloudFog className="w-10 h-10 text-slate-500" />
-            <p className="text-slate-400 text-sm">{error}</p>
-            <div className="flex gap-2">
-              <button onClick={() => setShowSearch(true)}
-                className="px-4 py-2 rounded-xl text-xs font-semibold border transition-colors"
-                style={{ color: accent, borderColor: `${accent}30`, background: `${accent}10` }}>
-                Search Location
-              </button>
-              <button
-                onClick={() => fetchWeather(activeLocation?.lat ?? DEFAULT_LOCATION.lat, activeLocation?.lon ?? DEFAULT_LOCATION.lon)}
-                className="px-4 py-2 rounded-xl text-xs font-semibold text-slate-400 border border-slate-700 hover:bg-slate-700 transition-colors">
-                Retry
-              </button>
-            </div>
-          </div>
-        )}
-
-        {/* Main */}
-        {!loading && !error && current && (
-          <>
-            {/* Hero */}
-            <div className="relative overflow-hidden p-5 md:p-6"
-              style={{ background: bg, borderBottom: '1px solid rgba(71,85,105,0.2)' }}>
-              {(current.condition === 'Rain' || current.condition === 'Drizzle') && <RainDrops />}
-              {current.condition === 'Snow' && <Snowflakes />}
-              {current.condition === 'Clear' && <SunRays />}
-
-              <div className="relative flex flex-col md:flex-row md:items-start justify-between gap-4">
-                {/* Left */}
-                <div className="flex-1">
-                  {/* Location row */}
-                  <div className="flex flex-wrap items-center gap-2 mb-3">
-                    <button onClick={() => { setShowSearch(true); setShowSaved(false); }}
-                      className="loc-btn flex items-center gap-1.5 px-2.5 py-1 rounded-full border text-xs font-semibold"
-                      style={{ background: 'rgba(15,24,36,0.5)', borderColor: `${accent}50`, color: accent }}>
-                      <MapPin className="w-3 h-3" />
-                      {displayName}, {displayCountry}
-                      <Search className="w-3 h-3 ml-0.5 opacity-60" />
-                    </button>
-
-                    <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full border text-xs text-slate-400"
-                      style={{ background: 'rgba(15,24,36,0.5)', borderColor: 'rgba(71,85,105,0.3)' }}>
-                      <span className="w-1.5 h-1.5 rounded-full animate-pulse" style={{ backgroundColor: accent }} />
-                      Live · {now.toLocaleDateString([], { weekday: 'short', month: 'short', day: 'numeric' })}
-                    </div>
-
-                    <button
-                      onClick={() => { setShowSaved(true); setShowSearch(false); }}
-                      className="loc-btn flex items-center gap-1.5 px-2.5 py-1 rounded-full border text-xs text-slate-400"
-                      style={{ background: 'rgba(15,24,36,0.5)', borderColor: 'rgba(71,85,105,0.3)' }}
-                      title={`${savedLocations.length} saved location${savedLocations.length !== 1 ? 's' : ''}`}>
-                      <Star className="w-3 h-3" style={{ color: savedLocations.length > 0 ? accent : undefined }} />
-                      {savedLocations.length > 0 ? savedLocations.length : 'Save'}
-                    </button>
-                  </div>
-
-                  {/* Temp */}
-                  <div className="flex items-center gap-4 mb-2">
-                    <div className="float-icon">
-                      <WeatherIcon condition={current.condition} size={56} />
-                    </div>
-                    <div>
-                      <div className="flex items-start leading-none">
-                        <span className="text-6xl md:text-7xl font-bold text-slate-100">{current.temp}</span>
-                        <span className="text-2xl text-slate-400 font-light mt-2">°C</span>
-                      </div>
-                      <p className="text-slate-300 text-sm font-medium capitalize mt-1">{current.description}</p>
-                      <p className="text-slate-500 text-xs mt-0.5">Feels like {current.feelsLike}°C</p>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Right: stat pills */}
-                <div className="grid grid-cols-2 md:grid-cols-3 gap-2 md:min-w-[320px]">
-                  {([
-                    { icon: Droplets, label: 'Humidity',  value: `${current.humidity}%`,                                    color: '#22d3ee' },
-                    { icon: Wind,     label: 'Wind',      value: `${current.windSpeed} km/h ${windDirection(current.windDeg)}`, color: '#94a3b8' },
-                    { icon: Eye,      label: 'Visibility',value: `${current.visibility} km`,                                color: '#a78bfa' },
-                    { icon: Gauge,    label: 'Pressure',  value: `${current.pressure} hPa`,                                 color: '#fb923c' },
-                    { icon: Sunrise,  label: 'Sunrise',   value: formatTime(current.sunrise),                               color: '#fbbf24' },
-                    { icon: Sunset,   label: 'Sunset',    value: formatTime(current.sunset),                                color: '#f97316' },
-                  ] as const).map(stat => (
-                    <div key={stat.label} className="stat-pill flex items-center gap-2 p-2.5 rounded-xl border cursor-default"
-                      style={{ background: 'rgba(15,24,36,0.55)', borderColor: 'rgba(71,85,105,0.3)' }}>
-                      <div className="w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0"
-                        style={{ backgroundColor: `${stat.color}18`, border: `1px solid ${stat.color}25` }}>
-                        <stat.icon className="w-3.5 h-3.5" style={{ color: stat.color }} />
-                      </div>
-                      <div className="min-w-0">
-                        <div className="text-[10px] text-slate-500 leading-none">{stat.label}</div>
-                        <div className="text-xs font-bold text-slate-200 mt-0.5 truncate">{stat.value}</div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              {/* View toggle */}
-              <div className="mt-4 flex gap-1 p-1 rounded-xl w-fit"
-                style={{ background: 'rgba(15,24,36,0.6)', border: '1px solid rgba(71,85,105,0.3)' }}>
-                {(['today', 'week'] as const).map(v => (
-                  <button key={v} onClick={() => { setView(v); setSelectedDay(0); setHourlyOffset(0); }}
-                    className="weather-tab px-5 py-2 rounded-lg text-xs font-semibold capitalize"
-                    style={{
-                      background: view === v ? accent : 'transparent',
-                      color:      view === v ? '#0f1824' : '#94a3b8',
-                      boxShadow:  view === v ? `0 4px 12px ${accent}40` : 'none',
-                    }}>
-                    {v === 'today' ? '⏱ Today' : '📅 7-Day'}
-                  </button>
-                ))}
-                <button
-                  onClick={() => fetchWeather(activeLocation?.lat ?? DEFAULT_LOCATION.lat, activeLocation?.lon ?? DEFAULT_LOCATION.lon)}
-                  className="ml-1 p-2 rounded-lg text-slate-500 hover:text-slate-300 transition-colors" title="Refresh">
-                  <RefreshCw className="w-3.5 h-3.5" />
+          {/* Error state */}
+          {!loading && error && (
+            <div style={{ padding: '40px 24px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12, textAlign: 'center' }}>
+              <CloudFog size={36} color="#b0a088" />
+              <p style={{ fontSize: 13.5, color: '#9a8870', fontFamily: "'DM Sans', sans-serif" }}>{error}</p>
+              <div style={{ display: 'flex', gap: 8 }}>
+                <button onClick={() => setShowSearch(true)}
+                  style={{ padding: '8px 18px', borderRadius: 100, fontSize: 12.5, fontWeight: 600, cursor: 'pointer', fontFamily: "'DM Sans', sans-serif", background: `${accent}14`, border: `1px solid ${accent}30`, color: accent }}>
+                  Search Location
+                </button>
+                <button onClick={() => fetchWeather(activeLocation?.lat ?? DEFAULT_LOCATION.lat, activeLocation?.lon ?? DEFAULT_LOCATION.lon)}
+                  style={{ padding: '8px 18px', borderRadius: 100, fontSize: 12.5, fontWeight: 500, cursor: 'pointer', fontFamily: "'DM Sans', sans-serif", background: '#f9f5ef', border: '1px solid rgba(160,130,90,0.22)', color: '#5a5040' }}>
+                  Retry
                 </button>
               </div>
             </div>
+          )}
 
-            {/* TODAY */}
-            {view === 'today' && (
-              <div className="p-5 space-y-5">
-                {/* Hourly */}
-                <div>
-                  <div className="flex items-center justify-between mb-3">
-                    <h4 className="text-xs font-semibold text-slate-400 uppercase tracking-widest">Hourly Forecast</h4>
-                    <div className="flex gap-1">
-                      <button onClick={() => setHourlyOffset(o => Math.max(0, o - 3))}
-                        disabled={hourlyOffset === 0}
-                        className="p-1.5 rounded-lg border border-slate-700 text-slate-400 hover:text-slate-200 disabled:opacity-30 transition-all hover:bg-slate-700">
-                        <ChevronLeft className="w-3.5 h-3.5" />
-                      </button>
-                      <button onClick={() => setHourlyOffset(o => Math.min(hourly.length - 6, o + 3))}
-                        disabled={hourlyOffset >= hourly.length - 6}
-                        className="p-1.5 rounded-lg border border-slate-700 text-slate-400 hover:text-slate-200 disabled:opacity-30 transition-all hover:bg-slate-700">
-                        <ChevronRight className="w-3.5 h-3.5" />
-                      </button>
+          {/* Main weather content */}
+          {!loading && !error && current && (
+            <>
+              {/* ── Hero section — matches dashboard hero banner palette ── */}
+              <div style={{
+                background: isSunny
+                  ? 'linear-gradient(135deg, #fffbeb 0%, #f9f5ef 40%, #f0faf2 100%)'
+                  : isRainy
+                    ? 'linear-gradient(135deg, #ecfeff 0%, #f9f5ef 50%, #eff6ff 100%)'
+                    : current.condition === 'Thunderstorm'
+                      ? 'linear-gradient(135deg, #faf5ff 0%, #f9f5ef 50%, #f0f9ff 100%)'
+                      : 'linear-gradient(135deg, #f0faf2 0%, #f9f5ef 40%, #f0faf2 100%)',
+                padding: '24px 24px 20px',
+                borderBottom: '1px solid rgba(160,130,90,0.12)',
+                position: 'relative',
+                overflow: 'hidden',
+              }}>
+                {/* Ambient effects */}
+                {isRainy && <AmbientRain intensity={isRainy ? 22 : 0} />}
+                {isSunny && <AmbientSun />}
+                {current.condition === 'Thunderstorm' && <AmbientRain intensity={30} />}
+
+                <div style={{ position: 'relative', zIndex: 1, display: 'flex', flexWrap: 'wrap', alignItems: 'flex-start', justifyContent: 'space-between', gap: 20 }}>
+                  {/* Left: main temp */}
+                  <div style={{ flex: 1, minWidth: 240 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 14, flexWrap: 'wrap' }}>
+                      <span style={{
+                        display: 'inline-flex', alignItems: 'center', gap: 6, padding: '3px 11px',
+                        borderRadius: 100, fontSize: 11, fontWeight: 700, fontFamily: "'DM Sans', sans-serif",
+                        background: isRainy ? '#ecfeff' : isSunny ? '#fffbeb' : '#f0faf2',
+                        color: accent, border: `1px solid ${accent}35`,
+                      }}>
+                        <span className="sf-pulse" style={{ width: 6, height: 6, borderRadius: '50%', background: accent, display: 'inline-block' }} />
+                        LIVE · {new Date(current.dt * 1000).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                      </span>
                     </div>
-                  </div>
-                  <div className="grid grid-cols-6 gap-2">
-                    {visibleHourly.map((h, i) => {
-                      const isNowSlot = i === 0 && hourlyOffset === 0;
-                      return (
-                        <div key={h.dt} className="hourly-card flex flex-col items-center gap-1.5 p-2.5 md:p-3 rounded-xl border cursor-default"
-                          style={{
-                            background:   isNowSlot ? `${accent}18` : 'rgba(15,24,36,0.5)',
-                            borderColor:  isNowSlot ? `${accent}40` : 'rgba(71,85,105,0.25)',
-                          }}>
-                          <span className="text-[10px] font-semibold" style={{ color: isNowSlot ? accent : '#64748b' }}>
-                            {isNowSlot ? 'Now' : formatHour(h.dt)}
-                          </span>
-                          <WeatherIcon condition={h.condition} size={20} />
-                          <span className="text-sm font-bold text-slate-100">{h.temp}°</span>
-                          {h.pop > 0 && (
-                            <div className="flex items-center gap-0.5">
-                              <Droplets className="w-2.5 h-2.5 text-cyan-400" />
-                              <span className="text-[10px] text-cyan-400 font-medium">{h.pop}%</span>
-                            </div>
-                          )}
-                          <div className="text-[10px] text-slate-500">{h.windSpeed}km/h</div>
+
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 18, marginBottom: 10 }}>
+                      <div className="sf-float">
+                        <WeatherIcon condition={current.condition} size={60} color={iconColor} />
+                      </div>
+                      <div>
+                        <div style={{ display: 'flex', alignItems: 'flex-start', lineHeight: 1 }}>
+                          <span style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: 64, fontWeight: 700, color: '#1c1a15', letterSpacing: '-0.03em', lineHeight: 1 }}>{current.temp}</span>
+                          <span style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 22, color: '#9a8870', fontWeight: 300, marginTop: 8 }}>°C</span>
                         </div>
-                      );
-                    })}
-                  </div>
-                </div>
-
-                {/* Sun arc */}
-                <div className="rounded-xl p-4 border" style={{ background: 'rgba(15,24,36,0.5)', borderColor: 'rgba(71,85,105,0.25)' }}>
-                  <h4 className="text-xs font-semibold text-slate-400 uppercase tracking-widest mb-3">Sun Arc</h4>
-                  <div className="flex items-end justify-between gap-2">
-                    <div className="flex items-center gap-2">
-                      <Sunrise className="w-5 h-5 text-amber-400" />
-                      <div>
-                        <div className="text-[10px] text-slate-500">Sunrise</div>
-                        <div className="text-sm font-bold text-amber-400">{formatTime(current.sunrise)}</div>
+                        <p style={{ fontSize: 14, fontWeight: 500, color: '#5a5040', textTransform: 'capitalize', marginTop: 4, fontFamily: "'DM Sans', sans-serif" }}>{current.description}</p>
+                        <p style={{ fontSize: 12, color: '#b0a088', marginTop: 2, fontFamily: "'DM Sans', sans-serif" }}>Feels like {current.feelsLike}°C</p>
                       </div>
-                    </div>
-                    <div className="flex-1 relative flex items-end justify-center" style={{ height: 60 }}>
-                      <svg width="100%" height="60" viewBox="0 0 200 60" preserveAspectRatio="none">
-                        <path d="M 10 55 Q 100 -10 190 55" stroke="rgba(71,85,105,0.3)" strokeWidth="2" fill="none" />
-                        <path d="M 10 55 Q 100 -10 190 55" stroke={accent} strokeWidth="2.5" fill="none" strokeLinecap="round" className="sun-arc" />
-                        <circle cx="100" cy="5" r="5" fill={accent} style={{ filter: `drop-shadow(0 0 6px ${accent})` }} />
-                      </svg>
-                      <div className="absolute bottom-0 left-1/2 -translate-x-1/2">
-                        <div className="text-[10px] text-slate-500 text-center">{formatTime(current.dt)}</div>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-2 text-right">
-                      <div>
-                        <div className="text-[10px] text-slate-500">Sunset</div>
-                        <div className="text-sm font-bold text-orange-400">{formatTime(current.sunset)}</div>
-                      </div>
-                      <Sunset className="w-5 h-5 text-orange-400" />
                     </div>
                   </div>
-                </div>
 
-                {/* Today stats */}
-                {daily[0] && (
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+                  {/* Right: stat grid — matches dashboard sensor card grid */}
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 8, minWidth: 280 }}>
                     {([
-                      { label: 'High',       value: `${daily[0].tempMax}°C`, icon: ArrowUp,    color: '#ef4444', sub: "Today's max" },
-                      { label: 'Low',        value: `${daily[0].tempMin}°C`, icon: ArrowDown,  color: '#3b82f6', sub: "Today's min" },
-                      { label: 'Rain Chance',value: `${daily[0].pop}%`,      icon: CloudRain,  color: '#22d3ee', sub: 'Precipitation' },
-                      { label: 'Humidity',   value: `${daily[0].humidity}%`, icon: Droplets,   color: '#a78bfa', sub: 'Relative humidity' },
-                    ] as const).map(s => (
-                      <div key={s.label} className="p-3 rounded-xl border flex items-center gap-3 stat-pill cursor-default"
-                        style={{ background: 'rgba(15,24,36,0.5)', borderColor: 'rgba(71,85,105,0.25)' }}>
-                        <div className="w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0"
-                          style={{ backgroundColor: `${s.color}15`, border: `1px solid ${s.color}25` }}>
-                          <s.icon style={{ color: s.color, width: 18, height: 18 }} />
+                      { icon: Droplets,  label: 'Humidity',   value: `${current.humidity}%`,                                      color: '#0891b2', pale: '#ecfeff' },
+                      { icon: Wind,      label: 'Wind',        value: `${current.windSpeed} km/h ${windDirection(current.windDeg)}`, color: '#64748b', pale: '#f8fafc' },
+                      { icon: Eye,       label: 'Visibility',  value: `${current.visibility} km`,                                  color: '#7c3aed', pale: '#faf5ff' },
+                      { icon: Gauge,     label: 'Pressure',    value: `${current.pressure} hPa`,                                   color: '#f97316', pale: '#fff7ed' },
+                      { icon: Sunrise,   label: 'Sunrise',     value: formatTime(current.sunrise),                                  color: '#d97706', pale: '#fffbeb' },
+                      { icon: Sunset,    label: 'Sunset',      value: formatTime(current.sunset),                                   color: '#ea580c', pale: '#fff7ed' },
+                    ] as const).map(stat => (
+                      <div key={stat.label}
+                        style={{
+                          display: 'flex', alignItems: 'center', gap: 8, padding: '10px 11px',
+                          borderRadius: 12, background: '#fff',
+                          border: '1px solid rgba(160,130,90,0.16)',
+                          boxShadow: '0 1px 4px rgba(100,70,30,0.05)',
+                        }}>
+                        <div style={{ width: 30, height: 30, borderRadius: 8, background: stat.pale, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, border: `1px solid ${stat.color}18` }}>
+                          <stat.icon size={14} color={stat.color} />
                         </div>
-                        <div>
-                          <div className="text-[10px] text-slate-500">{s.sub}</div>
-                          <div className="text-base font-bold text-slate-100">{s.value}</div>
+                        <div style={{ minWidth: 0 }}>
+                          <div style={{ fontSize: 10, color: '#b0a088', fontFamily: "'DM Sans', sans-serif", textTransform: 'uppercase', letterSpacing: '0.04em' }}>{stat.label}</div>
+                          <div style={{ fontSize: 12, fontWeight: 700, color: '#1c1a15', marginTop: 1, fontFamily: "'DM Sans', sans-serif", overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{stat.value}</div>
                         </div>
                       </div>
                     ))}
                   </div>
-                )}
-              </div>
-            )}
-
-            {/* WEEK */}
-            {view === 'week' && (
-              <div className="p-5 space-y-4">
-                <h4 className="text-xs font-semibold text-slate-400 uppercase tracking-widest">7-Day Outlook</h4>
-                <div className="space-y-2">
-                  {daily.map((day, i) => {
-                    const isSelected = selectedDay === i;
-                    const range = tempRangeForBar.max - tempRangeForBar.min || 1;
-                    const barStart = ((day.tempMin - tempRangeForBar.min) / range) * 100;
-                    const barWidth = ((day.tempMax - day.tempMin) / range) * 100;
-                    return (
-                      <div key={day.dt} onClick={() => setSelectedDay(i)}
-                        className="day-card rounded-xl border cursor-pointer transition-all duration-200"
-                        style={{
-                          background:  isSelected ? `${accent}10` : 'rgba(15,24,36,0.4)',
-                          borderColor: isSelected ? `${accent}40` : 'rgba(71,85,105,0.2)',
-                          padding: '10px 14px',
-                        }}>
-                        <div className="flex items-center gap-3">
-                          <div className="w-20 flex-shrink-0">
-                            <div className={`text-xs font-bold ${isSelected ? 'text-slate-100' : 'text-slate-300'}`}>
-                              {formatDayShort(day.dt)}
-                            </div>
-                            <div className="text-[10px] text-slate-500 mt-0.5 capitalize truncate">{day.description}</div>
-                          </div>
-                          <div className="flex items-center gap-1.5 w-14 flex-shrink-0">
-                            <WeatherIcon condition={day.condition} size={20} />
-                            {day.pop > 0 && <span className="text-[10px] text-cyan-400 font-semibold">{day.pop}%</span>}
-                          </div>
-                          <div className="flex-1 flex items-center gap-2">
-                            <span className="text-xs text-blue-400 font-semibold w-8 text-right">{day.tempMin}°</span>
-                            <div className="flex-1 relative h-2 rounded-full" style={{ background: 'rgba(30,41,59,0.8)' }}>
-                              <div className="absolute h-full rounded-full transition-all duration-500"
-                                style={{
-                                  left:      `${barStart}%`,
-                                  width:     `${Math.max(barWidth, 8)}%`,
-                                  background: isSelected
-                                    ? `linear-gradient(90deg, #3b82f6, ${accent})`
-                                    : 'linear-gradient(90deg, #3b82f6, #f97316)',
-                                  boxShadow: isSelected ? `0 0 8px ${accent}60` : 'none',
-                                }} />
-                            </div>
-                            <span className="text-xs text-orange-400 font-semibold w-8">{day.tempMax}°</span>
-                          </div>
-                          <div className="hidden sm:flex items-center gap-1 w-16 flex-shrink-0">
-                            <Wind className="w-3 h-3 text-slate-500" />
-                            <span className="text-[10px] text-slate-400">{day.windSpeed}km/h</span>
-                          </div>
-                          <ChevronRight className="w-3.5 h-3.5 flex-shrink-0 transition-all"
-                            style={{ color: isSelected ? accent : '#334155', transform: isSelected ? 'rotate(90deg)' : 'none' }} />
-                        </div>
-
-                        {isSelected && (
-                          <div className="mt-3 pt-3 border-t grid grid-cols-2 md:grid-cols-4 gap-2"
-                            style={{ borderColor: `${accent}25` }}>
-                            {([
-                              { icon: Droplets,   label: 'Humidity',   value: `${day.humidity}%`,              color: '#22d3ee' },
-                              { icon: Wind,       label: 'Wind',       value: `${day.windSpeed} km/h`,         color: '#94a3b8' },
-                              { icon: CloudRain,  label: 'Rain Prob.', value: `${day.pop}%`,                   color: '#3b82f6' },
-                              { icon: Thermometer,label: 'Temp Range', value: `${day.tempMin}–${day.tempMax}°`,color: '#f97316' },
-                            ] as const).map(s => (
-                              <div key={s.label} className="flex items-center gap-2 p-2 rounded-lg"
-                                style={{ background: 'rgba(15,24,36,0.5)', border: `1px solid ${s.color}20` }}>
-                                <s.icon className="w-3.5 h-3.5 flex-shrink-0" style={{ color: s.color }} />
-                                <div>
-                                  <div className="text-[10px] text-slate-500">{s.label}</div>
-                                  <div className="text-xs font-bold text-slate-200">{s.value}</div>
-                                </div>
-                              </div>
-                            ))}
-                          </div>
-                        )}
-                      </div>
-                    );
-                  })}
                 </div>
 
-                {selectedDayData && (
-                  <div className="rounded-xl p-4 border" style={{ background: `${accent}08`, borderColor: `${accent}25` }}>
-                    <div className="flex items-center gap-2 mb-3">
-                      <WeatherIcon condition={selectedDayData.condition} size={22} />
-                      <div>
-                        <p className="text-sm font-semibold text-slate-200">{formatDayFull(selectedDayData.dt)}</p>
-                        <p className="text-xs text-slate-400 capitalize">{selectedDayData.description}</p>
+                {/* View toggle — same style as dashboard time range buttons */}
+                <div style={{ marginTop: 18, display: 'flex', alignItems: 'center', gap: 4, position: 'relative', zIndex: 1 }}>
+                  <div style={{ display: 'flex', padding: 3, borderRadius: 12, background: '#fff', border: '1px solid rgba(160,130,90,0.2)', boxShadow: '0 1px 4px rgba(100,70,30,0.05)' }}>
+                    {(['today', 'week'] as const).map(v => (
+                      <button key={v} onClick={() => { setView(v); setSelectedDay(0); setHourlyOffset(0); }}
+                        style={{
+                          padding: '7px 22px', borderRadius: 9, fontSize: 12.5, fontWeight: 600, cursor: 'pointer',
+                          fontFamily: "'DM Sans', sans-serif", transition: 'all 0.2s', border: 'none',
+                          background: view === v ? accent : 'transparent',
+                          color: view === v ? '#fff' : '#9a8870',
+                          boxShadow: view === v ? `0 2px 10px ${accent}35` : 'none',
+                        }}>
+                        {v === 'today' ? '⏱ Today' : '📅 7-Day'}
+                      </button>
+                    ))}
+                  </div>
+                  <button onClick={() => fetchWeather(activeLocation?.lat ?? DEFAULT_LOCATION.lat, activeLocation?.lon ?? DEFAULT_LOCATION.lon)}
+                    style={{ marginLeft: 8, width: 34, height: 34, borderRadius: 10, background: '#fff', border: '1px solid rgba(160,130,90,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: '#9a8870' }}>
+                    <RefreshCw size={13} />
+                  </button>
+                </div>
+              </div>
+
+              {/* ── TODAY view ── */}
+              {view === 'today' && (
+                <div style={{ padding: '22px 24px', display: 'flex', flexDirection: 'column', gap: 20, background: '#f9f5ef' }}>
+
+                  {/* Hourly scroll */}
+                  <div>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
+                      <h4 style={{ fontSize: 11.5, fontWeight: 700, color: '#9a8870', textTransform: 'uppercase', letterSpacing: '0.07em', fontFamily: "'DM Sans', sans-serif", margin: 0 }}>Hourly Forecast</h4>
+                      <div style={{ display: 'flex', gap: 4 }}>
+                        {[
+                          { fn: () => setHourlyOffset(o => Math.max(0, o - 3)), icon: ChevronLeft, dis: hourlyOffset === 0 },
+                          { fn: () => setHourlyOffset(o => Math.min(hourly.length - 6, o + 3)), icon: ChevronRight, dis: hourlyOffset >= hourly.length - 6 },
+                        ].map(({ fn, icon: Icon, dis }, i) => (
+                          <button key={i} onClick={fn} disabled={dis}
+                            style={{ width: 28, height: 28, borderRadius: 8, border: '1px solid rgba(160,130,90,0.22)', background: '#fff', cursor: dis ? 'not-allowed' : 'pointer', color: dis ? '#d4c4a8' : '#9a8870', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                            <Icon size={13} />
+                          </button>
+                        ))}
                       </div>
                     </div>
-                    <UVBar value={selectedDayData.uvIndex} />
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(6,1fr)', gap: 8 }}>
+                      {visibleHourly.map((h, i) => {
+                        const isNow = i === 0 && hourlyOffset === 0;
+                        return (
+                          <div key={h.dt} className="sf-hover-lift"
+                            style={{
+                              display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6,
+                              padding: '13px 8px', borderRadius: 14,
+                              border: `1.5px solid ${isNow ? accent + '45' : 'rgba(160,130,90,0.16)'}`,
+                              background: isNow ? `${accent}10` : '#fff',
+                              boxShadow: '0 1px 5px rgba(100,70,30,0.05)',
+                            }}>
+                            <span style={{ fontSize: 10.5, fontWeight: 700, color: isNow ? accent : '#b0a088', fontFamily: "'DM Sans', sans-serif" }}>{isNow ? 'Now' : formatHour(h.dt)}</span>
+                            <WeatherIcon condition={h.condition} size={20} color={conditionIconColor(h.condition)} />
+                            <span style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: 18, color: '#1c1a15', fontWeight: 600 }}>{h.temp}°</span>
+                            {h.pop > 0 && (
+                              <div style={{ display: 'flex', alignItems: 'center', gap: 3 }}>
+                                <Droplets size={10} color="#0891b2" />
+                                <span style={{ fontSize: 10, color: '#0891b2', fontWeight: 700, fontFamily: "'DM Sans', sans-serif" }}>{h.pop}%</span>
+                              </div>
+                            )}
+                            <span style={{ fontSize: 10, color: '#b0a088', fontFamily: "'DM Sans', sans-serif" }}>{h.windSpeed}km/h</span>
+                          </div>
+                        );
+                      })}
+                    </div>
                   </div>
-                )}
-              </div>
-            )}
-          </>
-        )}
+
+                  {/* Sun arc card — earthy tint */}
+                  <div style={{ ...cardBase, background: 'linear-gradient(155deg, #fdf8f2 0%, #faf5ec 100%)', borderColor: 'rgba(160,100,40,0.18)', padding: '18px 22px' }}>
+                    <h4 style={{ fontSize: 11.5, fontWeight: 700, color: '#9a8870', textTransform: 'uppercase', letterSpacing: '0.07em', fontFamily: "'DM Sans', sans-serif", margin: '0 0 14px' }}>Sun Arc</h4>
+                    <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', gap: 10 }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                        <div style={{ width: 36, height: 36, borderRadius: 10, background: '#fffbeb', border: '1px solid rgba(217,119,6,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                          <Sunrise size={17} color="#d97706" />
+                        </div>
+                        <div>
+                          <div style={{ fontSize: 10, color: '#b0a088', fontFamily: "'DM Sans', sans-serif", textTransform: 'uppercase', letterSpacing: '0.04em' }}>Sunrise</div>
+                          <div style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: 16, fontWeight: 700, color: '#d97706' }}>{formatTime(current.sunrise)}</div>
+                        </div>
+                      </div>
+                      <div style={{ flex: 1, position: 'relative', height: 60 }}>
+                        <svg width="100%" height="60" viewBox="0 0 200 60" preserveAspectRatio="none">
+                          <path d="M 10 55 Q 100 -10 190 55" stroke="rgba(160,130,90,0.2)" strokeWidth="2" fill="none" />
+                          <path d="M 10 55 Q 100 -10 190 55" stroke={accent} strokeWidth="2.5" fill="none" strokeLinecap="round" className="sf-arc" />
+                          <circle cx="100" cy="5" r="5" fill={accent} style={{ filter: `drop-shadow(0 0 6px ${accent}80)` }} />
+                        </svg>
+                        <div style={{ position: 'absolute', bottom: 0, left: '50%', transform: 'translateX(-50%)', fontSize: 10.5, color: '#9a8870', fontFamily: "'DM Sans', sans-serif", whiteSpace: 'nowrap' }}>{formatTime(current.dt)}</div>
+                      </div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8, textAlign: 'right' }}>
+                        <div>
+                          <div style={{ fontSize: 10, color: '#b0a088', fontFamily: "'DM Sans', sans-serif", textTransform: 'uppercase', letterSpacing: '0.04em' }}>Sunset</div>
+                          <div style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: 16, fontWeight: 700, color: '#ea580c' }}>{formatTime(current.sunset)}</div>
+                        </div>
+                        <div style={{ width: 36, height: 36, borderRadius: 10, background: '#fff7ed', border: '1px solid rgba(234,88,12,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                          <Sunset size={17} color="#ea580c" />
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Today stats — matches dashboard stats cards */}
+                  {daily[0] && (
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 10 }}>
+                      {([
+                        { label: 'High Temp',   value: `${daily[0].tempMax}°C`, icon: ArrowUp,    color: '#dc2626', pale: '#fee2e2', bdr: 'rgba(220,38,38,0.16)',  bg: 'linear-gradient(145deg,#fff1f2,#fee8e8)' },
+                        { label: 'Low Temp',    value: `${daily[0].tempMin}°C`, icon: ArrowDown,  color: '#2563eb', pale: '#eff6ff', bdr: 'rgba(37,99,235,0.16)',  bg: 'linear-gradient(145deg,#f0f6ff,#eaf1ff)' },
+                        { label: 'Rain Chance', value: `${daily[0].pop}%`,      icon: CloudRain,  color: '#0891b2', pale: '#ecfeff', bdr: 'rgba(8,145,178,0.16)',  bg: 'linear-gradient(145deg,#f0fbff,#e8f8fc)' },
+                        { label: 'Humidity',    value: `${daily[0].humidity}%`, icon: Droplets,   color: '#7c3aed', pale: '#faf5ff', bdr: 'rgba(124,58,237,0.16)', bg: 'linear-gradient(145deg,#f5f7ff,#f0ecff)' },
+                      ] as const).map(s => (
+                        <div key={s.label} className="sf-hover-lift"
+                          style={{ background: s.bg, border: `1px solid ${s.bdr}`, borderRadius: 14, boxShadow: '0 2px 8px rgba(100,70,30,0.05)', padding: '16px', display: 'flex', alignItems: 'center', gap: 12 }}>
+                          <div style={{ width: 38, height: 38, borderRadius: 11, background: s.pale, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, border: `1px solid ${s.color}22` }}>
+                            <s.icon size={17} color={s.color} />
+                          </div>
+                          <div>
+                            <div style={{ fontSize: 10.5, color: '#b0a088', fontFamily: "'DM Sans', sans-serif", textTransform: 'uppercase', letterSpacing: '0.04em' }}>{s.label}</div>
+                            <div style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: 22, color: '#1c1a15', letterSpacing: '-0.02em', lineHeight: 1.1, marginTop: 2 }}>{s.value}</div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* ── WEEK view ── */}
+              {view === 'week' && (
+                <div style={{ padding: '22px 24px', display: 'flex', flexDirection: 'column', gap: 16, background: '#f9f5ef' }}>
+                  <h4 style={{ fontSize: 11.5, fontWeight: 700, color: '#9a8870', textTransform: 'uppercase', letterSpacing: '0.07em', fontFamily: "'DM Sans', sans-serif", margin: 0 }}>7-Day Outlook</h4>
+
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                    {daily.map((day, i) => {
+                      const isSel = selectedDay === i;
+                      const range = tempRange.max - tempRange.min || 1;
+                      const barStart = ((day.tempMin - tempRange.min) / range) * 100;
+                      const barWidth = Math.max(((day.tempMax - day.tempMin) / range) * 100, 8);
+                      return (
+                        <div key={day.dt} className="sf-day-row"
+                          onClick={() => setSelectedDay(i)}
+                          style={{
+                            borderRadius: 14,
+                            border: `1.5px solid ${isSel ? accent + '45' : 'rgba(160,130,90,0.16)'}`,
+                            background: isSel ? `${accent}10` : '#fff',
+                            padding: '12px 16px',
+                            cursor: 'pointer',
+                            boxShadow: isSel ? `0 2px 12px ${accent}16` : '0 1px 4px rgba(100,70,30,0.05)',
+                          }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                            <div style={{ width: 90, flexShrink: 0 }}>
+                              <div style={{ fontSize: 13.5, fontWeight: 700, color: isSel ? '#1c1a15' : '#5a5040', fontFamily: "'Space Grotesk', sans-serif" }}>{formatDayShort(day.dt)}</div>
+                              <div style={{ fontSize: 11, color: '#b0a088', marginTop: 2, textTransform: 'capitalize', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontFamily: "'DM Sans', sans-serif" }}>{day.description}</div>
+                            </div>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 6, width: 56, flexShrink: 0 }}>
+                              <WeatherIcon condition={day.condition} size={20} color={conditionIconColor(day.condition)} />
+                              {day.pop > 0 && <span style={{ fontSize: 10.5, color: '#0891b2', fontWeight: 700, fontFamily: "'DM Sans', sans-serif" }}>{day.pop}%</span>}
+                            </div>
+                            <div style={{ flex: 1, display: 'flex', alignItems: 'center', gap: 8 }}>
+                              <span style={{ fontSize: 12.5, color: '#2563eb', fontWeight: 700, width: 32, textAlign: 'right', fontFamily: "'Space Grotesk', sans-serif", flexShrink: 0 }}>{day.tempMin}°</span>
+                              <div style={{ flex: 1, position: 'relative', height: 6, borderRadius: 100, background: '#ede4d3', overflow: 'hidden' }}>
+                                <div style={{ position: 'absolute', height: '100%', borderRadius: 100, left: `${barStart}%`, width: `${barWidth}%`, background: isSel ? `linear-gradient(90deg, #2563eb, ${accent})` : 'linear-gradient(90deg, #2563eb, #f97316)', transition: 'all 0.5s' }} />
+                              </div>
+                              <span style={{ fontSize: 12.5, color: '#ea580c', fontWeight: 700, width: 32, fontFamily: "'Space Grotesk', sans-serif", flexShrink: 0 }}>{day.tempMax}°</span>
+                            </div>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 4, width: 60, flexShrink: 0 }}>
+                              <Wind size={11} color="#b0a088" />
+                              <span style={{ fontSize: 10.5, color: '#9a8870', fontFamily: "'DM Sans', sans-serif" }}>{day.windSpeed}km/h</span>
+                            </div>
+                            <ChevronRight size={13} color={isSel ? accent : '#d4c4a8'} style={{ flexShrink: 0, transform: isSel ? 'rotate(90deg)' : 'none', transition: 'transform 0.2s' }} />
+                          </div>
+
+                          {/* Expanded day detail */}
+                          {isSel && (
+                            <div className="sf-slidein" style={{ marginTop: 12, paddingTop: 12, borderTop: `1px solid ${accent}22`, display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 8 }}>
+                              {([
+                                { icon: Droplets,    label: 'Humidity',   value: `${day.humidity}%`,              color: '#0891b2', pale: '#ecfeff' },
+                                { icon: Wind,        label: 'Wind',       value: `${day.windSpeed} km/h`,          color: '#64748b', pale: '#f8fafc' },
+                                { icon: CloudRain,   label: 'Rain Prob.', value: `${day.pop}%`,                    color: '#2563eb', pale: '#eff6ff' },
+                                { icon: Thermometer, label: 'Range',      value: `${day.tempMin}–${day.tempMax}°`, color: '#f97316', pale: '#fff7ed' },
+                              ] as const).map(s => (
+                                <div key={s.label} style={{ display: 'flex', alignItems: 'center', gap: 7, padding: '9px 10px', borderRadius: 10, background: s.pale, border: `1px solid ${s.color}18` }}>
+                                  <s.icon size={13} color={s.color} style={{ flexShrink: 0 }} />
+                                  <div>
+                                    <div style={{ fontSize: 9.5, color: '#b0a088', fontFamily: "'DM Sans', sans-serif", textTransform: 'uppercase', letterSpacing: '0.04em' }}>{s.label}</div>
+                                    <div style={{ fontSize: 12, fontWeight: 700, color: '#1c1a15', fontFamily: "'Space Grotesk', sans-serif", marginTop: 1 }}>{s.value}</div>
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+
+                  {/* Selected day summary */}
+                  {daily[selectedDay] && (
+                    <div className="sf-slidein" style={{ borderRadius: 14, padding: '16px 18px', background: `${accent}0e`, border: `1px solid ${accent}25` }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                        <div style={{ width: 40, height: 40, borderRadius: 12, background: `${accent}14`, border: `1px solid ${accent}22`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                          <WeatherIcon condition={daily[selectedDay].condition} size={20} color={conditionIconColor(daily[selectedDay].condition)} />
+                        </div>
+                        <div>
+                          <p style={{ fontSize: 14, fontWeight: 600, color: '#1c1a15', fontFamily: "'Space Grotesk', sans-serif", margin: 0 }}>{formatDayFull(daily[selectedDay].dt)}</p>
+                          <p style={{ fontSize: 12, color: '#9a8870', textTransform: 'capitalize', fontFamily: "'DM Sans', sans-serif", margin: '2px 0 0' }}>{daily[selectedDay].description}</p>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+            </>
+          )}
+        </div>
       </div>
     </>
   );

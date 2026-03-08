@@ -6,7 +6,7 @@ import {
   Bot, Send, Leaf, AlertTriangle, TrendingUp, Droplets,
   Thermometer, Waves, FlaskConical, Zap, RefreshCw, Sparkles,
   ChevronRight, Clock, AlertCircle, Info, Menu, BarChart2,
-  X, Loader2, Check, Activity, Layers, Wind
+  X, Loader2, Check, Activity, Layers, Wind, User
 } from 'lucide-react';
 import { startRealtimeUpdates, fetchSensorData, auth } from '@/lib/firebase';
 import { onAuthStateChanged, type User as AuthUser } from 'firebase/auth';
@@ -77,10 +77,6 @@ function saveCachedInsights(plotId: string, insights: Insight[]): void {
 // ══════════════════════════════════════════════════════════════════════════════
 // HELPERS
 // ══════════════════════════════════════════════════════════════════════════════
-
-function cn(...classes: (string | undefined | false | null)[]) {
-  return classes.filter(Boolean).join(' ');
-}
 
 function formatTime(date: Date) {
   return date.toLocaleTimeString('en-KE', { hour: '2-digit', minute: '2-digit' });
@@ -164,117 +160,149 @@ Return ONLY valid JSON (no markdown fences) in this exact format:
 }
 
 // ══════════════════════════════════════════════════════════════════════════════
-// PRIORITY CONFIG — dashboard-consistent colors
+// PRIORITY CONFIG — matching dashboard color language
 // ══════════════════════════════════════════════════════════════════════════════
 
-const priorityConfig: Record<Priority, {
-  color: string; bg: string; border: string; badge: string; dot: string; accentColor: string;
-}> = {
+type PriorityCfg = {
+  accentColor: string;
+  bg: string;
+  border: string;
+  badgeBg: string;
+  badgeColor: string;
+  badgeBorder: string;
+  dotColor: string;
+  label: string;
+};
+
+const priorityConfig: Record<Priority, PriorityCfg> = {
   critical: {
-    color: 'text-red-400', bg: 'rgba(239,68,68,0.06)', border: 'rgba(239,68,68,0.3)',
-    badge: 'bg-red-500/10 text-red-400 border border-red-500/20', dot: '#ef4444', accentColor: '#ef4444'
+    accentColor: '#ef4444',
+    bg: '#fff1f2',
+    border: '#fecaca',
+    badgeBg: '#fee2e2',
+    badgeColor: '#991b1b',
+    badgeBorder: '#fecaca',
+    dotColor: '#dc2626',
+    label: 'Critical',
   },
   high: {
-    color: 'text-amber-400', bg: 'rgba(245,158,11,0.06)', border: 'rgba(245,158,11,0.3)',
-    badge: 'bg-amber-500/10 text-amber-400 border border-amber-500/20', dot: '#f59e0b', accentColor: '#f59e0b'
+    accentColor: '#f59e0b',
+    bg: '#fffbeb',
+    border: '#fde68a',
+    badgeBg: '#fef3c7',
+    badgeColor: '#92400e',
+    badgeBorder: '#fde68a',
+    dotColor: '#d97706',
+    label: 'High',
   },
   medium: {
-    color: 'text-sky-400', bg: 'rgba(14,165,233,0.06)', border: 'rgba(14,165,233,0.3)',
-    badge: 'bg-sky-500/10 text-sky-400 border border-sky-500/20', dot: '#0ea5e9', accentColor: '#0ea5e9'
+    accentColor: '#0891b2',
+    bg: '#ecfeff',
+    border: '#a5f3fc',
+    badgeBg: '#cffafe',
+    badgeColor: '#164e63',
+    badgeBorder: '#a5f3fc',
+    dotColor: '#0891b2',
+    label: 'Medium',
   },
   low: {
-    color: 'text-emerald-400', bg: 'rgba(16,185,129,0.06)', border: 'rgba(16,185,129,0.3)',
-    badge: 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20', dot: '#10b981', accentColor: '#10b981'
+    accentColor: '#2d6a4f',
+    bg: '#f0faf2',
+    border: '#bbf7d0',
+    badgeBg: '#d8f3dc',
+    badgeColor: '#2d6a4f',
+    badgeBorder: '#b7e4c7',
+    dotColor: '#40916c',
+    label: 'Low',
   }
 };
 
 // ══════════════════════════════════════════════════════════════════════════════
-// INSIGHT CARD
+// INSIGHT CARD — dashboard card styling
 // ══════════════════════════════════════════════════════════════════════════════
 
-function InsightCard({ insight, index }: { insight: Insight; index: number }) {
+function InsightCard({ insight }: { insight: Insight }) {
   const [expanded, setExpanded] = useState(true);
   const cfg = priorityConfig[insight.priority];
 
   const categoryIcon: Record<string, React.ReactNode> = {
-    Temperature:    <Thermometer className="w-3.5 h-3.5" />,
-    Humidity:       <Waves className="w-3.5 h-3.5" />,
-    Irrigation:     <Droplets className="w-3.5 h-3.5" />,
-    Nutrition:      <FlaskConical className="w-3.5 h-3.5" />,
-    pH:             <FlaskConical className="w-3.5 h-3.5" />,
-    'Disease Risk': <AlertCircle className="w-3.5 h-3.5" />,
-    Harvest:        <Leaf className="w-3.5 h-3.5" />,
-    Climate:        <Thermometer className="w-3.5 h-3.5" />,
+    Temperature:    <Thermometer size={13} />,
+    Humidity:       <Waves size={13} />,
+    Irrigation:     <Droplets size={13} />,
+    Nutrition:      <FlaskConical size={13} />,
+    pH:             <FlaskConical size={13} />,
+    'Disease Risk': <AlertCircle size={13} />,
+    Harvest:        <Leaf size={13} />,
+    Climate:        <Thermometer size={13} />,
   };
 
   return (
     <div
-      className="rounded-2xl transition-all duration-300 overflow-hidden cursor-pointer hover:-translate-y-0.5"
-      style={{
-        background: 'rgba(30,41,59,0.6)',
-        border: `1px solid ${expanded ? cfg.border : 'rgba(71,85,105,0.35)'}`,
-        backdropFilter: 'blur(12px)',
-        borderLeft: `3px solid ${cfg.accentColor}`,
-        boxShadow: expanded ? `0 0 30px ${cfg.accentColor}08` : 'none',
-      }}
       onClick={() => setExpanded(!expanded)}
+      style={{
+        background: '#ffffff',
+        border: `1px solid rgba(160,130,90,0.18)`,
+        borderLeft: `3px solid ${cfg.accentColor}`,
+        borderRadius: 18,
+        boxShadow: expanded ? '0 4px 20px rgba(100,70,30,0.09)' : '0 2px 12px rgba(100,70,30,0.06)',
+        overflow: 'hidden',
+        cursor: 'pointer',
+        transition: 'transform 0.2s, box-shadow 0.2s',
+      }}
+      onMouseEnter={e => { (e.currentTarget as HTMLElement).style.transform = 'translateY(-2px)'; (e.currentTarget as HTMLElement).style.boxShadow = '0 10px 32px rgba(100,70,30,0.12)'; }}
+      onMouseLeave={e => { (e.currentTarget as HTMLElement).style.transform = ''; (e.currentTarget as HTMLElement).style.boxShadow = ''; }}
     >
       {/* Header */}
-      <div className="flex items-start gap-3 p-4">
+      <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12, padding: '16px 18px' }}>
         {/* Priority dot */}
-        <div className="mt-1.5 flex-shrink-0">
-          <span className="block w-2 h-2 rounded-full animate-pulse" style={{ background: cfg.accentColor }} />
+        <div style={{ marginTop: 8, flexShrink: 0 }}>
+          <span style={{ display: 'block', width: 8, height: 8, borderRadius: '50%', background: cfg.dotColor, animation: 'pls 2s infinite' }} />
         </div>
 
-        <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2 flex-wrap mb-1.5">
-            <span className={cn('inline-flex items-center gap-1 text-[11px] font-bold px-2 py-0.5 rounded-full capitalize', cfg.badge)}>
-              {insight.priority}
+        <div style={{ flex: 1, minWidth: 0 }}>
+          {/* Badges row */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap', marginBottom: 6 }}>
+            <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, padding: '3px 10px', borderRadius: 100, fontSize: 11, fontWeight: 700, background: cfg.badgeBg, color: cfg.badgeColor, border: `1px solid ${cfg.badgeBorder}`, fontFamily: "'DM Sans', sans-serif", textTransform: 'capitalize' }}>
+              {cfg.label}
             </span>
-            <span className="inline-flex items-center gap-1 text-[11px] text-slate-400 px-2 py-0.5 rounded-full"
-              style={{ background: 'rgba(15,24,36,0.6)', border: '1px solid rgba(71,85,105,0.3)' }}>
-              {categoryIcon[insight.category] ?? <Info className="w-3 h-3" />}
-              <span className="ml-0.5">{insight.category}</span>
+            <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5, padding: '3px 10px', borderRadius: 100, fontSize: 11, fontWeight: 500, background: '#f9f5ef', color: '#5a5040', border: '1px solid rgba(160,130,90,0.22)', fontFamily: "'DM Sans', sans-serif" }}>
+              {categoryIcon[insight.category] ?? <Info size={12} />} {insight.category}
             </span>
-            <span className="ml-auto text-[10px] text-slate-500 flex items-center gap-1 flex-shrink-0">
-              <Clock className="w-3 h-3" />
-              {formatTime(insight.timestamp)}
+            <span style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 4, fontSize: 10.5, color: '#b0a088', fontFamily: "'DM Sans', sans-serif", flexShrink: 0 }}>
+              <Clock size={10} /> {formatTime(insight.timestamp)}
             </span>
           </div>
-          <p className="text-sm font-semibold text-slate-100 leading-snug section-title">{insight.title}</p>
+          <p style={{ fontSize: 13.5, fontWeight: 700, color: '#1c1a15', fontFamily: "'Space Grotesk', sans-serif", lineHeight: 1.35 }}>{insight.title}</p>
         </div>
 
-        <ChevronRight className={cn(
-          'w-4 h-4 text-slate-500 flex-shrink-0 transition-transform duration-200 mt-0.5',
-          expanded && 'rotate-90'
-        )} />
+        <ChevronRight size={15} style={{ color: '#b0a088', flexShrink: 0, marginTop: 2, transform: expanded ? 'rotate(90deg)' : 'rotate(0deg)', transition: 'transform 0.2s' }} />
       </div>
 
       {/* Expanded body */}
       {expanded && (
-        <div className="px-4 pb-4 space-y-3" style={{ borderTop: '1px solid rgba(71,85,105,0.2)' }}>
-          <p className="text-sm text-slate-300 leading-relaxed pt-3">{insight.detail}</p>
+        <div style={{ padding: '0 18px 18px', borderTop: '1px solid rgba(160,130,90,0.1)' }}>
+          <p style={{ fontSize: 13, color: '#5a5040', lineHeight: 1.6, fontFamily: "'DM Sans', sans-serif", padding: '12px 0 10px' }}>{insight.detail}</p>
 
-          <div className="rounded-xl p-3 border"
-            style={{ background: 'rgba(15,24,36,0.6)', borderColor: 'rgba(71,85,105,0.25)' }}>
-            <p className="text-[10px] font-semibold text-emerald-400 uppercase tracking-widest mb-1.5 flex items-center gap-1">
-              <Zap className="w-3 h-3" /> Recommended Action
+          {/* Recommended action */}
+          <div style={{ background: '#f9f5ef', border: '1px solid rgba(160,130,90,0.18)', borderRadius: 12, padding: '11px 14px', marginBottom: 10 }}>
+            <p style={{ fontSize: 10.5, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', color: '#2d6a4f', marginBottom: 6, display: 'flex', alignItems: 'center', gap: 5, fontFamily: "'DM Sans', sans-serif" }}>
+              <Zap size={11} /> Recommended Action
             </p>
-            <p className="text-sm text-slate-200">{insight.action}</p>
+            <p style={{ fontSize: 13, color: '#1c1a15', lineHeight: 1.5, fontFamily: "'DM Sans', sans-serif" }}>{insight.action}</p>
           </div>
 
-          <div className="flex items-center justify-between gap-4">
-            <div className="flex items-center gap-1.5 min-w-0">
-              <TrendingUp className="w-3.5 h-3.5 text-slate-500 flex-shrink-0" />
-              <span className="text-xs text-slate-400 truncate">{insight.impact}</span>
+          {/* Impact + confidence */}
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6, minWidth: 0, flex: 1 }}>
+              <TrendingUp size={13} color="#b0a088" style={{ flexShrink: 0 }} />
+              <span style={{ fontSize: 11.5, color: '#9a8870', fontFamily: "'DM Sans', sans-serif", overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{insight.impact}</span>
             </div>
-            <div className="flex items-center gap-1.5 flex-shrink-0">
-              <span className="text-[10px] text-slate-500">Confidence</span>
-              <div className="w-20 h-1.5 rounded-full overflow-hidden" style={{ background: 'rgba(30,41,59,0.8)' }}>
-                <div className="h-full rounded-full transition-all duration-700"
-                  style={{ width: `${insight.confidence}%`, backgroundColor: cfg.accentColor }} />
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0 }}>
+              <span style={{ fontSize: 10.5, color: '#b0a088', fontFamily: "'DM Sans', sans-serif" }}>Confidence</span>
+              <div style={{ width: 72, height: 5, borderRadius: 100, background: '#ede4d3', overflow: 'hidden' }}>
+                <div style={{ width: `${insight.confidence}%`, height: '100%', borderRadius: 100, background: cfg.accentColor, transition: 'width 0.7s cubic-bezier(.34,1.56,.64,1)' }} />
               </div>
-              <span className="text-[11px] font-semibold text-slate-300 stat-number">{insight.confidence}%</span>
+              <span style={{ fontSize: 11.5, fontWeight: 700, color: '#1c1a15', fontFamily: "'Space Grotesk', sans-serif" }}>{insight.confidence}%</span>
             </div>
           </div>
         </div>
@@ -430,10 +458,10 @@ Give concise, actionable advice specific to ${plot?.cropType ?? 'the crop'}. Be 
   }, [input, chatLoading, systemContext]);
 
   const quickPrompts: QuickPrompt[] = [
-    { label: 'Irrigation advice',  prompt: 'Based on current moisture and weather, should I irrigate today?',  icon: <Droplets className="w-3.5 h-3.5" /> },
-    { label: 'Nutrient plan',      prompt: 'Create a fertiliser plan based on my soil nutrient levels.',        icon: <FlaskConical className="w-3.5 h-3.5" /> },
-    { label: 'Harvest forecast',   prompt: 'When should I expect to harvest based on current conditions?',      icon: <Leaf className="w-3.5 h-3.5" /> },
-    { label: 'Disease risk',       prompt: 'Is there a risk of fungal disease given the current humidity?',     icon: <AlertCircle className="w-3.5 h-3.5" /> },
+    { label: 'Irrigation advice',  prompt: 'Based on current moisture and weather, should I irrigate today?',  icon: <Droplets size={13} /> },
+    { label: 'Nutrient plan',      prompt: 'Create a fertiliser plan based on my soil nutrient levels.',        icon: <FlaskConical size={13} /> },
+    { label: 'Harvest forecast',   prompt: 'When should I expect to harvest based on current conditions?',      icon: <Leaf size={13} /> },
+    { label: 'Disease risk',       prompt: 'Is there a risk of fungal disease given the current humidity?',     icon: <AlertCircle size={13} /> },
   ];
 
   const countByPriority = (p: Priority) => insights.filter(i => i.priority === p).length;
@@ -444,118 +472,141 @@ Give concise, actionable advice specific to ${plot?.cropType ?? 'the crop'}. Be 
       ? `Refreshed ${formatTime(lastRefreshed)}`
       : null;
 
+  // ── Shared card style matching dashboard ──
+  const cardBase: React.CSSProperties = {
+    background: '#ffffff',
+    border: '1px solid rgba(160,130,90,0.18)',
+    borderRadius: 18,
+    boxShadow: '0 2px 12px rgba(100,70,30,0.06)',
+  };
+
+  const statsCards: React.CSSProperties[] = [
+    { ...cardBase, background: 'linear-gradient(145deg, #fff1f2 0%, #ffe4e6 100%)', borderColor: 'rgba(239,68,68,0.18)' },
+    { ...cardBase, background: 'linear-gradient(145deg, #fffaf0 0%, #fff6e3 100%)', borderColor: 'rgba(217,119,6,0.18)' },
+    { ...cardBase, background: 'linear-gradient(145deg, #f0fbff 0%, #e6f7fc 100%)', borderColor: 'rgba(8,145,178,0.18)' },
+    { ...cardBase, background: 'linear-gradient(145deg, #f3fbf5 0%, #edf7ef 100%)', borderColor: 'rgba(45,106,79,0.18)' },
+  ];
+
+  const soilCardStyle: React.CSSProperties = {
+    ...cardBase,
+    background: 'linear-gradient(160deg, #f6f8ff 0%, #f2f5fe 100%)',
+    borderColor: 'rgba(59,130,246,0.14)',
+  };
+
+  const chatCardStyle: React.CSSProperties = {
+    ...cardBase,
+    background: 'linear-gradient(160deg, #f5f7ff 0%, #f8f5ff 100%)',
+    borderColor: 'rgba(124,58,237,0.14)',
+  };
+
   // ══════════════════════════════════════════════════════════════════════════════
   // RENDER
   // ══════════════════════════════════════════════════════════════════════════════
 
   return (
-    <div className="text-slate-100 min-h-screen" style={{ background: '#0f1824', fontFamily: "'DM Sans', system-ui, sans-serif" }}>
+    <div style={{ minHeight: '100vh', background: '#f9f5ef', fontFamily: "'DM Sans', 'Segoe UI', sans-serif", color: '#1c1a15' }}>
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700&family=Space+Grotesk:wght@400;500;600;700&display=swap');
-        * { box-sizing: border-box; }
-        ::-webkit-scrollbar { width: 4px; height: 4px; }
-        ::-webkit-scrollbar-track { background: #1e293b; }
-        ::-webkit-scrollbar-thumb { background: #334155; border-radius: 2px; }
-        .card { background: rgba(30,41,59,0.6); border: 1px solid rgba(71,85,105,0.35); backdrop-filter: blur(12px); }
-        .card-glow-green:hover { box-shadow: 0 0 40px rgba(16,185,129,0.08); border-color: rgba(16,185,129,0.2); }
-        .shimmer { background: linear-gradient(90deg, rgba(255,255,255,0) 0%, rgba(255,255,255,0.03) 50%, rgba(255,255,255,0) 100%); background-size: 200% 100%; animation: shimmer 2s infinite; }
-        @keyframes shimmer { from { background-position: -200% 0; } to { background-position: 200% 0; } }
-        .stat-number { font-family: 'Space Grotesk', monospace; }
-        .section-title { font-family: 'Space Grotesk', sans-serif; }
+        @import url('https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,300&family=Space+Grotesk:wght@400;500;600;700&display=swap');
+        *{box-sizing:border-box;}
+        ::-webkit-scrollbar{width:4px;height:4px}
+        ::-webkit-scrollbar-track{background:#f2ece0}
+        ::-webkit-scrollbar-thumb{background:#d4c4a8;border-radius:2px}
+        @keyframes spin{to{transform:rotate(360deg)}}
+        @keyframes ping{75%,100%{transform:scale(1.8);opacity:0}}
+        @keyframes bounce{0%,100%{transform:translateY(0)}50%{transform:translateY(-5px)}}
+        @keyframes pls{0%,100%{opacity:1}50%{opacity:0.4}}
+        .pls{animation:pls 2s infinite}
+        .btn-p{background:#2d6a4f;color:#fff;border:none;border-radius:100px;padding:9px 18px;font-family:'DM Sans',sans-serif;font-size:13px;font-weight:600;cursor:pointer;display:inline-flex;align-items:center;gap:7px;transition:all .2s;box-shadow:0 2px 10px rgba(45,106,79,0.28)}
+        .btn-p:hover{background:#40916c;transform:translateY(-1px)}
+        .btn-p:disabled{opacity:.5;cursor:not-allowed;transform:none}
+        .btn-g{background:transparent;border:1px solid rgba(160,130,90,0.22);color:#5a5040;border-radius:100px;padding:8px 16px;font-family:'DM Sans',sans-serif;font-size:13px;font-weight:500;cursor:pointer;display:inline-flex;align-items:center;gap:7px;transition:all .15s}
+        .btn-g:hover{background:#f2ece0;border-color:rgba(160,130,90,0.4);color:#1c1a15}
+        .ptrack{width:100%;height:5px;background:#ede4d3;border-radius:100px;overflow:hidden}
+        .pfill{height:100%;border-radius:100px;transition:width 0.7s cubic-bezier(.34,1.56,.64,1)}
+        .tab-btn{display:flex;align-items:center;gap:8px;padding:9px 18px;border-radius:10px;font-size:13.5px;font-weight:600;cursor:pointer;font-family:'Space Grotesk',sans-serif;border:none;transition:all .15s}
+        .quick-btn{display:inline-flex;align-items:center;gap:6px;padding:7px 14px;border-radius:100px;font-size:12px;font-weight:500;cursor:pointer;font-family:'DM Sans',sans-serif;background:rgba(255,255,255,0.8);border:1px solid rgba(160,130,90,0.22);color:#5a5040;transition:all .15s}
+        .quick-btn:hover{border-color:rgba(45,106,79,0.35);color:#2d6a4f;background:#fff}
       `}</style>
 
-      {/* Ambient blobs */}
-      <div className="fixed inset-0 pointer-events-none overflow-hidden z-0">
-        <div className="absolute -top-40 -right-40 w-[600px] h-[600px] rounded-full"
-          style={{ background: 'radial-gradient(circle, rgba(16,185,129,0.04) 0%, transparent 70%)' }} />
-        <div className="absolute top-1/2 -left-40 w-[400px] h-[400px] rounded-full"
-          style={{ background: 'radial-gradient(circle, rgba(59,130,246,0.03) 0%, transparent 70%)' }} />
-        <div className="absolute -bottom-40 right-1/3 w-[500px] h-[500px] rounded-full"
-          style={{ background: 'radial-gradient(circle, rgba(168,85,247,0.02) 0%, transparent 70%)' }} />
-      </div>
-
       {/* ── Header ── */}
-      <header className="relative z-40 sticky top-0 h-auto border-b"
-        style={{ background: 'rgba(15,24,36,0.85)', backdropFilter: 'blur(20px)', borderColor: 'rgba(71,85,105,0.3)' }}>
+      <header style={{ position: 'sticky', top: 0, zIndex: 50, height: 'auto', background: 'rgba(249,245,239,0.92)', backdropFilter: 'blur(14px)', borderBottom: '1px solid rgba(160,130,90,0.14)' }}>
 
         {/* Top row */}
-        <div className="flex items-center justify-between px-4 md:px-6 h-16 gap-4">
-          <button onClick={() => document.dispatchEvent(new CustomEvent('toggleMobileMenu'))}
-            className="lg:hidden p-2 rounded-lg hover:bg-slate-800 text-slate-400 transition-colors">
-            <Menu className="w-5 h-5" />
-          </button>
+        <div style={{ display: 'flex', alignItems: 'center', padding: '0 24px', height: 64, gap: 16 }}>
 
-          {/* Title */}
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl flex items-center justify-center"
-              style={{ background: 'linear-gradient(135deg, #059669, #0891b2)', boxShadow: '0 4px 12px rgba(5,150,105,0.25)' }}>
-              <Sparkles className="w-5 h-5 text-white" />
+          {/* Brand */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+            <div style={{ width: 36, height: 36, borderRadius: 11, background: 'linear-gradient(135deg, #2d6a4f, #0891b2)', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 4px 12px rgba(45,106,79,0.25)', flexShrink: 0 }}>
+              <Sparkles size={16} color="#fff" />
             </div>
             <div>
-              <h1 className="section-title text-base font-bold text-slate-100 leading-none">AI Insights</h1>
-              <p className="text-[11px] text-slate-500 mt-0.5">
+              <h1 style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: 15, fontWeight: 700, color: '#1c1a15', lineHeight: 1 }}>AI Insights</h1>
+              <p style={{ fontSize: 11, color: '#b0a088', marginTop: 2, fontFamily: "'DM Sans', sans-serif" }}>
                 {plot ? `${plot.emoji} ${plot.name} — ${plot.cropType} (${plot.variety})` : 'AI-powered · Real-time farm analysis'}
               </p>
             </div>
           </div>
 
-          {/* Sensor pills + refresh */}
-          <div className="flex items-center gap-2 flex-wrap ml-auto">
+          {/* Sensor pills */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginLeft: 'auto', flexWrap: 'wrap' }}>
             {[
-              { icon: <Thermometer className="w-3 h-3" />, label: 'Temp', value: sensor.temperature.toFixed(1), unit: '°C',
-                status: sensor.temperature > 35 ? 'alert' : sensor.temperature > 30 ? 'warn' : 'ok' },
-              { icon: <Droplets className="w-3 h-3" />, label: 'Moisture', value: sensor.moisture.toFixed(0), unit: '%',
-                status: sensor.moisture < 30 ? 'alert' : sensor.moisture < 40 ? 'warn' : 'ok' },
-              { icon: <Waves className="w-3 h-3" />, label: 'Humidity', value: sensor.humidity.toFixed(0), unit: '%',
-                status: sensor.humidity > 85 ? 'warn' : 'ok' },
+              { icon: <Thermometer size={12} />, label: 'Temp',     value: sensor.temperature.toFixed(1), unit: '°C', status: sensor.temperature > 35 ? 'alert' : sensor.temperature > 30 ? 'warn' : 'ok' },
+              { icon: <Droplets size={12} />,    label: 'Moisture', value: sensor.moisture.toFixed(0),    unit: '%',  status: sensor.moisture < 30 ? 'alert' : sensor.moisture < 40 ? 'warn' : 'ok' },
+              { icon: <Waves size={12} />,       label: 'Humidity', value: sensor.humidity.toFixed(0),    unit: '%',  status: sensor.humidity > 85 ? 'warn' : 'ok' },
             ].map(s => {
               const colors = {
-                ok:    { bg: 'rgba(16,185,129,0.08)',  border: 'rgba(16,185,129,0.2)',  text: '#10b981' },
-                warn:  { bg: 'rgba(245,158,11,0.08)',  border: 'rgba(245,158,11,0.2)',  text: '#f59e0b' },
-                alert: { bg: 'rgba(239,68,68,0.08)',   border: 'rgba(239,68,68,0.2)',   text: '#ef4444' },
-              }[s.status] || { bg: 'rgba(16,185,129,0.08)',  border: 'rgba(16,185,129,0.2)',  text: '#10b981' };
+                ok:    { bg: '#f0faf2', border: 'rgba(45,106,79,0.25)',  text: '#2d6a4f' },
+                warn:  { bg: '#fffbeb', border: 'rgba(217,119,6,0.25)',  text: '#92400e' },
+                alert: { bg: '#fff1f2', border: 'rgba(220,38,38,0.25)', text: '#991b1b' },
+              }[s.status as 'ok'|'warn'|'alert'] || { bg: '#f0faf2', border: 'rgba(45,106,79,0.25)', text: '#2d6a4f' };
               return (
-                <div key={s.label} className="hidden sm:flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl text-xs font-medium border"
-                  style={{ background: colors.bg, borderColor: colors.border, color: colors.text }}>
-                  <span className="opacity-80">{s.icon}</span>
-                  <span className="text-slate-400">{s.label}</span>
-                  <span className="stat-number font-bold">{s.value}<span className="font-normal opacity-70 ml-0.5">{s.unit}</span></span>
+                <div key={s.label} style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '5px 12px', borderRadius: 100, fontSize: 12, fontWeight: 600, border: `1px solid ${colors.border}`, background: colors.bg, color: colors.text, fontFamily: "'DM Sans', sans-serif" }}>
+                  <span style={{ opacity: 0.85 }}>{s.icon}</span>
+                  <span style={{ color: '#9a8870', fontWeight: 400 }}>{s.label}</span>
+                  <span style={{ fontFamily: "'Space Grotesk', sans-serif" }}>{s.value}<span style={{ fontWeight: 400, opacity: 0.7, marginLeft: 2 }}>{s.unit}</span></span>
                 </div>
               );
             })}
 
-            {/* Connection dot */}
-            <div className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-full border text-[11px] font-semibold"
-              style={{ background: 'rgba(16,185,129,0.08)', borderColor: 'rgba(16,185,129,0.2)', color: '#10b981' }}>
-              <span className="relative flex h-2 w-2">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full opacity-75 bg-emerald-400" />
-                <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-400" />
+            {/* Live indicator */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '5px 13px', borderRadius: 100, fontSize: 12, fontWeight: 600, background: '#f0faf2', border: '1px solid rgba(45,106,79,0.25)', color: '#2d6a4f', fontFamily: "'DM Sans', sans-serif" }}>
+              <span style={{ position: 'relative', display: 'inline-flex', width: 8, height: 8 }}>
+                <span style={{ position: 'absolute', inset: 0, borderRadius: '50%', background: '#40916c', opacity: 0.75, animation: 'ping 1.2s cubic-bezier(0,0,.2,1) infinite' }} />
+                <span style={{ position: 'relative', display: 'inline-flex', borderRadius: '50%', width: 8, height: 8, background: '#40916c' }} />
               </span>
-              <span className="hidden sm:inline">Live</span>
+              Live
             </div>
 
-            <button onClick={() => handleGenerateInsights(true)}
+            {/* Refresh */}
+            <button
+              onClick={() => handleGenerateInsights(true)}
               disabled={insightsLoading || !dataLoaded}
-              className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 text-white text-xs font-semibold transition-all active:scale-95">
-              {insightsLoading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <RefreshCw className="w-3.5 h-3.5" />}
+              className="btn-p"
+              style={{ borderRadius: 100 }}
+            >
+              {insightsLoading
+                ? <RefreshCw size={13} style={{ animation: 'spin 1s linear infinite' }} />
+                : <RefreshCw size={13} />}
               Refresh
             </button>
           </div>
         </div>
 
         {/* Tab bar */}
-        <div className="px-4 md:px-6 pb-3">
-          <div className="flex gap-1 p-1 rounded-xl w-fit"
-            style={{ background: 'rgba(15,24,36,0.6)', border: '1px solid rgba(71,85,105,0.3)' }}>
+        <div style={{ padding: '0 24px 12px', display: 'flex' }}>
+          <div style={{ display: 'flex', gap: 4, padding: 4, borderRadius: 13, background: 'rgba(160,130,90,0.1)', border: '1px solid rgba(160,130,90,0.18)' }}>
             {(['chat', 'insights'] as const).map(tab => (
-              <button key={tab} onClick={() => setActiveTab(tab)}
-                className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold transition-all section-title"
+              <button
+                key={tab}
+                onClick={() => setActiveTab(tab)}
+                className="tab-btn"
                 style={activeTab === tab
-                  ? { background: 'rgba(30,41,59,0.9)', color: '#f1f5f9', boxShadow: '0 2px 8px rgba(0,0,0,0.3)' }
-                  : { color: '#64748b' }}>
+                  ? { background: '#ffffff', color: '#1c1a15', boxShadow: '0 2px 8px rgba(100,70,30,0.10)' }
+                  : { color: '#9a8870', background: 'transparent' }}
+              >
                 {tab === 'insights'
-                  ? <><BarChart2 className="w-4 h-4" /> Insights {insights.length > 0 && <span className="px-1.5 py-0.5 rounded-full text-[10px] bg-emerald-500/15 text-emerald-400">{insights.length}</span>}</>
-                  : <><Bot className="w-4 h-4" /> Ask AI</>}
+                  ? <><BarChart2 size={15} /> Insights {insights.length > 0 && <span style={{ padding: '2px 8px', borderRadius: 100, fontSize: 10.5, background: '#d8f3dc', color: '#2d6a4f', fontFamily: "'DM Sans', sans-serif" }}>{insights.length}</span>}</>
+                  : <><Bot size={15} /> Ask AI</>}
               </button>
             ))}
           </div>
@@ -563,26 +614,29 @@ Give concise, actionable advice specific to ${plot?.cropType ?? 'the crop'}. Be 
       </header>
 
       {/* ── Main Content ── */}
-      <div className="relative z-10 p-4 md:p-6 max-w-[1400px] mx-auto space-y-5">
+      <div style={{ maxWidth: 1400, margin: '0 auto', padding: '24px 24px 60px', display: 'flex', flexDirection: 'column', gap: 18 }}>
 
-        {/* ── INSIGHTS TAB ── */}
+        {/* ══════════════════════════════════════════════════════════════════ */}
+        {/* INSIGHTS TAB                                                       */}
+        {/* ══════════════════════════════════════════════════════════════════ */}
         {activeTab === 'insights' && (
           <>
-            {/* Priority summary */}
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-              {(['critical', 'high', 'medium', 'low'] as Priority[]).map(p => {
+            {/* Priority summary cards */}
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 14 }}>
+              {(['critical', 'high', 'medium', 'low'] as Priority[]).map((p, i) => {
                 const cfg = priorityConfig[p];
                 const count = countByPriority(p);
                 return (
-                  <div key={p} className="card card-glow-green rounded-2xl p-4 flex items-center gap-3 transition-all"
-                    style={{ borderLeft: `3px solid ${cfg.accentColor}` }}>
-                    <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0"
-                      style={{ background: cfg.bg, border: `1px solid ${cfg.border}` }}>
-                      <span className="stat-number text-xl font-black" style={{ color: cfg.accentColor }}>{count}</span>
+                  <div key={p}
+                    style={{ ...statsCards[i], padding: '16px 18px', display: 'flex', alignItems: 'center', gap: 14, borderLeft: `3px solid ${cfg.accentColor}`, transition: 'transform .2s' }}
+                    onMouseEnter={e => (e.currentTarget as HTMLElement).style.transform = 'translateY(-2px)'}
+                    onMouseLeave={e => (e.currentTarget as HTMLElement).style.transform = ''}>
+                    <div style={{ width: 42, height: 42, borderRadius: 12, background: cfg.bg, border: `1px solid ${cfg.border}`, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                      <span style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: 22, fontWeight: 900, color: cfg.accentColor }}>{count}</span>
                     </div>
                     <div>
-                      <p className="text-xs font-bold uppercase tracking-wider section-title" style={{ color: cfg.accentColor }}>{p}</p>
-                      <p className="text-[11px] text-slate-500">alerts</p>
+                      <p style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', color: cfg.accentColor }}>{p}</p>
+                      <p style={{ fontSize: 11, color: '#b0a088', fontFamily: "'DM Sans', sans-serif" }}>alerts</p>
                     </div>
                   </div>
                 );
@@ -590,85 +644,83 @@ Give concise, actionable advice specific to ${plot?.cropType ?? 'the crop'}. Be 
             </div>
 
             {/* Status bar */}
-            <div className="card rounded-xl px-4 py-2.5 flex items-center justify-between text-xs text-slate-500">
-              <span className="flex items-center gap-2">
-                <span className={cn('w-2 h-2 rounded-full', dataLoaded ? 'bg-emerald-500 animate-pulse' : 'bg-amber-500')} />
+            <div style={{ ...cardBase, padding: '10px 16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: 12, color: '#9a8870', fontFamily: "'DM Sans', sans-serif" }}>
+              <span style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <span style={{ width: 7, height: 7, borderRadius: '50%', background: dataLoaded ? '#40916c' : '#d97706', display: 'inline-block' }} className={dataLoaded ? 'pls' : ''} />
                 {dataLoaded
                   ? (plot ? `Live Data · ${plot.emoji} ${plot.name} – ${plot.cropType}` : 'Live Data · No plot selected')
                   : 'Loading sensor data…'}
               </span>
               {timestampLabel && (
-                <span className="flex items-center gap-1">
-                  <Clock className="w-3 h-3" /> {timestampLabel}
+                <span style={{ display: 'flex', alignItems: 'center', gap: 5, color: '#b0a088' }}>
+                  <Clock size={11} /> {timestampLabel}
                 </span>
               )}
             </div>
 
             {/* Loading / empty states */}
             {insightsLoading && insights.length === 0 ? (
-              <div className="card rounded-2xl flex flex-col items-center justify-center py-20 gap-4">
-                <div className="w-14 h-14 rounded-2xl flex items-center justify-center"
-                  style={{ background: 'rgba(16,185,129,0.08)', border: '1px solid rgba(16,185,129,0.2)' }}>
-                  <Loader2 className="w-6 h-6 text-emerald-400 animate-spin" />
+              <div style={{ ...cardBase, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '72px 24px', gap: 14 }}>
+                <div style={{ width: 52, height: 52, borderRadius: 16, background: '#f0faf2', border: '1px solid rgba(45,106,79,0.25)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <RefreshCw size={22} color="#2d6a4f" style={{ animation: 'spin 1s linear infinite' }} />
                 </div>
-                <p className="text-slate-400 text-sm">Analysing your sensor data…</p>
+                <p style={{ fontSize: 13.5, color: '#9a8870', fontFamily: "'DM Sans', sans-serif" }}>Analysing your sensor data…</p>
               </div>
             ) : !dataLoaded ? (
-              <div className="card rounded-2xl flex flex-col items-center justify-center py-20 gap-3 text-center">
-                <Loader2 className="w-10 h-10 text-slate-600 animate-spin" />
-                <p className="text-slate-400">Loading live sensor data…</p>
+              <div style={{ ...cardBase, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '72px 24px', gap: 12 }}>
+                <RefreshCw size={36} color="#b0a088" style={{ animation: 'spin 1s linear infinite' }} />
+                <p style={{ fontSize: 13.5, color: '#9a8870', fontFamily: "'DM Sans', sans-serif" }}>Loading live sensor data…</p>
               </div>
             ) : insights.length === 0 ? (
-              <div className="card rounded-2xl flex flex-col items-center justify-center py-20 gap-3 text-center">
-                <div className="w-14 h-14 rounded-2xl flex items-center justify-center"
-                  style={{ background: 'rgba(16,185,129,0.06)', border: '1px solid rgba(16,185,129,0.15)' }}>
-                  <Sparkles className="w-6 h-6 text-slate-600" />
+              <div style={{ ...cardBase, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '72px 24px', gap: 12 }}>
+                <div style={{ width: 52, height: 52, borderRadius: 16, background: '#f9f5ef', border: '1px solid rgba(160,130,90,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <Sparkles size={22} color="#b0a088" />
                 </div>
-                <p className="text-slate-400 text-sm">No insights yet — click <strong className="text-emerald-400">Refresh</strong> to analyse.</p>
+                <p style={{ fontSize: 13.5, color: '#9a8870', fontFamily: "'DM Sans', sans-serif" }}>No insights yet — click <strong style={{ color: '#2d6a4f' }}>Refresh</strong> to analyse.</p>
               </div>
             ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
                 {insights.map((insight, i) => (
-                  <InsightCard key={insight.id} insight={insight} index={i} />
+                  <InsightCard key={insight.id} insight={insight} />
                 ))}
               </div>
             )}
 
-            {/* Soil snapshot */}
-            <div className="card rounded-2xl p-5">
-              <div className="flex items-center justify-between mb-4">
+            {/* Soil Snapshot — matching dashboard soil card style */}
+            <div style={{ ...soilCardStyle, padding: 24 }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 18 }}>
                 <div>
-                  <h3 className="section-title font-semibold text-slate-100">Soil Snapshot</h3>
-                  <p className="text-xs text-slate-500 mt-0.5">Live readings from all sensors</p>
+                  <h3 style={{ fontWeight: 700, fontSize: 15, color: '#1c1a15', fontFamily: "'Space Grotesk', sans-serif" }}>Soil Snapshot</h3>
+                  <p style={{ fontSize: 12, color: '#9a8870', marginTop: 2, fontFamily: "'DM Sans', sans-serif" }}>Live readings from all sensors</p>
                 </div>
-                <span className="flex items-center gap-1.5 text-[11px] text-slate-500 px-2.5 py-1 rounded-full border"
-                  style={{ background: 'rgba(15,24,36,0.6)', borderColor: 'rgba(71,85,105,0.3)' }}>
-                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" /> Real-time
+                <span style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 11, padding: '4px 12px', borderRadius: 100, background: '#f9f5ef', border: '1px solid rgba(160,130,90,0.22)', color: '#9a8870', fontFamily: "'DM Sans', sans-serif" }}>
+                  <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#40916c', display: 'inline-block' }} className="pls" /> Real-time
                 </span>
               </div>
-              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))', gap: 12 }}>
                 {[
-                  { label: 'Moisture',    val: sensor.moisture,    unit: '%',     color: '#3b82f6',  max: 100, icon: <Droplets className="w-3.5 h-3.5" /> },
-                  { label: 'Temperature', val: sensor.temperature, unit: '°C',    color: '#f59e0b',  max: 50,  icon: <Thermometer className="w-3.5 h-3.5" /> },
-                  { label: 'Humidity',    val: sensor.humidity,    unit: '%',     color: '#06b6d4',  max: 100, icon: <Waves className="w-3.5 h-3.5" /> },
-                  { label: 'pH',          val: sensor.ph,          unit: '',      color: '#a78bfa',  max: 14,  icon: <FlaskConical className="w-3.5 h-3.5" /> },
-                  { label: 'Nitrogen',    val: sensor.nitrogen,    unit: 'mg/kg', color: '#f87171',  max: 200, icon: <Activity className="w-3.5 h-3.5" /> },
-                  { label: 'Phosphorus',  val: sensor.phosphorus,  unit: 'mg/kg', color: '#fb923c',  max: 100, icon: <Layers className="w-3.5 h-3.5" /> },
-                  { label: 'Potassium',   val: sensor.potassium,   unit: 'mg/kg', color: '#34d399',  max: 300, icon: <Wind className="w-3.5 h-3.5" /> },
+                  { label: 'Moisture',    val: sensor.moisture,    unit: '%',     accent: '#2563eb', max: 100, icon: <Droplets size={14} /> },
+                  { label: 'Temperature', val: sensor.temperature, unit: '°C',    accent: '#f97316', max: 50,  icon: <Thermometer size={14} /> },
+                  { label: 'Humidity',    val: sensor.humidity,    unit: '%',     accent: '#0891b2', max: 100, icon: <Waves size={14} /> },
+                  { label: 'pH',          val: sensor.ph,          unit: '',      accent: '#7c3aed', max: 14,  icon: <FlaskConical size={14} /> },
+                  { label: 'Nitrogen',    val: sensor.nitrogen,    unit: 'mg/kg', accent: '#dc2626', max: 200, icon: <Activity size={14} /> },
+                  { label: 'Phosphorus',  val: sensor.phosphorus,  unit: 'mg/kg', accent: '#d97706', max: 100, icon: <Layers size={14} /> },
+                  { label: 'Potassium',   val: sensor.potassium,   unit: 'mg/kg', accent: '#2d6a4f', max: 300, icon: <Wind size={14} /> },
                 ].map(m => (
-                  <div key={m.label} className="rounded-xl p-3 transition-all hover:-translate-y-0.5"
-                    style={{ background: 'rgba(15,24,36,0.6)', border: '1px solid rgba(71,85,105,0.25)' }}>
-                    <div className="flex items-center gap-1.5 mb-1.5">
-                      <span style={{ color: m.color }}>{m.icon}</span>
-                      <p className="text-[10px] text-slate-500 uppercase tracking-wider font-semibold">{m.label}</p>
+                  <div key={m.label}
+                    style={{ background: '#f9f5ef', border: '1px solid rgba(160,130,90,0.14)', borderRadius: 14, padding: '14px 16px', transition: 'transform .2s' }}
+                    onMouseEnter={e => (e.currentTarget as HTMLElement).style.transform = 'translateY(-2px)'}
+                    onMouseLeave={e => (e.currentTarget as HTMLElement).style.transform = ''}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 8 }}>
+                      <span style={{ color: m.accent }}>{m.icon}</span>
+                      <p style={{ fontSize: 10.5, textTransform: 'uppercase', letterSpacing: '0.06em', fontWeight: 700, color: '#b0a088', fontFamily: "'DM Sans', sans-serif" }}>{m.label}</p>
                     </div>
-                    <p className="stat-number text-lg font-bold text-slate-100">
-                      {typeof m.val === 'number' && m.unit === '' ? m.val.toFixed(1) : Math.round(Number(m.val))}
-                      <span className="text-xs font-normal text-slate-400 ml-1">{m.unit}</span>
+                    <p style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: 20, fontWeight: 700, color: '#1c1a15', lineHeight: 1 }}>
+                      {m.unit === '' ? Number(m.val).toFixed(1) : Math.round(Number(m.val))}
+                      <span style={{ fontSize: 11.5, fontWeight: 400, color: '#9a8870', marginLeft: 3, fontFamily: "'DM Sans', sans-serif" }}>{m.unit}</span>
                     </p>
-                    <div className="mt-2 h-1.5 rounded-full overflow-hidden" style={{ background: 'rgba(30,41,59,0.8)' }}>
-                      <div className="h-full rounded-full transition-all duration-700"
-                        style={{ width: `${Math.min((Number(m.val) / m.max) * 100, 100)}%`, backgroundColor: m.color, boxShadow: `0 0 6px ${m.color}40` }} />
+                    <div className="ptrack" style={{ marginTop: 10 }}>
+                      <div className="pfill" style={{ width: `${Math.min((Number(m.val) / m.max) * 100, 100)}%`, background: m.accent, opacity: 0.75 }} />
                     </div>
                   </div>
                 ))}
@@ -677,58 +729,52 @@ Give concise, actionable advice specific to ${plot?.cropType ?? 'the crop'}. Be 
           </>
         )}
 
-        {/* ── CHAT TAB ── */}
+        {/* ══════════════════════════════════════════════════════════════════ */}
+        {/* CHAT TAB — matches dashboard AI chat panel style                   */}
+        {/* ══════════════════════════════════════════════════════════════════ */}
         {activeTab === 'chat' && (
-          <div className="flex flex-col" style={{ height: 'calc(100vh - 200px)', minHeight: '500px' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', height: 'calc(100vh - 200px)', minHeight: 500 }}>
 
             {/* Messages */}
-            <div className="flex-1 overflow-y-auto space-y-4 pb-4 pr-1">
+            <div style={{ flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 16, paddingBottom: 16, paddingRight: 4 }}>
               {messages.map(msg => (
-                <div key={msg.id} className={cn('flex gap-3', msg.role === 'user' ? 'justify-end' : 'justify-start')}>
+                <div key={msg.id} style={{ display: 'flex', gap: 10, justifyContent: msg.role === 'user' ? 'flex-end' : 'flex-start' }}>
                   {msg.role === 'assistant' && (
-                    <div className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 mt-1 shadow-lg shadow-emerald-500/20"
-                      style={{ background: 'linear-gradient(135deg, #059669, #0891b2)' }}>
-                      <Bot className="w-4 h-4 text-white" />
+                    <div style={{ width: 32, height: 32, borderRadius: '50%', background: '#2d6a4f', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, marginTop: 2 }}>
+                      <Bot size={14} color="#fff" />
                     </div>
                   )}
-
-                  <div className={cn(
-                    'max-w-[80%] rounded-2xl px-4 py-3 text-sm leading-relaxed',
-                    msg.role === 'user' ? 'text-white rounded-tr-sm' : 'text-slate-200 rounded-tl-sm card'
-                  )}
-                  style={msg.role === 'user'
-                    ? { background: 'linear-gradient(135deg, #059669, #0891b2)' }
-                    : {}}>
+                  <div style={{
+                    maxWidth: '80%', borderRadius: msg.role === 'assistant' ? '16px 16px 16px 4px' : '16px 16px 4px 16px',
+                    padding: '12px 16px', fontSize: 13.5, lineHeight: 1.6, fontFamily: "'DM Sans', sans-serif",
+                    background: msg.role === 'user' ? '#2d6a4f' : 'linear-gradient(145deg, #eef8f1 0%, #e8f5ec 100%)',
+                    border: msg.role === 'user' ? 'none' : '1px solid rgba(45,106,79,0.18)',
+                    color: msg.role === 'user' ? '#fff' : '#1c1a15',
+                  }}>
                     {msg.content.split('\n').map((line, i, arr) => (
                       <span key={i}>{line}{i < arr.length - 1 && <br />}</span>
                     ))}
-                    <p className={cn('text-[10px] mt-1.5', msg.role === 'user' ? 'text-emerald-100/70' : 'text-slate-500')}>
+                    <p style={{ fontSize: 10.5, marginTop: 6, color: msg.role === 'user' ? 'rgba(255,255,255,0.55)' : '#b0a088' }}>
                       {formatTime(msg.timestamp)}
                     </p>
                   </div>
-
                   {msg.role === 'user' && (
-                    <div className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 mt-1 text-xs font-bold text-slate-300 section-title"
-                      style={{ background: 'rgba(30,41,59,0.8)', border: '1px solid rgba(71,85,105,0.35)' }}>
-                      Me
+                    <div style={{ width: 32, height: 32, borderRadius: '50%', background: '#fff', border: '1px solid rgba(160,130,90,0.22)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, marginTop: 2 }}>
+                      <User size={14} color="#5a5040" />
                     </div>
                   )}
                 </div>
               ))}
 
               {chatLoading && (
-                <div className="flex gap-3 items-center">
-                  <div className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 shadow-lg shadow-emerald-500/20"
-                    style={{ background: 'linear-gradient(135deg, #059669, #0891b2)' }}>
-                    <Bot className="w-4 h-4 text-white" />
+                <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
+                  <div style={{ width: 32, height: 32, borderRadius: '50%', background: '#2d6a4f', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                    <Bot size={14} color="#fff" />
                   </div>
-                  <div className="card rounded-2xl rounded-tl-sm px-4 py-3 flex items-center gap-2">
-                    <div className="flex gap-1">
-                      {[0, 150, 300].map(d => (
-                        <span key={d} className="w-2 h-2 bg-slate-400 rounded-full animate-bounce"
-                          style={{ animationDelay: `${d}ms` }} />
-                      ))}
-                    </div>
+                  <div style={{ padding: '12px 16px', borderRadius: '16px 16px 16px 4px', background: '#f9f5ef', border: '1px solid rgba(160,130,90,0.14)', display: 'flex', gap: 5, alignItems: 'center' }}>
+                    {[0, 1, 2].map(i => (
+                      <span key={i} style={{ width: 7, height: 7, borderRadius: '50%', background: '#40916c', display: 'inline-block', animation: `bounce .9s ${i * 0.15}s ease-in-out infinite` }} />
+                    ))}
                   </div>
                 </div>
               )}
@@ -736,41 +782,46 @@ Give concise, actionable advice specific to ${plot?.cropType ?? 'the crop'}. Be 
             </div>
 
             {/* Input area */}
-            <div className="mt-auto space-y-3">
+            <div style={{ marginTop: 'auto', display: 'flex', flexDirection: 'column', gap: 10 }}>
+
               {/* Quick prompts */}
-              <div className="flex gap-2 flex-wrap">
+              <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
                 {quickPrompts.map(qp => (
-                  <button key={qp.label} onClick={() => setInput(qp.prompt)}
-                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-medium transition-all hover:-translate-y-0.5"
-                    style={{ background: 'rgba(30,41,59,0.6)', border: '1px solid rgba(71,85,105,0.35)', color: '#94a3b8' }}
-                    onMouseEnter={e => { e.currentTarget.style.borderColor = 'rgba(16,185,129,0.4)'; e.currentTarget.style.color = '#6ee7b7'; }}
-                    onMouseLeave={e => { e.currentTarget.style.borderColor = 'rgba(71,85,105,0.35)'; e.currentTarget.style.color = '#94a3b8'; }}>
+                  <button key={qp.label} onClick={() => setInput(qp.prompt)} className="quick-btn">
                     {qp.icon} {qp.label}
                   </button>
                 ))}
               </div>
 
               {/* Sensor context strip */}
-              <div className="card rounded-xl px-4 py-2 flex items-center gap-3 flex-wrap text-[11px] text-slate-400">
-                <span className="text-emerald-400 font-semibold section-title">{plot?.emoji} {plot?.name}</span>
+              <div style={{ ...cardBase, padding: '8px 16px', display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap', fontSize: 12, color: '#9a8870', fontFamily: "'DM Sans', sans-serif" }}>
+                <span style={{ fontFamily: "'Space Grotesk', sans-serif", fontWeight: 700, color: '#2d6a4f', fontSize: 12.5 }}>{plot?.emoji} {plot?.name}</span>
                 <span>🌡️ {sensor.temperature.toFixed(1)}°C</span>
                 <span>💧 {sensor.moisture.toFixed(0)}%</span>
                 <span>💦 {sensor.humidity.toFixed(0)}%</span>
                 <span>pH {sensor.ph}</span>
-                <span className="ml-auto text-slate-600">AI has access to live data</span>
+                <span style={{ marginLeft: 'auto', color: '#c4b49a' }}>AI has access to live data</span>
               </div>
 
               {/* Input bar */}
-              <div className="card rounded-2xl p-2 flex gap-2">
-                <textarea rows={1} value={input}
+              <div style={{ ...chatCardStyle, padding: 8, display: 'flex', gap: 8, borderRadius: 18 }}>
+                <textarea
+                  rows={1}
+                  value={input}
                   onChange={e => setInput(e.target.value)}
                   onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSend(); } }}
                   placeholder="Ask about your crops, soil, irrigation, pests…"
-                  className="flex-1 bg-transparent text-sm text-slate-200 placeholder:text-slate-600 resize-none focus:outline-none px-2 py-1.5 leading-relaxed" />
-                <button onClick={handleSend} disabled={!input.trim() || chatLoading}
-                  className="w-10 h-10 rounded-xl flex items-center justify-center text-white transition-all active:scale-95 disabled:opacity-40 flex-shrink-0 self-end"
-                  style={{ background: 'linear-gradient(135deg, #059669, #0891b2)', boxShadow: '0 4px 12px rgba(5,150,105,0.25)' }}>
-                  {chatLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
+                  style={{ flex: 1, background: 'transparent', border: 'none', outline: 'none', resize: 'none', fontSize: 13.5, fontFamily: "'DM Sans', sans-serif", color: '#1c1a15', padding: '8px 10px', lineHeight: 1.5 }}
+                />
+                <button
+                  onClick={handleSend}
+                  disabled={!input.trim() || chatLoading}
+                  className="btn-p"
+                  style={{ borderRadius: 12, padding: '0 16px', height: 40, alignSelf: 'flex-end', flexShrink: 0 }}
+                >
+                  {chatLoading
+                    ? <RefreshCw size={14} style={{ animation: 'spin 1s linear infinite' }} />
+                    : <Send size={14} />}
                 </button>
               </div>
             </div>

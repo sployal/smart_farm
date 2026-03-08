@@ -162,7 +162,7 @@ const MiniChart = ({ color, data }: { color: string; data: number[] }) => (
   <div className="w-full h-full min-w-0 min-h-0">
     <ResponsiveContainer width="100%" height={64}>
       <AreaChart data={data.map((val, i) => ({ val, i }))}>
-        <Area type="monotone" dataKey="val" stroke={color} fill={color} fillOpacity={0.12} strokeWidth={2} dot={false} />
+        <Area type="monotone" dataKey="val" stroke={color} fill={color} fillOpacity={0.1} strokeWidth={2} dot={false} />
       </AreaChart>
     </ResponsiveContainer>
   </div>
@@ -177,14 +177,14 @@ const HealthGauge = ({ value, color, label }: { value: number; color: string; la
         <ResponsiveContainer width="100%" height="100%">
           <RadialBarChart cx="50%" cy="50%" innerRadius="65%" outerRadius="100%" startAngle={90} endAngle={-270} data={data}>
             <PolarAngleAxis type="number" domain={[0, 100]} angleAxisId={0} tick={false} />
-            <RadialBar background={{ fill: '#1e293b' }} dataKey="value" cornerRadius={8} angleAxisId={0} />
+            <RadialBar background={{ fill: '#ede4d3' }} dataKey="value" cornerRadius={8} angleAxisId={0} />
           </RadialBarChart>
         </ResponsiveContainer>
         <div className="absolute inset-0 flex items-center justify-center">
-          <span className="text-sm font-bold text-slate-100">{value}%</span>
+          <span className="text-sm font-bold" style={{ color: '#1c1a15', fontFamily: "'Space Grotesk', sans-serif" }}>{value}%</span>
         </div>
       </div>
-      <span className="text-xs text-slate-400 mt-1 font-medium">{label}</span>
+      <span className="text-xs mt-1 font-medium" style={{ color: '#9a8870', fontFamily: "'DM Sans', sans-serif" }}>{label}</span>
     </div>
   );
 };
@@ -201,78 +201,72 @@ function PlotModal({ initial, saving, onSave, onClose }: {
   const crop = CROPS.find(c => c.type === f.cropType) ?? CROPS[0];
 
   return (
-    <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-[100] flex items-center justify-center p-4" onClick={onClose}>
-      <div className="bg-slate-800 border border-slate-700 rounded-2xl w-full max-w-lg shadow-2xl" onClick={e => e.stopPropagation()}>
-        <div className="p-5 border-b border-slate-700 flex items-center gap-3">
-          <span className="text-3xl">{f.emoji}</span>
-          <div className="flex-1">
-            <h3 className="text-lg font-semibold text-slate-100">{isNew ? 'Add New Plot' : `Edit ${f.name}`}</h3>
-            <p className="text-xs text-slate-400 mt-1">Synced to Firebase Database</p>
+    <div style={{ position: 'fixed', inset: 0, background: 'rgba(28,26,21,0.55)', backdropFilter: 'blur(8px)', zIndex: 200, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20 }} onClick={onClose}>
+      <div style={{ background: '#fff', border: '1px solid rgba(160,130,90,0.18)', borderRadius: 20, width: '100%', maxWidth: 480, boxShadow: '0 24px 60px rgba(100,70,30,0.18)', overflow: 'hidden' }} onClick={e => e.stopPropagation()}>
+        <div style={{ padding: '20px 24px', borderBottom: '1px solid rgba(160,130,90,0.12)', display: 'flex', alignItems: 'center', gap: 12 }}>
+          <span style={{ fontSize: 28 }}>{f.emoji}</span>
+          <div style={{ flex: 1 }}>
+            <h3 style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: 20, fontWeight: 600, color: '#1c1a15' }}>{isNew ? 'Add New Plot' : `Edit ${f.name}`}</h3>
+            <p style={{ fontSize: 12, color: '#9a8870', marginTop: 2, fontFamily: "'DM Sans', sans-serif" }}>Synced to Firebase Database</p>
           </div>
-          <button onClick={onClose} className="p-2 hover:bg-slate-700 rounded-lg text-slate-400"><X className="w-4 h-4" /></button>
+          <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#9a8870', padding: 6, borderRadius: 8 }}><X size={16} /></button>
         </div>
-        <div className="p-5 space-y-4 max-h-[60vh] overflow-y-auto">
-          <div className="grid grid-cols-2 gap-3">
+        <div style={{ padding: 24, display: 'flex', flexDirection: 'column', gap: 14, maxHeight: '60vh', overflowY: 'auto' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
             <div>
-              <label className="text-xs font-semibold text-slate-400 uppercase tracking-wider block mb-2">Plot Name *</label>
-              <input className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2.5 text-sm text-slate-200 outline-none focus:border-emerald-500"
+              <label style={{ fontSize: 11.5, fontWeight: 700, color: '#5a5040', display: 'block', marginBottom: 6, textTransform: 'uppercase', letterSpacing: '0.05em', fontFamily: "'DM Sans', sans-serif" }}>Plot Name *</label>
+              <input style={{ width: '100%', background: '#f9f5ef', border: '1px solid rgba(160,130,90,0.22)', borderRadius: 10, padding: '10px 13px', fontFamily: "'DM Sans', sans-serif", fontSize: 13.5, color: '#1c1a15', outline: 'none' }}
                 value={f.name} onChange={e => setF(x => ({ ...x, name: e.target.value }))} placeholder="e.g. Plot A" />
             </div>
             <div>
-              <label className="text-xs font-semibold text-slate-400 uppercase tracking-wider block mb-2">Area</label>
-              <input className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2.5 text-sm text-slate-200 outline-none focus:border-emerald-500"
+              <label style={{ fontSize: 11.5, fontWeight: 700, color: '#5a5040', display: 'block', marginBottom: 6, textTransform: 'uppercase', letterSpacing: '0.05em', fontFamily: "'DM Sans', sans-serif" }}>Area</label>
+              <input style={{ width: '100%', background: '#f9f5ef', border: '1px solid rgba(160,130,90,0.22)', borderRadius: 10, padding: '10px 13px', fontFamily: "'DM Sans', sans-serif", fontSize: 13.5, color: '#1c1a15', outline: 'none' }}
                 value={f.area} onChange={e => setF(x => ({ ...x, area: e.target.value }))} placeholder="e.g. 0.5 ha" />
             </div>
           </div>
           <div>
-            <label className="text-xs font-semibold text-slate-400 uppercase tracking-wider block mb-2">Crop Type *</label>
-            <select className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2.5 text-sm text-slate-200 outline-none focus:border-emerald-500"
-              value={f.cropType}
-              onChange={e => { const c = CROPS.find(x => x.type === e.target.value) ?? CROPS[0]; setF(x => ({ ...x, cropType: c.type, variety: c.varieties[0], emoji: c.emoji })); }}>
+            <label style={{ fontSize: 11.5, fontWeight: 700, color: '#5a5040', display: 'block', marginBottom: 6, textTransform: 'uppercase', letterSpacing: '0.05em', fontFamily: "'DM Sans', sans-serif" }}>Crop Type *</label>
+            <select style={{ width: '100%', background: '#f9f5ef', border: '1px solid rgba(160,130,90,0.22)', borderRadius: 10, padding: '10px 13px', fontFamily: "'DM Sans', sans-serif", fontSize: 13.5, color: '#1c1a15', outline: 'none', appearance: 'none', cursor: 'pointer' }}
+              value={f.cropType} onChange={e => { const c = CROPS.find(x => x.type === e.target.value) ?? CROPS[0]; setF(x => ({ ...x, cropType: c.type, variety: c.varieties[0], emoji: c.emoji })); }}>
               {CROPS.map(c => <option key={c.type}>{c.type}</option>)}
             </select>
           </div>
           <div>
-            <label className="text-xs font-semibold text-slate-400 uppercase tracking-wider block mb-2">Variety</label>
-            <select className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2.5 text-sm text-slate-200 outline-none focus:border-emerald-500"
+            <label style={{ fontSize: 11.5, fontWeight: 700, color: '#5a5040', display: 'block', marginBottom: 6, textTransform: 'uppercase', letterSpacing: '0.05em', fontFamily: "'DM Sans', sans-serif" }}>Variety</label>
+            <select style={{ width: '100%', background: '#f9f5ef', border: '1px solid rgba(160,130,90,0.22)', borderRadius: 10, padding: '10px 13px', fontFamily: "'DM Sans', sans-serif", fontSize: 13.5, color: '#1c1a15', outline: 'none', appearance: 'none', cursor: 'pointer' }}
               value={f.variety} onChange={e => setF(x => ({ ...x, variety: e.target.value }))}>
               {crop.varieties.map(v => <option key={v}>{v}</option>)}
             </select>
           </div>
-          <div className="grid grid-cols-2 gap-3">
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
             <div>
-              <label className="text-xs font-semibold text-slate-400 uppercase tracking-wider block mb-2">Planted</label>
-              <input type="date" className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2.5 text-sm text-slate-200 outline-none focus:border-emerald-500"
+              <label style={{ fontSize: 11.5, fontWeight: 700, color: '#5a5040', display: 'block', marginBottom: 6, textTransform: 'uppercase', letterSpacing: '0.05em', fontFamily: "'DM Sans', sans-serif" }}>Planted</label>
+              <input type="date" style={{ width: '100%', background: '#f9f5ef', border: '1px solid rgba(160,130,90,0.22)', borderRadius: 10, padding: '10px 13px', fontFamily: "'DM Sans', sans-serif", fontSize: 13.5, color: '#1c1a15', outline: 'none', colorScheme: 'light' }}
                 value={f.plantedDate} onChange={e => setF(x => ({ ...x, plantedDate: e.target.value }))} />
             </div>
             <div>
-              <label className="text-xs font-semibold text-slate-400 uppercase tracking-wider block mb-2">Harvest ETA</label>
-              <input type="date" className="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2.5 text-sm text-slate-200 outline-none focus:border-emerald-500"
+              <label style={{ fontSize: 11.5, fontWeight: 700, color: '#5a5040', display: 'block', marginBottom: 6, textTransform: 'uppercase', letterSpacing: '0.05em', fontFamily: "'DM Sans', sans-serif" }}>Harvest ETA</label>
+              <input type="date" style={{ width: '100%', background: '#f9f5ef', border: '1px solid rgba(160,130,90,0.22)', borderRadius: 10, padding: '10px 13px', fontFamily: "'DM Sans', sans-serif", fontSize: 13.5, color: '#1c1a15', outline: 'none', colorScheme: 'light' }}
                 value={f.harvestDate} onChange={e => setF(x => ({ ...x, harvestDate: e.target.value }))} />
             </div>
           </div>
           <div>
-            <label className="text-xs font-semibold text-slate-400 uppercase tracking-wider block mb-2">Status</label>
-            <div className="flex gap-2">
+            <label style={{ fontSize: 11.5, fontWeight: 700, color: '#5a5040', display: 'block', marginBottom: 8, textTransform: 'uppercase', letterSpacing: '0.05em', fontFamily: "'DM Sans', sans-serif" }}>Status</label>
+            <div style={{ display: 'flex', gap: 8 }}>
               {(['growing', 'dormant', 'harvested'] as const).map(s => (
                 <button key={s} onClick={() => setF(x => ({ ...x, status: s }))}
-                  className={cn("flex-1 px-3 py-2.5 rounded-xl text-xs font-semibold capitalize transition-all border-2",
-                    f.status === s
-                      ? s === 'growing' ? 'bg-emerald-500/10 border-emerald-500 text-emerald-400'
-                        : s === 'dormant' ? 'bg-amber-500/10 border-amber-500 text-amber-400'
-                        : 'bg-slate-500/10 border-slate-500 text-slate-400'
-                      : 'bg-transparent border-slate-700 text-slate-500 hover:border-slate-600')}>
+                  style={{ flex: 1, padding: '9px 6px', borderRadius: 10, fontSize: 12.5, fontWeight: 600, cursor: 'pointer', fontFamily: "'DM Sans', sans-serif", textTransform: 'capitalize', transition: 'all 0.15s', border: `1.5px solid ${f.status === s ? (s === 'growing' ? '#40916c' : s === 'dormant' ? '#d97706' : '#9a8870') : 'rgba(160,130,90,0.18)'}`, background: f.status === s ? (s === 'growing' ? '#f0faf2' : s === 'dormant' ? '#fffbeb' : '#f9f5ef') : 'transparent', color: f.status === s ? (s === 'growing' ? '#2d6a4f' : s === 'dormant' ? '#92400e' : '#5a5040') : '#9a8870' }}>
                   {s === 'growing' ? '🌱' : s === 'dormant' ? '💤' : '✅'} {s}
                 </button>
               ))}
             </div>
           </div>
         </div>
-        <div className="p-5 border-t border-slate-700 flex gap-3">
-          <button onClick={onClose} className="flex-1 px-4 py-2.5 rounded-xl font-medium text-sm bg-transparent border border-slate-700 text-slate-400 hover:bg-slate-700 transition-colors">Cancel</button>
+        <div style={{ padding: '16px 24px', borderTop: '1px solid rgba(160,130,90,0.12)', display: 'flex', gap: 10 }}>
+          <button onClick={onClose} style={{ flex: 1, padding: 11, borderRadius: 100, fontFamily: "'DM Sans', sans-serif", fontSize: 13.5, fontWeight: 500, cursor: 'pointer', background: 'transparent', border: '1px solid rgba(160,130,90,0.22)', color: '#5a5040' }}>Cancel</button>
           <button onClick={() => f.name && f.cropType && onSave(f)} disabled={saving || !f.name}
-            className="flex-1 px-4 py-2.5 rounded-xl font-semibold text-sm bg-emerald-600 text-white hover:bg-emerald-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center justify-center gap-2">
-            {saving ? '...' : <><Database className="w-4 h-4" /> Save Plot</>}
+            style={{ flex: 1, padding: 11, borderRadius: 100, fontFamily: "'DM Sans', sans-serif", fontSize: 13.5, fontWeight: 600, cursor: 'pointer', background: '#2d6a4f', color: '#fff', border: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 7, opacity: saving || !f.name ? 0.55 : 1 }}>
+            {saving ? '...' : <><Database size={13} /> Save Plot</>}
           </button>
         </div>
       </div>
@@ -292,63 +286,59 @@ function SoilMetricsModal({ initial, saving, onSave, onClose }: {
     { key: 'potassium' as const, label: 'Potassium (K)', unit: 'mg/kg', min: 0, max: 800, step: 1, ideal: '150 – 300', accent: '#0891b2', icon: Wind },
   ];
   return (
-    <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-[100] flex items-center justify-center p-4" onClick={onClose}>
-      <div className="bg-slate-800 border border-slate-700 rounded-2xl w-full max-w-md shadow-2xl" onClick={e => e.stopPropagation()}>
-        <div className="p-5 border-b border-slate-700 flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center">
-            <FlaskConical className="w-5 h-5 text-emerald-400" />
+    <div style={{ position: 'fixed', inset: 0, background: 'rgba(28,26,21,0.55)', backdropFilter: 'blur(8px)', zIndex: 200, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20 }} onClick={onClose}>
+      <div style={{ background: '#fff', border: '1px solid rgba(160,130,90,0.18)', borderRadius: 20, width: '100%', maxWidth: 440, boxShadow: '0 24px 60px rgba(100,70,30,0.18)', overflow: 'hidden' }} onClick={e => e.stopPropagation()}>
+        <div style={{ padding: '20px 24px', borderBottom: '1px solid rgba(160,130,90,0.12)', display: 'flex', alignItems: 'center', gap: 12 }}>
+          <div style={{ width: 40, height: 40, borderRadius: 12, background: '#f0faf2', border: '1px solid rgba(45,106,79,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <FlaskConical size={18} color="#2d6a4f" />
           </div>
-          <div className="flex-1">
-            <h3 className="text-lg font-semibold text-slate-100">Edit Soil Metrics</h3>
-            <p className="text-xs text-slate-400 mt-0.5">Adjust values and save to database</p>
+          <div style={{ flex: 1 }}>
+            <h3 style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: 20, fontWeight: 600, color: '#1c1a15' }}>Edit Soil Metrics</h3>
+            <p style={{ fontSize: 12, color: '#9a8870', marginTop: 2, fontFamily: "'DM Sans', sans-serif" }}>Adjust values and save to database</p>
           </div>
-          <button onClick={onClose} className="p-2 hover:bg-slate-700 rounded-lg text-slate-400"><X className="w-4 h-4" /></button>
+          <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#9a8870', padding: 6, borderRadius: 8 }}><X size={16} /></button>
         </div>
-        <div className="p-5 space-y-6 max-h-[60vh] overflow-y-auto">
+        <div style={{ padding: 24, display: 'flex', flexDirection: 'column', gap: 22, maxHeight: '60vh', overflowY: 'auto' }}>
           {fields.map(field => {
             const val = f[field.key];
             const pct = field.key === 'ph' ? (val / 14) * 100 : Math.min(100, (val / field.max) * 100);
             const st = calcStatus(val, field.key as keyof typeof SENSOR_THRESHOLDS);
             return (
-              <div key={field.key} className="space-y-2">
-                <div className="flex items-start justify-between">
-                  <div className="flex items-center gap-2">
-                    <div className="w-7 h-7 rounded-lg flex items-center justify-center" style={{ backgroundColor: `${field.accent}20` }}>
-                      <field.icon className="w-3.5 h-3.5" style={{ color: field.accent }} />
+              <div key={field.key}>
+                <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 10 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <div style={{ width: 30, height: 30, borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center', background: `${field.accent}15`, border: `1px solid ${field.accent}25` }}>
+                      <field.icon size={14} color={field.accent} />
                     </div>
-                    <div className="text-sm font-semibold text-slate-200">{field.label}</div>
+                    <span style={{ fontSize: 13.5, fontWeight: 600, color: '#1c1a15', fontFamily: "'DM Sans', sans-serif" }}>{field.label}</span>
                   </div>
-                  <div className="text-right">
-                    <div className="text-lg font-bold" style={{ color: field.accent }}>
-                      {field.key === 'ph' ? val.toFixed(1) : val}<span className="text-xs font-normal text-slate-400 ml-1">{field.unit}</span>
+                  <div style={{ textAlign: 'right' }}>
+                    <div style={{ fontSize: 17, fontWeight: 700, color: field.accent, fontFamily: "'Space Grotesk', sans-serif" }}>
+                      {field.key === 'ph' ? val.toFixed(1) : val}<span style={{ fontSize: 11, fontWeight: 400, color: '#9a8870', marginLeft: 3, fontFamily: "'DM Sans', sans-serif" }}>{field.unit}</span>
                     </div>
-                    <span className={cn("inline-block mt-1 px-2 py-0.5 rounded-full text-[10px] font-bold",
-                      st === 'optimal' && "bg-emerald-500/10 text-emerald-400",
-                      st === 'good' && "bg-amber-500/10 text-amber-400",
-                      st === 'warning' && "bg-red-500/10 text-red-400")}>
+                    <span style={{ display: 'inline-block', marginTop: 3, padding: '2px 8px', borderRadius: 100, fontSize: 10, fontWeight: 700, background: st === 'optimal' ? '#d8f3dc' : st === 'good' ? '#fef3c7' : '#fee2e2', color: st === 'optimal' ? '#2d6a4f' : st === 'good' ? '#92400e' : '#991b1b', border: `1px solid ${st === 'optimal' ? '#b7e4c7' : st === 'good' ? '#fde68a' : '#fecaca'}`, fontFamily: "'DM Sans', sans-serif" }}>
                       {statusLabel(val, field.key as keyof typeof SENSOR_THRESHOLDS)}
                     </span>
                   </div>
                 </div>
                 <input type="range" min={field.min} max={field.max} step={field.step} value={val}
                   onChange={e => setF(prev => ({ ...prev, [field.key]: parseFloat(e.target.value) }))}
-                  className="w-full h-2 rounded-full appearance-none cursor-pointer"
-                  style={{ background: `linear-gradient(to right, ${field.accent} ${pct}%, #334155 ${pct}%)` }} />
-                <div className="flex items-center justify-between gap-3">
-                  <span className="text-[11px] text-slate-500">Ideal: <span className="text-slate-400 font-medium">{field.ideal} {field.unit}</span></span>
+                  style={{ width: '100%', height: 6, borderRadius: 100, appearance: 'none', cursor: 'pointer', background: `linear-gradient(to right, ${field.accent} ${pct}%, #ede4d3 ${pct}%)`, outline: 'none', border: 'none' }} />
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, marginTop: 8 }}>
+                  <span style={{ fontSize: 11, color: '#b0a088', fontFamily: "'DM Sans', sans-serif" }}>Ideal: <span style={{ color: '#5a5040', fontWeight: 600 }}>{field.ideal} {field.unit}</span></span>
                   <input type="number" min={field.min} max={field.max} step={field.step} value={field.key === 'ph' ? val.toFixed(1) : val}
                     onChange={e => { const v = parseFloat(e.target.value); if (!isNaN(v)) setF(prev => ({ ...prev, [field.key]: v })); }}
-                    className="w-24 bg-slate-900 border border-slate-700 rounded-lg px-2 py-1.5 text-xs text-slate-200 text-right outline-none focus:border-emerald-500" />
+                    style={{ width: 90, background: '#f9f5ef', border: '1px solid rgba(160,130,90,0.22)', borderRadius: 8, padding: '6px 10px', fontSize: 12, color: '#1c1a15', textAlign: 'right', outline: 'none', fontFamily: "'DM Sans', sans-serif" }} />
                 </div>
               </div>
             );
           })}
         </div>
-        <div className="p-5 border-t border-slate-700 flex gap-3">
-          <button onClick={onClose} className="flex-1 px-4 py-2.5 rounded-xl font-medium text-sm bg-transparent border border-slate-700 text-slate-400 hover:bg-slate-700 transition-colors">Cancel</button>
+        <div style={{ padding: '16px 24px', borderTop: '1px solid rgba(160,130,90,0.12)', display: 'flex', gap: 10 }}>
+          <button onClick={onClose} style={{ flex: 1, padding: 11, borderRadius: 100, fontFamily: "'DM Sans', sans-serif", fontSize: 13.5, fontWeight: 500, cursor: 'pointer', background: 'transparent', border: '1px solid rgba(160,130,90,0.22)', color: '#5a5040' }}>Cancel</button>
           <button onClick={() => onSave(f)} disabled={saving}
-            className="flex-1 px-4 py-2.5 rounded-xl font-semibold text-sm bg-emerald-600 text-white hover:bg-emerald-500 disabled:opacity-50 transition-colors flex items-center justify-center gap-2">
-            {saving ? <><RefreshCw className="w-4 h-4 animate-spin" /> Saving...</> : <><Database className="w-4 h-4" /> Save Metrics</>}
+            style={{ flex: 1, padding: 11, borderRadius: 100, fontFamily: "'DM Sans', sans-serif", fontSize: 13.5, fontWeight: 600, cursor: 'pointer', background: '#2d6a4f', color: '#fff', border: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 7, opacity: saving ? 0.55 : 1 }}>
+            {saving ? <><RefreshCw size={13} style={{ animation: 'spin 1s linear infinite' }} /> Saving...</> : <><Database size={13} /> Save Metrics</>}
           </button>
         </div>
       </div>
@@ -392,15 +382,14 @@ export default function SmartFarmDashboard() {
   const [isMounted, setIsMounted] = useState(false);
   const chatEndRef = useRef<HTMLDivElement>(null);
 
-  const miniChartData = Array.from({ length: 12 }, (_, i) => Math.floor(Math.random() * 30 + 50));
+  const miniChartData = Array.from({ length: 12 }, () => Math.floor(Math.random() * 30 + 50));
 
   const plot = activePlotId ? (plots.find(p => p.id === activePlotId) ?? plots[0]) : plots[0];
   const isPlotReady = Boolean(activePlotId && plot);
   const growth = plot?.plantedDate && plot?.harvestDate ? growthPct(plot.plantedDate, plot.harvestDate) : 0;
   const remaining = plot?.harvestDate ? daysLeft(plot.harvestDate) : null;
-  const chartColor = { moisture: '#3b82f6', temperature: '#f97316', humidity: '#0891b2' }[selectedMetric];
+  const chartColor = { moisture: '#2563eb', temperature: '#f97316', humidity: '#0891b2' }[selectedMetric];
 
-  // Derived health score (0-100)
   const healthScore = Math.round(
     (calcStatus(sensorData.temperature, 'temperature') === 'optimal' ? 25 : 10) +
     (calcStatus(sensorData.humidity, 'humidity') === 'optimal' ? 25 : 10) +
@@ -408,7 +397,6 @@ export default function SmartFarmDashboard() {
     (calcStatus(sensorData.ph, 'ph') === 'optimal' ? 25 : 10)
   );
 
-  // ── Ticker ──────────────────────────────────────────────────────────────────
   useEffect(() => {
     setIsMounted(true);
     const t = setInterval(() => setCurrentTime(new Date()), 1000);
@@ -546,7 +534,6 @@ export default function SmartFarmDashboard() {
     { id: '4', time: '10:30 AM', event: 'Offline Mode', sensor: 'Connectivity', value: 'WiFi disconnected', status: 'info' },
   ];
 
-  // Tasks mock data
   const tasks = [
     { id: 1, title: 'Apply nitrogen fertilizer to Plot A', due: 'Today', priority: 'high', done: false },
     { id: 2, title: 'Inspect Plot B for pest activity', due: 'Tomorrow', priority: 'medium', done: false },
@@ -556,233 +543,276 @@ export default function SmartFarmDashboard() {
 
   const [tasksDone, setTasksDone] = useState<number[]>([3]);
 
+  // ── ELEGANT COLOR PALETTE ──────────────────────────────────────────────────
+  // Subtle tinted card backgrounds — warm, cool, sage, amber
+  // All very light so text stays readable; darker borders for definition
+
+  const statusBg   = (s: SensorStatus) => ({ optimal: '#f0faf2', good: '#fffbeb', warning: '#fff1f2' }[s]);
+  const statusClr  = (s: SensorStatus) => ({ optimal: '#2d6a4f', good: '#92400e', warning: '#991b1b' }[s]);
+  const statusBdr  = (s: SensorStatus) => ({ optimal: '#bbf7d0', good: '#fde68a', warning: '#fecaca' }[s]);
+
+  // Card tints for each section — matches the accent colour of its content
+  const cardBase: React.CSSProperties = {
+    border: '1px solid rgba(160,130,90,0.16)',
+    borderRadius: 18,
+    boxShadow: '0 2px 12px rgba(100,70,30,0.06)',
+  };
+
+  // Temperature → warm amber-cream tint
+  const cardTemperature: React.CSSProperties = {
+    ...cardBase,
+    background: 'linear-gradient(145deg, #fffaf3 0%, #fff8ed 100%)',
+    borderColor: 'rgba(249,115,22,0.18)',
+  };
+  // Humidity → cool aqua tint
+  const cardHumidity: React.CSSProperties = {
+    ...cardBase,
+    background: 'linear-gradient(145deg, #f0fbff 0%, #e8f8fc 100%)',
+    borderColor: 'rgba(8,145,178,0.18)',
+  };
+  // Moisture → soft blue tint
+  const cardMoisture: React.CSSProperties = {
+    ...cardBase,
+    background: 'linear-gradient(145deg, #f0f6ff 0%, #eaf1ff 100%)',
+    borderColor: 'rgba(37,99,235,0.18)',
+  };
+  // Chart card → neutral warm white with a gentle sage wash
+  const cardChart: React.CSSProperties = {
+    ...cardBase,
+    background: 'linear-gradient(160deg, #f6fbf7 0%, #faf9f5 100%)',
+    borderColor: 'rgba(45,106,79,0.14)',
+  };
+  // AI insights → soft lavender-sage
+  const cardAI: React.CSSProperties = {
+    ...cardBase,
+    background: 'linear-gradient(160deg, #f5f7ff 0%, #f8f5ff 100%)',
+    borderColor: 'rgba(124,58,237,0.14)',
+  };
+  // Soil card → earthy terracotta-cream
+  const cardSoil: React.CSSProperties = {
+    ...cardBase,
+    background: 'linear-gradient(155deg, #fdf8f2 0%, #faf5ec 100%)',
+    borderColor: 'rgba(160,100,40,0.2)',
+  };
+  // Tasks card → light sage green
+  const cardTasks: React.CSSProperties = {
+    ...cardBase,
+    background: 'linear-gradient(155deg, #f3fbf5 0%, #eef8f0 100%)',
+    borderColor: 'rgba(45,106,79,0.16)',
+  };
+  // System logs → very light slate-blue
+  const cardLogs: React.CSSProperties = {
+    ...cardBase,
+    background: 'linear-gradient(155deg, #f6f8ff 0%, #f2f5fe 100%)',
+    borderColor: 'rgba(59,130,246,0.14)',
+  };
+  // Stats cards — cycle through 4 tints
+  const statsCards: React.CSSProperties[] = [
+    { ...cardBase, background: 'linear-gradient(145deg, #f3fbf5 0%, #edf7ef 100%)', borderColor: 'rgba(45,106,79,0.18)' },   // sage
+    { ...cardBase, background: 'linear-gradient(145deg, #fffaf0 0%, #fff6e3 100%)', borderColor: 'rgba(217,119,6,0.18)' },    // amber
+    { ...cardBase, background: 'linear-gradient(145deg, #f8f5ff 0%, #f3eeff 100%)', borderColor: 'rgba(124,58,237,0.18)' },   // lavender
+    { ...cardBase, background: 'linear-gradient(145deg, #f0fbff 0%, #e6f7fc 100%)', borderColor: 'rgba(8,145,178,0.18)' },    // teal
+  ];
+  // Plot cards — alternating warm tints
+  const plotCardBg = (idx: number) => {
+    const tints = [
+      'linear-gradient(145deg, #f6fbf7 0%, #f0f8f1 100%)',
+      'linear-gradient(145deg, #fdf8f2 0%, #faf3ea 100%)',
+      'linear-gradient(145deg, #f5f7ff 0%, #eef1ff 100%)',
+      'linear-gradient(145deg, #f0fbff 0%, #e8f7fc 100%)',
+    ];
+    return tints[idx % tints.length];
+  };
+
   return (
-    <div className="text-slate-100 min-h-screen" style={{ background: '#0f1824', fontFamily: "'DM Sans', system-ui, sans-serif" }}>
+    <div style={{ minHeight: '100vh', background: '#f9f5ef', fontFamily: "'DM Sans', 'Segoe UI', sans-serif", color: '#1c1a15' }}>
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,300&family=Space+Grotesk:wght@400;500;600;700&display=swap');
-        * { box-sizing: border-box; }
-        ::-webkit-scrollbar { width: 4px; height: 4px; }
-        ::-webkit-scrollbar-track { background: #1e293b; }
-        ::-webkit-scrollbar-thumb { background: #334155; border-radius: 2px; }
-        .card { background: rgba(30,41,59,0.6); border: 1px solid rgba(71,85,105,0.35); backdrop-filter: blur(12px); }
-        .card-glow-green:hover { box-shadow: 0 0 40px rgba(16,185,129,0.08); border-color: rgba(16,185,129,0.2); }
-        .gradient-border { background: linear-gradient(#1e293b, #1e293b) padding-box, linear-gradient(135deg, #10b981, #06b6d4, #a78bfa) border-box; border: 1px solid transparent; }
-        .pulse-dot::before { content: ''; position: absolute; inset: -3px; border-radius: 50%; border: 2px solid currentColor; opacity: 0.4; animation: ping 1.5s cubic-bezier(0,0,0.2,1) infinite; }
-        @keyframes ping { 75%,100% { transform: scale(1.8); opacity: 0; } }
-        .shimmer { background: linear-gradient(90deg, rgba(255,255,255,0) 0%, rgba(255,255,255,0.03) 50%, rgba(255,255,255,0) 100%); background-size: 200% 100%; animation: shimmer 2s infinite; }
-        @keyframes shimmer { from { background-position: -200% 0; } to { background-position: 200% 0; } }
-        .stat-number { font-family: 'Space Grotesk', monospace; }
-        .section-title { font-family: 'Space Grotesk', sans-serif; }
+        *{box-sizing:border-box;}
+        ::-webkit-scrollbar{width:4px;height:4px}
+        ::-webkit-scrollbar-track{background:#f2ece0}
+        ::-webkit-scrollbar-thumb{background:#d4c4a8;border-radius:2px}
+        @keyframes spin{to{transform:rotate(360deg)}}
+        @keyframes ping{75%,100%{transform:scale(1.8);opacity:0}}
+        @keyframes shimmer{from{background-position:-200% 0}to{background-position:200% 0}}
+        @keyframes bounce{0%,100%{transform:translateY(0)}50%{transform:translateY(-5px)}}
+        @keyframes pls{0%,100%{opacity:1}50%{opacity:0.4}}
+        .pls{animation:pls 2s infinite}
+        .shimmer{background:linear-gradient(90deg,rgba(255,255,255,0) 0%,rgba(255,255,255,0.6) 50%,rgba(255,255,255,0) 100%);background-size:200% 100%;animation:shimmer 2s infinite}
+        .btn-p{background:#2d6a4f;color:#fff;border:none;border-radius:100px;padding:10px 20px;font-family:'DM Sans',sans-serif;font-size:13px;font-weight:600;cursor:pointer;display:inline-flex;align-items:center;gap:7px;transition:all .2s;box-shadow:0 2px 10px rgba(45,106,79,0.28)}
+        .btn-p:hover{background:#40916c;transform:translateY(-1px)}
+        .btn-p:disabled{opacity:.5;cursor:not-allowed;transform:none}
+        .btn-g{background:transparent;border:1px solid rgba(160,130,90,0.22);color:#5a5040;border-radius:100px;padding:9px 18px;font-family:'DM Sans',sans-serif;font-size:13px;font-weight:500;cursor:pointer;display:inline-flex;align-items:center;gap:7px;transition:all .15s}
+        .btn-g:hover{background:#f2ece0;border-color:rgba(160,130,90,0.4);color:#1c1a15}
+        .plot-chip{display:flex;align-items:center;gap:8px;padding:7px 15px 7px 10px;border-radius:100px;font-size:13px;font-weight:500;cursor:pointer;transition:all .15s;border:1.5px solid rgba(160,130,90,0.22);background:#fff;color:#5a5040;white-space:nowrap;font-family:'DM Sans',sans-serif}
+        .plot-chip.act{background:#2d6a4f;border-color:#2d6a4f;color:#fff}
+        .plot-chip:not(.act):hover{border-color:#40916c;color:#2d6a4f}
+        .ptrack{width:100%;height:6px;background:#ede4d3;border-radius:100px;overflow:hidden}
+        .pfill{height:100%;border-radius:100px;transition:width 1.2s cubic-bezier(.34,1.56,.64,1)}
+        input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:14px;height:14px;border-radius:50%;background:#2d6a4f;cursor:pointer;border:2px solid #fff;box-shadow:0 1px 4px rgba(45,106,79,0.3)}
       `}</style>
 
-      {/* Ambient background blobs */}
-      <div className="fixed inset-0 pointer-events-none overflow-hidden z-0">
-        <div className="absolute -top-40 -right-40 w-[600px] h-[600px] rounded-full" style={{ background: 'radial-gradient(circle, rgba(16,185,129,0.04) 0%, transparent 70%)' }} />
-        <div className="absolute top-1/2 -left-40 w-[400px] h-[400px] rounded-full" style={{ background: 'radial-gradient(circle, rgba(59,130,246,0.03) 0%, transparent 70%)' }} />
-        <div className="absolute -bottom-40 right-1/3 w-[500px] h-[500px] rounded-full" style={{ background: 'radial-gradient(circle, rgba(168,85,247,0.02) 0%, transparent 70%)' }} />
-      </div>
-
       {/* ── Header ─────────────────────────────────────────────────────────── */}
-      <header className="relative z-40 sticky top-0 h-16 border-b flex items-center justify-between px-4 md:px-6 gap-4"
-        style={{ background: 'rgba(15,24,36,0.85)', backdropFilter: 'blur(20px)', borderColor: 'rgba(71,85,105,0.3)' }}>
-        <button onClick={() => document.dispatchEvent(new CustomEvent('toggleMobileMenu'))} className="lg:hidden p-2 rounded-lg hover:bg-slate-800 text-slate-400 transition-colors">
-          <Menu className="w-5 h-5" />
-        </button>
-
-        {/* Live clock + date */}
-        <div className="hidden lg:flex flex-col leading-tight" suppressHydrationWarning>
-          <span className="stat-number text-emerald-400 font-bold text-sm">{isMounted ? format(currentTime, 'HH:mm:ss') : '00:00:00'}</span>
-          <span className="text-slate-500 text-[11px]">{isMounted ? format(currentTime, 'EEEE, MMM d yyyy') : ''}</span>
+      <header style={{ position: 'sticky', top: 0, zIndex: 50, height: 60, background: 'rgba(249,245,239,0.9)', backdropFilter: 'blur(14px)', borderBottom: '1px solid rgba(160,130,90,0.14)', display: 'flex', alignItems: 'center', padding: '0 24px', gap: 14 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          <div style={{ width: 34, height: 34, borderRadius: 10, background: '#2d6a4f', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+            <Leaf size={16} color="#fff" />
+          </div>
+          <div style={{ display: 'flex', flexDirection: 'column', lineHeight: 1.2 }} suppressHydrationWarning>
+            <span style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: 16, fontWeight: 600, color: '#1c1a15', letterSpacing: '-0.01em' }}>smartfarm</span>
+            <span style={{ fontSize: 10.5, color: '#9a8870', fontFamily: "'DM Sans', sans-serif" }}>{isMounted ? format(currentTime, 'EEE, MMM d · HH:mm:ss') : ''}</span>
+          </div>
         </div>
 
-        <div className="flex items-center gap-3 bg-slate-950/80 border border-slate-800 rounded-xl px-4 py-2 w-full sm:w-64 md:w-72"
-          style={{ borderColor: 'rgba(71,85,105,0.3)' }}>
-          <Search className="w-4 h-4 text-slate-500" />
-          <input type="text" placeholder="Search plots, crops..." className="bg-transparent border-none outline-none text-sm text-slate-200 w-full placeholder:text-slate-600" />
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, background: '#fff', border: '1px solid rgba(160,130,90,0.2)', borderRadius: 12, padding: '8px 14px', width: 260, marginLeft: 8 }}>
+          <Search size={14} color="#b0a088" />
+          <input type="text" placeholder="Search plots, crops..." style={{ background: 'transparent', border: 'none', outline: 'none', fontSize: 13, fontFamily: "'DM Sans', sans-serif", color: '#1c1a15', width: '100%' }} />
         </div>
 
-        <div className="flex items-center gap-3 ml-auto">
-          {/* Connection indicator */}
-          <div className={cn("flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-semibold border",
-            isConnected ? "bg-emerald-500/10 border-emerald-500/30 text-emerald-400" : "bg-red-500/10 border-red-500/30 text-red-400")}>
-            <span className="relative flex h-2 w-2">
-              <span className={cn("animate-ping absolute inline-flex h-full w-full rounded-full opacity-75", isConnected ? "bg-emerald-400" : "bg-red-400")} />
-              <span className={cn("relative inline-flex rounded-full h-2 w-2", isConnected ? "bg-emerald-400" : "bg-red-400")} />
-            </span>
-            <span className="hidden sm:inline">{isConnected ? 'Live' : 'Offline'}</span>
-          </div>
-
-          {/* Plot chips */}
-          <div className="hidden md:flex gap-1.5 overflow-x-auto">
-            {plots.slice(0, 3).map(p => (
-              <button key={p.id} onClick={() => setActivePlotId(p.id)}
-                className={cn("flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium transition-all whitespace-nowrap border",
-                  activePlotId === p.id ? "bg-emerald-500 border-emerald-500 text-white shadow-lg shadow-emerald-500/20"
-                    : "border-slate-700 text-slate-400 hover:border-emerald-500/50 hover:text-emerald-400")}
-                style={{ background: activePlotId === p.id ? undefined : 'rgba(30,41,59,0.4)' }}>
-                <span>{p.emoji}</span><span>{p.name}</span>
-              </button>
-            ))}
-            <button onClick={() => { setEditPlot(null); setShowModal(true); }}
-              className="flex items-center gap-1 px-3 py-1.5 rounded-full text-xs font-medium border border-dashed border-slate-700 text-slate-400 hover:border-emerald-500/50 hover:text-emerald-400 transition-all whitespace-nowrap">
-              <Plus className="w-3 h-3" /> Add
-            </button>
-          </div>
-
-          <button onClick={() => window.location.reload()} className="p-2.5 rounded-xl hover:bg-slate-800 text-slate-400 transition-all"><RefreshCw className="w-4 h-4" /></button>
-
-          <button onClick={() => router.push('/notifications')} className="relative p-2.5 rounded-xl hover:bg-slate-800 text-slate-400 transition-all">
-            <Bell className="w-4 h-4" />
-            <span className="absolute top-0 right-0 w-4 h-4 bg-red-500 text-[10px] font-bold text-white rounded-full flex items-center justify-center border-2 border-slate-900">3</span>
-          </button>
-
-          <button onClick={() => router.push('/my_account')} className="flex items-center gap-2 pl-3 border-l border-slate-800 rounded-lg hover:bg-slate-800/50 transition-colors">
-            <div className="w-8 h-8 rounded-full bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center text-sm font-bold text-white shadow-lg shadow-emerald-500/20">
-              {currentUser?.photoURL ? <img src={currentUser.photoURL} alt="" className="w-8 h-8 rounded-full object-cover" /> : initials(currentUser)}
+        <div style={{ display: 'flex', gap: 8, flex: 1, overflowX: 'auto', scrollbarWidth: 'none', paddingLeft: 8 }}>
+          {plots.slice(0, 3).map(p => (
+            <div key={p.id} onClick={() => setActivePlotId(p.id)} className={`plot-chip${activePlotId === p.id ? ' act' : ''}`}>
+              <span style={{ fontSize: 15 }}>{p.emoji}</span>{p.name}
             </div>
-            <span className="text-sm font-medium hidden lg:block text-slate-200">{currentUser?.displayName || currentUser?.email || 'Account'}</span>
+          ))}
+          <div onClick={() => { setEditPlot(null); setShowModal(true); }}
+            style={{ display: 'flex', alignItems: 'center', gap: 5, padding: '7px 14px', borderRadius: 100, fontSize: 13, fontWeight: 500, cursor: 'pointer', border: '1.5px dashed rgba(160,130,90,0.3)', color: '#9a8870', whiteSpace: 'nowrap', flexShrink: 0, fontFamily: "'DM Sans', sans-serif" }}>
+            <Plus size={13} /> Add
+          </div>
+        </div>
+
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexShrink: 0 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '5px 13px', borderRadius: 100, background: '#fff', border: `1px solid ${isConnected ? 'rgba(45,106,79,0.25)' : 'rgba(160,130,90,0.2)'}`, fontSize: 12, color: isConnected ? '#2d6a4f' : '#9a8870', fontWeight: 600, fontFamily: "'DM Sans', sans-serif" }}>
+            <span style={{ width: 6, height: 6, borderRadius: '50%', background: isConnected ? '#40916c' : '#b0a088', display: 'inline-block' }} className={isConnected ? 'pls' : ''} />
+            {isConnected ? `Live · ${lastSync}` : 'Offline'}
+          </div>
+          <button onClick={() => window.location.reload()} style={{ background: '#fff', border: '1px solid rgba(160,130,90,0.2)', borderRadius: 10, width: 34, height: 34, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: '#9a8870' }}>
+            <RefreshCw size={14} />
+          </button>
+          <button onClick={() => router.push('/notifications')} style={{ position: 'relative', background: '#fff', border: '1px solid rgba(160,130,90,0.2)', borderRadius: 10, width: 34, height: 34, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: '#9a8870' }}>
+            <Bell size={14} />
+            <span style={{ position: 'absolute', top: 6, right: 6, width: 8, height: 8, borderRadius: '50%', background: '#ef4444', border: '2px solid #f9f5ef' }} />
+          </button>
+          <button onClick={() => router.push('/my_account')} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '4px 4px 4px 10px', borderLeft: '1px solid rgba(160,130,90,0.14)', background: 'transparent', border: 'none', cursor: 'pointer', marginLeft: 4 }}>
+            <div style={{ width: 32, height: 32, borderRadius: '50%', background: '#2d6a4f', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, fontWeight: 700, color: '#fff', overflow: 'hidden', flexShrink: 0, fontFamily: "'Space Grotesk', sans-serif" }}>
+              {currentUser?.photoURL ? <img src={currentUser.photoURL} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : initials(currentUser)}
+            </div>
+            <span style={{ fontSize: 13, fontWeight: 600, color: '#1c1a15', whiteSpace: 'nowrap', fontFamily: "'DM Sans', sans-serif" }}>{currentUser?.displayName?.split(' ')[0] ?? currentUser?.email ?? 'Account'}</span>
           </button>
         </div>
       </header>
 
       {/* ── Main Content ───────────────────────────────────────────────────── */}
-      <div className="relative z-10 p-4 md:p-6 max-w-[1600px] mx-auto space-y-5">
+      <div style={{ maxWidth: 1520, margin: '0 auto', padding: '28px 24px 60px' }}>
 
         {/* ── SECTION 0: HERO BANNER ─────────────────────────────────────── */}
-        <div className="relative rounded-2xl overflow-hidden gradient-border p-6 md:p-8"
-          style={{ background: 'linear-gradient(135deg, rgba(16,185,129,0.08) 0%, rgba(15,24,36,0.95) 50%, rgba(6,182,212,0.05) 100%)' }}>
-          <div className="absolute inset-0 pointer-events-none" style={{ backgroundImage: 'radial-gradient(circle at 80% 50%, rgba(16,185,129,0.06) 0%, transparent 60%)' }} />
-
-          <div className="relative flex flex-col md:flex-row md:items-center gap-6">
-            {/* Left: plot info */}
-            <div className="flex-1">
-              <div className="flex items-center gap-2 mb-2">
-                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-semibold bg-emerald-500/15 text-emerald-400 border border-emerald-500/25">
-                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-                  LIVE MONITORING
-                </span>
-                <span className="text-xs text-slate-500">Last sync: {lastSync}</span>
-              </div>
-              <h1 className="section-title text-3xl md:text-4xl font-bold text-slate-100 mb-1">
-                {plot?.emoji} {plot?.name}
-                <span className="text-emerald-400"> · {plot?.cropType}</span>
-              </h1>
-              <p className="text-slate-400 text-sm">
-                {plot?.variety} &nbsp;·&nbsp; {plot?.area} &nbsp;·&nbsp; Planted {plot?.plantedDate || 'N/A'} &nbsp;·&nbsp;
-                <span className={cn("font-semibold", plot?.status === 'growing' ? 'text-emerald-400' : plot?.status === 'dormant' ? 'text-amber-400' : 'text-slate-400')}>
-                  {plot?.status === 'growing' ? '🌱 Growing' : plot?.status === 'dormant' ? '💤 Dormant' : '✅ Harvested'}
-                </span>
-              </p>
-
-              {/* Progress */}
-              {plot?.plantedDate && plot?.harvestDate && (
-                <div className="mt-4 max-w-md">
-                  <div className="flex justify-between text-xs text-slate-400 mb-1.5">
-                    <span>Growth Progress</span>
-                    <span className="text-emerald-400 font-bold stat-number">{growth}%</span>
-                  </div>
-                  <div className="h-2 rounded-full overflow-hidden" style={{ background: 'rgba(30,41,59,0.8)' }}>
-                    <div className="h-full rounded-full transition-all duration-1000 relative overflow-hidden"
-                      style={{ width: `${growth}%`, background: 'linear-gradient(90deg, #059669, #10b981, #34d399)' }}>
-                      <div className="absolute inset-0 shimmer" />
+        <div style={{ background: 'linear-gradient(135deg, #e8f5eb 0%, #f3fbf4 40%, #eef4ff 100%)', border: '1px solid rgba(45,106,79,0.18)', borderRadius: 18, boxShadow: '0 2px 16px rgba(45,106,79,0.08)', padding: '28px 32px', marginBottom: 22 }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+            <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', flexWrap: 'wrap', gap: 16 }}>
+              <div style={{ flex: 1, minWidth: 260 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
+                  <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '3px 11px', borderRadius: 100, fontSize: 11, fontWeight: 700, background: '#d8f3dc', color: '#2d6a4f', border: '1px solid #b7e4c7', fontFamily: "'DM Sans', sans-serif" }}>
+                    <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#40916c', display: 'inline-block' }} className="pls" />
+                    LIVE MONITORING
+                  </span>
+                  <span style={{ fontSize: 11.5, color: '#9a8870', fontFamily: "'DM Sans', sans-serif" }}>Last sync: {lastSync}</span>
+                </div>
+                <h1 style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: 34, fontWeight: 700, color: '#1c1a15', letterSpacing: '-0.02em', lineHeight: 1.1, marginBottom: 6 }}>
+                  {plot?.emoji} {plot?.name}
+                  <span style={{ color: '#2d6a4f' }}> · {plot?.cropType}</span>
+                </h1>
+                <p style={{ fontSize: 14, color: '#9a8870', fontFamily: "'DM Sans', sans-serif" }}>
+                  {plot?.variety} &nbsp;·&nbsp; {plot?.area} &nbsp;·&nbsp; Planted {plot?.plantedDate || 'N/A'} &nbsp;·&nbsp;
+                  <span style={{ fontWeight: 600, color: plot?.status === 'growing' ? '#2d6a4f' : plot?.status === 'dormant' ? '#92400e' : '#9a8870' }}>
+                    {plot?.status === 'growing' ? '🌱 Growing' : plot?.status === 'dormant' ? '💤 Dormant' : '✅ Harvested'}
+                  </span>
+                </p>
+                {plot?.plantedDate && plot?.harvestDate && (
+                  <div style={{ marginTop: 16, maxWidth: 440 }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, color: '#9a8870', marginBottom: 6, fontFamily: "'DM Sans', sans-serif" }}>
+                      <span>Growth Progress</span>
+                      <span style={{ color: '#2d6a4f', fontWeight: 700, fontFamily: "'Space Grotesk', sans-serif" }}>{growth}%</span>
+                    </div>
+                    <div className="ptrack">
+                      <div className="pfill shimmer" style={{ width: `${growth}%`, background: 'linear-gradient(90deg, #2d6a4f, #52b788)' }} />
+                    </div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11, color: '#b0a088', marginTop: 5, fontFamily: "'DM Sans', sans-serif" }}>
+                      <span>{plot.plantedDate}</span>
+                      {remaining !== null && <span style={{ color: '#2d6a4f', fontWeight: 600 }}>{remaining} days to harvest</span>}
+                      <span>{plot.harvestDate}</span>
                     </div>
                   </div>
-                  <div className="flex justify-between text-[11px] text-slate-500 mt-1">
-                    <span>{plot.plantedDate}</span>
-                    {remaining !== null && <span className="text-emerald-500 font-semibold">{remaining} days to harvest</span>}
-                    <span>{plot.harvestDate}</span>
-                  </div>
-                </div>
-              )}
+                )}
+              </div>
+              <div style={{ display: 'flex', gap: 20, flexWrap: 'wrap', alignItems: 'center' }}>
+                <HealthGauge value={healthScore} color="#40916c" label="Farm Health" />
+                <HealthGauge value={growth} color="#3b82f6" label="Growth" />
+                <HealthGauge value={Math.round(sensorData.moisture)} color="#0891b2" label="Moisture" />
+                <HealthGauge value={Math.min(100, Math.round((sensorData.nitrogen / 150) * 100))} color="#7c3aed" label="Nutrients" />
+              </div>
             </div>
-
-            {/* Right: radial health gauges */}
-            <div className="flex gap-4 md:gap-6 flex-wrap">
-              <HealthGauge value={healthScore} color="#10b981" label="Farm Health" />
-              <HealthGauge value={growth} color="#3b82f6" label="Growth" />
-              <HealthGauge value={Math.round(sensorData.moisture)} color="#06b6d4" label="Moisture" />
-              <HealthGauge value={Math.min(100, Math.round((sensorData.nitrogen / 150) * 100))} color="#a78bfa" label="Nutrients" />
+            <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+              <button onClick={() => { setEditPlot(plot ?? null); setShowModal(true); }} className="btn-g">
+                <Edit3 size={13} /> Edit Plot
+              </button>
+              <button onClick={() => isPlotReady && router.push('/plant_performance?plotId=' + activePlotId)} disabled={!isPlotReady} className="btn-p">
+                <BarChart3 size={14} /> View Performance
+              </button>
+              <button onClick={() => setShowChat(true)}
+                style={{ display: 'inline-flex', alignItems: 'center', gap: 7, padding: '10px 20px', borderRadius: 100, fontFamily: "'DM Sans', sans-serif", fontSize: 13, fontWeight: 600, cursor: 'pointer', background: '#5b21b6', color: '#fff', border: 'none', transition: 'all .2s', boxShadow: '0 2px 10px rgba(91,33,182,0.22)' }}>
+                <Bot size={14} /> Ask AI
+              </button>
+              <button onClick={() => setShowSoilModal(true)} className="btn-g">
+                <FlaskConical size={13} /> Edit Soil
+              </button>
             </div>
-          </div>
-
-          {/* Action buttons */}
-          <div className="mt-5 flex gap-3 flex-wrap">
-            <button onClick={() => { setEditPlot(plot ?? null); setShowModal(true); }}
-              className="px-4 py-2.5 rounded-xl border border-slate-700 text-slate-300 font-medium text-sm hover:bg-slate-800 transition-colors flex items-center gap-2"
-              style={{ background: 'rgba(30,41,59,0.6)' }}>
-              <Edit3 className="w-4 h-4" /> Edit Plot
-            </button>
-            <button onClick={() => isPlotReady && router.push('/plant_performance?plotId=' + activePlotId)} disabled={!isPlotReady}
-              className="px-4 py-2.5 rounded-xl bg-emerald-600 text-white font-semibold text-sm hover:bg-emerald-500 disabled:opacity-50 transition-colors flex items-center gap-2 shadow-lg shadow-emerald-500/20">
-              <BarChart3 className="w-4 h-4" /> View Performance
-            </button>
-            <button onClick={() => setShowChat(true)}
-              className="px-4 py-2.5 rounded-xl font-semibold text-sm text-white flex items-center gap-2 transition-colors hover:opacity-90"
-              style={{ background: 'linear-gradient(135deg, #7c3aed, #6d28d9)' }}>
-              <Bot className="w-4 h-4" /> Ask AI
-            </button>
-            <button onClick={() => setShowSoilModal(true)}
-              className="px-4 py-2.5 rounded-xl border border-slate-700 text-slate-300 font-medium text-sm hover:bg-slate-800 transition-colors flex items-center gap-2"
-              style={{ background: 'rgba(30,41,59,0.6)' }}>
-              <FlaskConical className="w-4 h-4" /> Edit Soil
-            </button>
           </div>
         </div>
 
         {/* ── SECTION 1: SENSOR CARDS ───────────────────────────────────── */}
-        <div>
-          <div className="flex items-center justify-between mb-3">
-            <h2 className="section-title text-sm font-semibold text-slate-400 uppercase tracking-widest">Live Sensors</h2>
-            <span className="text-xs text-slate-500 flex items-center gap-1.5">
-              <Cpu className="w-3 h-3" /> ESP32-Node1 · synced {lastSync}
+        <div style={{ marginBottom: 22 }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
+            <h2 style={{ fontSize: 11.5, fontWeight: 700, color: '#9a8870', textTransform: 'uppercase', letterSpacing: '0.07em', fontFamily: "'DM Sans', sans-serif" }}>Live Sensors</h2>
+            <span style={{ fontSize: 11.5, color: '#b0a088', display: 'flex', alignItems: 'center', gap: 5, fontFamily: "'DM Sans', sans-serif" }}>
+              <Cpu size={12} /> ESP32-Node1 · synced {lastSync}
             </span>
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 16 }}>
             {[
-              { key: 'temperature' as const, label: 'Temperature', sub: 'Air temp from DHT22', icon: Thermometer, value: sensorData.temperature.toFixed(1), unit: '°C', accent: '#f97316', pale: 'rgba(249,115,22,0.08)', delta: dailyDelta.temperature, deltaDigits: 1 },
-              { key: 'humidity' as const, label: 'Air Humidity', sub: 'Relative humidity', icon: Waves, value: sensorData.humidity.toFixed(1), unit: '%', accent: '#0891b2', pale: 'rgba(8,145,178,0.08)', delta: dailyDelta.humidity, deltaDigits: 0 },
-              { key: 'moisture' as const, label: 'Soil Moisture', sub: 'Capacitive sensor', icon: Droplets, value: sensorData.moisture.toFixed(1), unit: '%', accent: '#2563eb', pale: 'rgba(37,99,235,0.08)', delta: dailyDelta.moisture, deltaDigits: 0 }
+              { key: 'temperature' as const, cardStyle: cardTemperature, label: 'Temperature', sub: 'Air temp from DHT22', icon: Thermometer, value: sensorData.temperature.toFixed(1), unit: '°C', accent: '#f97316', pale: '#fff7ed', delta: dailyDelta.temperature, deltaDigits: 1 },
+              { key: 'humidity'    as const, cardStyle: cardHumidity,    label: 'Air Humidity', sub: 'Relative humidity', icon: Waves, value: sensorData.humidity.toFixed(1), unit: '%', accent: '#0891b2', pale: '#ecfeff', delta: dailyDelta.humidity, deltaDigits: 0 },
+              { key: 'moisture'   as const, cardStyle: cardMoisture,    label: 'Soil Moisture', sub: 'Capacitive sensor', icon: Droplets, value: sensorData.moisture.toFixed(1), unit: '%', accent: '#2563eb', pale: '#eff6ff', delta: dailyDelta.moisture, deltaDigits: 0 },
             ].map(s => {
               const st = calcStatus(parseFloat(s.value), s.key);
               const stLabel = statusLabel(parseFloat(s.value), s.key);
               const deltaUp = s.delta >= 0;
               return (
                 <div key={s.key} onClick={() => setSelectedMetric(s.key)}
-                  className="card card-glow-green rounded-2xl p-5 cursor-pointer transition-all duration-300 hover:-translate-y-1 hover:shadow-2xl hover:shadow-black/40 group relative overflow-hidden">
-                  <div className="absolute top-0 right-0 w-32 h-32 rounded-full pointer-events-none"
-                    style={{ background: `radial-gradient(circle, ${s.accent}08 0%, transparent 70%)`, transform: 'translate(30%,-30%)' }} />
-
-                  <div className="flex justify-between items-start mb-4 relative">
-                    <div className="w-11 h-11 rounded-xl flex items-center justify-center" style={{ backgroundColor: s.pale, border: `1px solid ${s.accent}25` }}>
-                      <s.icon className="w-5 h-5" style={{ color: s.accent }} />
+                  style={{ ...s.cardStyle, padding: 22, cursor: 'pointer', transition: 'all 0.2s', borderColor: selectedMetric === s.key ? s.accent : (s.cardStyle.borderColor as string), borderWidth: selectedMetric === s.key ? 2 : 1, position: 'relative', overflow: 'hidden' }}
+                  onMouseEnter={e => { (e.currentTarget as HTMLElement).style.transform = 'translateY(-3px)'; (e.currentTarget as HTMLElement).style.boxShadow = '0 10px 32px rgba(100,70,30,0.12)'; }}
+                  onMouseLeave={e => { (e.currentTarget as HTMLElement).style.transform = ''; (e.currentTarget as HTMLElement).style.boxShadow = ''; }}>
+                  <div style={{ position: 'absolute', top: 0, right: 0, width: 120, height: 120, borderRadius: '50%', background: `radial-gradient(circle, ${s.accent}12 0%, transparent 70%)`, transform: 'translate(30%,-30%)', pointerEvents: 'none' }} />
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 14 }}>
+                    <div style={{ width: 42, height: 42, borderRadius: 12, background: s.pale, display: 'flex', alignItems: 'center', justifyContent: 'center', border: `1px solid ${s.accent}22` }}>
+                      <s.icon size={19} color={s.accent} />
                     </div>
-                    <span className={cn("flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-semibold border",
-                      st === 'optimal' && "bg-emerald-500/10 text-emerald-400 border-emerald-500/20",
-                      st === 'good' && "bg-amber-500/10 text-amber-400 border-amber-500/20",
-                      st === 'warning' && "bg-red-500/10 text-red-400 border-red-500/20")}>
-                      {st === 'optimal' ? <Check className="w-3 h-3" /> : <AlertTriangle className="w-3 h-3" />}
-                      {stLabel}
+                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, padding: '3px 10px', borderRadius: 100, fontSize: 11.5, fontWeight: 600, background: statusBg(st), color: statusClr(st), border: `1px solid ${statusBdr(st)}`, fontFamily: "'DM Sans', sans-serif" }}>
+                      {st === 'optimal' ? <Check size={10} /> : <AlertTriangle size={10} />} {stLabel}
                     </span>
                   </div>
-
-                  <div className="stat-number text-4xl font-bold text-slate-100 mb-0.5">
-                    {s.value}<span className="text-base text-slate-400 font-normal ml-1">{s.unit}</span>
+                  <div style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: 42, letterSpacing: '-0.02em', color: '#1c1a15', lineHeight: 1, marginBottom: 2 }}>
+                    {s.value}<span style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 15, color: '#9a8870', marginLeft: 3, fontWeight: 400 }}>{s.unit}</span>
                   </div>
-                  <div className="text-sm font-medium text-slate-300 mb-0.5">{s.label}</div>
-                  <div className="text-xs text-slate-500 mb-3">{s.sub}</div>
-
-                  <div className={cn("flex items-center gap-1 text-xs font-semibold mb-3", deltaUp ? "text-emerald-400" : "text-red-400")}>
-                    {deltaUp ? <ArrowUpRight className="w-3 h-3" /> : <ArrowDownRight className="w-3 h-3" />}
+                  <div style={{ fontSize: 13, fontWeight: 500, color: '#5a5040', marginBottom: 2, fontFamily: "'DM Sans', sans-serif" }}>{s.label}</div>
+                  <div style={{ fontSize: 12, color: '#b0a088', marginBottom: 10, fontFamily: "'DM Sans', sans-serif" }}>{s.sub}</div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 12, fontWeight: 600, color: deltaUp ? '#2d6a4f' : '#dc2626', marginBottom: 10, fontFamily: "'DM Sans', sans-serif" }}>
+                    {deltaUp ? <ArrowUpRight size={13} /> : <ArrowDownRight size={13} />}
                     {formatSignedDelta(s.delta, s.deltaDigits)}{s.unit} from yesterday
                   </div>
-
-                  <div className="h-16 opacity-50 group-hover:opacity-80 transition-opacity">
+                  <div style={{ opacity: 0.4 }}>
                     <MiniChart color={s.accent} data={miniChartData} />
                   </div>
-
-                  {selectedMetric === s.key && (
-                    <div className="absolute bottom-0 left-0 right-0 h-0.5 rounded-full" style={{ backgroundColor: s.accent }} />
-                  )}
+                  {selectedMetric === s.key && <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: 3, background: s.accent, borderRadius: '0 0 18px 18px' }} />}
                 </div>
               );
             })}
@@ -790,141 +820,116 @@ export default function SmartFarmDashboard() {
         </div>
 
         {/* ── SECTION 2: CHART + AI INSIGHTS ─────────────────────────────── */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 360px', gap: 16, marginBottom: 22 }}>
           {/* Analytics Chart */}
-          <div className="lg:col-span-2 card rounded-2xl p-5">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-5">
+          <div style={{ ...cardChart, padding: 24 }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 18, flexWrap: 'wrap', gap: 10 }}>
               <div>
-                <h3 className="section-title font-semibold text-slate-100">Environmental Trends</h3>
-                <p className="text-xs text-slate-500 mt-0.5">Historical sensor data from {plot?.name}</p>
+                <h3 style={{ fontWeight: 700, fontSize: 15, color: '#1c1a15', fontFamily: "'Space Grotesk', sans-serif" }}>Environmental Trends</h3>
+                <p style={{ fontSize: 12, color: '#9a8870', marginTop: 2, fontFamily: "'DM Sans', sans-serif" }}>Historical sensor data from {plot?.name}</p>
               </div>
-              <div className="flex items-center gap-2 flex-wrap">
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
                 {(['24h', '7d', '30d'] as const).map(range => (
                   <button key={range} onClick={() => setTimeRange(range)}
-                    className={cn("px-3 py-1.5 rounded-lg text-xs font-semibold transition-all",
-                      timeRange === range ? "bg-emerald-500 text-white shadow-md shadow-emerald-500/20" : "text-slate-400 hover:text-slate-200 hover:bg-slate-700")}
-                    style={{ background: timeRange === range ? undefined : 'rgba(30,41,59,0.6)' }}>
+                    style={{ padding: '6px 14px', borderRadius: 100, fontSize: 12, fontWeight: 600, cursor: 'pointer', fontFamily: "'DM Sans', sans-serif", border: `1.5px solid ${timeRange === range ? '#40916c' : 'rgba(160,130,90,0.22)'}`, background: timeRange === range ? '#f0faf2' : 'transparent', color: timeRange === range ? '#2d6a4f' : '#5a5040', transition: 'all .15s' }}>
                     {range.toUpperCase()}
                   </button>
                 ))}
-                <button className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-slate-400 hover:text-slate-200 transition-colors"
-                  style={{ background: 'rgba(30,41,59,0.6)' }}>
-                  <Download className="w-3.5 h-3.5" /> Export
+                <button style={{ display: 'flex', alignItems: 'center', gap: 5, padding: '6px 13px', borderRadius: 100, fontSize: 12, fontWeight: 500, cursor: 'pointer', fontFamily: "'DM Sans', sans-serif", border: '1px solid rgba(160,130,90,0.22)', background: 'transparent', color: '#9a8870' }}>
+                  <Download size={12} /> Export
                 </button>
               </div>
             </div>
-
-            <div className="h-[240px]">
+            <div style={{ height: 240 }}>
               {isLoadingChart ? (
-                <div className="w-full h-full flex items-center justify-center gap-3">
-                  <RefreshCw className="w-5 h-5 animate-spin text-slate-400" />
-                  <span className="text-slate-400 text-sm">Loading chart data...</span>
+                <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10 }}>
+                  <RefreshCw size={16} color="#9a8870" style={{ animation: 'spin 1s linear infinite' }} />
+                  <span style={{ fontSize: 13, color: '#9a8870', fontFamily: "'DM Sans', sans-serif" }}>Loading chart data...</span>
                 </div>
               ) : (
                 <ResponsiveContainer width="100%" height="100%">
                   <AreaChart data={chartData}>
                     <defs>
                       <linearGradient id={`grad${selectedMetric}`} x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="5%" stopColor={chartColor} stopOpacity={0.25} />
+                        <stop offset="5%" stopColor={chartColor} stopOpacity={0.2} />
                         <stop offset="95%" stopColor={chartColor} stopOpacity={0} />
                       </linearGradient>
                     </defs>
-                    <CartesianGrid strokeDasharray="3 3" stroke="rgba(71,85,105,0.25)" vertical={false} />
-                    <XAxis dataKey="time" stroke="#475569" tick={{ fill: '#64748b', fontSize: 11 }} tickLine={false} axisLine={false} />
-                    <YAxis stroke="#475569" tick={{ fill: '#64748b', fontSize: 11 }} tickLine={false} axisLine={false} />
-                    <Tooltip contentStyle={{ backgroundColor: '#1e293b', border: '1px solid rgba(71,85,105,0.5)', borderRadius: '10px', color: '#f1f5f9', fontSize: '12px' }} />
-                    <Area type="monotone" dataKey={selectedMetric} name={selectedMetric.charAt(0).toUpperCase() + selectedMetric.slice(1)} stroke={chartColor} fillOpacity={1} fill={`url(#grad${selectedMetric})`} strokeWidth={2.5} dot={false} activeDot={{ r: 4, fill: chartColor }} />
+                    <CartesianGrid strokeDasharray="3 3" stroke="rgba(160,130,90,0.12)" vertical={false} />
+                    <XAxis dataKey="time" tick={{ fill: '#b0a088', fontSize: 11, fontFamily: "'DM Sans', sans-serif" }} tickLine={false} axisLine={{ stroke: 'rgba(160,130,90,0.2)' }} />
+                    <YAxis tick={{ fill: '#b0a088', fontSize: 11, fontFamily: "'DM Sans', sans-serif" }} tickLine={false} axisLine={false} />
+                    <Tooltip contentStyle={{ background: '#fff', border: '1px solid rgba(160,130,90,0.2)', borderRadius: 12, fontFamily: "'DM Sans', sans-serif", fontSize: 12, boxShadow: '0 8px 24px rgba(100,70,30,0.12)', color: '#1c1a15' }} />
+                    <Area type="monotone" dataKey={selectedMetric} name={selectedMetric.charAt(0).toUpperCase() + selectedMetric.slice(1)} stroke={chartColor} fillOpacity={1} fill={`url(#grad${selectedMetric})`} strokeWidth={2.5} dot={false} activeDot={{ r: 4, fill: chartColor, strokeWidth: 0 }} />
                   </AreaChart>
                 </ResponsiveContainer>
               )}
             </div>
-
-            <div className="flex flex-wrap items-center gap-2 mt-4 pt-4 border-t" style={{ borderColor: 'rgba(71,85,105,0.25)' }}>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginTop: 16, paddingTop: 16, borderTop: '1px solid rgba(160,130,90,0.1)' }}>
               {[
                 { key: 'temperature' as const, label: 'Temperature', icon: Thermometer, color: '#f97316' },
                 { key: 'humidity' as const, label: 'Humidity', icon: Waves, color: '#0891b2' },
                 { key: 'moisture' as const, label: 'Moisture', icon: Droplets, color: '#2563eb' }
               ].map(m => (
                 <button key={m.key} onClick={() => setSelectedMetric(m.key)}
-                  className={cn("flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all border",
-                    selectedMetric === m.key ? "border-transparent text-white" : "text-slate-400 hover:text-slate-200")}
-                  style={{
-                    backgroundColor: selectedMetric === m.key ? m.color : 'rgba(30,41,59,0.6)',
-                    borderColor: selectedMetric === m.key ? 'transparent' : 'rgba(71,85,105,0.3)',
-                  }}>
-                  <m.icon className="w-3.5 h-3.5" />{m.label}
+                  style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '7px 16px', borderRadius: 100, fontSize: 12.5, fontWeight: 600, cursor: 'pointer', fontFamily: "'DM Sans', sans-serif", border: `1.5px solid ${selectedMetric === m.key ? m.color : 'rgba(160,130,90,0.22)'}`, background: selectedMetric === m.key ? `${m.color}14` : 'transparent', color: selectedMetric === m.key ? m.color : '#5a5040', transition: 'all .15s' }}>
+                  <m.icon size={13} /> {m.label}
                 </button>
               ))}
             </div>
           </div>
 
-          {/* AI Insights */}
-          <div className="card rounded-2xl flex flex-col overflow-hidden">
-            <div className="p-4 flex items-center gap-3" style={{ background: 'linear-gradient(135deg, rgba(16,185,129,0.15), rgba(6,182,212,0.08))' }}>
-              <div className="w-9 h-9 rounded-xl bg-emerald-500/20 border border-emerald-500/30 flex items-center justify-center">
-                <Bot className="w-5 h-5 text-emerald-400" />
+          {/* AI Insights — soft lavender tint */}
+          <div style={{ ...cardAI, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+            <div style={{ padding: '16px 18px', background: 'linear-gradient(135deg, #eef1ff, #f8f5ff)', borderBottom: '1px solid rgba(124,58,237,0.1)', display: 'flex', alignItems: 'center', gap: 10 }}>
+              <div style={{ width: 36, height: 36, borderRadius: 11, background: '#5b21b6', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                <Bot size={16} color="#fff" />
               </div>
-              <div className="flex-1">
-                <h3 className="font-semibold text-slate-100 text-sm">AI Insights</h3>
-                <p className="text-[11px] text-slate-400">LLaMA 3.3 70B</p>
+              <div style={{ flex: 1 }}>
+                <div style={{ fontWeight: 700, fontSize: 14, color: '#1c1a15', fontFamily: "'Space Grotesk', sans-serif" }}>AI Insights</div>
+                <div style={{ fontSize: 11, color: '#9a8870', fontFamily: "'DM Sans', sans-serif" }}>LLaMA 3.3 70B</div>
               </div>
-              <span className="flex items-center gap-1 px-2 py-0.5 bg-emerald-500/20 rounded-full text-[10px] font-bold text-emerald-400 border border-emerald-500/25">
-                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />LIVE
-              </span>
+              <span style={{ fontSize: 10.5, padding: '3px 9px', borderRadius: 100, background: '#d8f3dc', color: '#2d6a4f', fontWeight: 700, border: '1px solid #b7e4c7', fontFamily: "'DM Sans', sans-serif" }} className="pls">● LIVE</span>
             </div>
-
-            <div className="flex-1 p-3 space-y-2 overflow-y-auto" style={{ maxHeight: '280px' }}>
+            <div style={{ flex: 1, padding: 14, display: 'flex', flexDirection: 'column', gap: 8, overflowY: 'auto', maxHeight: 260 }}>
               {insights.map(insight => (
                 <div key={insight.id}
-                  className={cn("flex gap-2.5 p-3 rounded-xl border-l-2 cursor-pointer transition-all hover:translate-x-0.5",
-                    insight.priority === 'high' && "border-red-500 hover:bg-red-500/5",
-                    insight.priority === 'medium' && "border-amber-500 hover:bg-amber-500/5",
-                    insight.priority === 'low' && "border-cyan-500 hover:bg-cyan-500/5")}
-                  style={{ background: 'rgba(15,24,36,0.4)' }}>
-                  <div className={cn("w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0",
-                    insight.priority === 'high' && "bg-red-500/10 text-red-400",
-                    insight.priority === 'medium' && "bg-amber-500/10 text-amber-400",
-                    insight.priority === 'low' && "bg-cyan-500/10 text-cyan-400")}>
-                    {insight.priority === 'high' ? <AlertCircle className="w-4 h-4" /> : insight.priority === 'medium' ? <Lightbulb className="w-4 h-4" /> : <TrendingUp className="w-4 h-4" />}
+                  style={{ padding: '12px 14px', borderRadius: 12, borderLeft: `3px solid ${insight.priority === 'high' ? '#ef4444' : insight.priority === 'medium' ? '#f59e0b' : '#0891b2'}`, background: insight.priority === 'high' ? '#fff1f2' : insight.priority === 'medium' ? '#fffbeb' : '#f0f9ff', cursor: 'pointer', transition: 'transform 0.15s' }}
+                  onMouseEnter={e => (e.currentTarget as HTMLElement).style.transform = 'translateX(3px)'}
+                  onMouseLeave={e => (e.currentTarget as HTMLElement).style.transform = ''}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 7, marginBottom: 4 }}>
+                    {insight.priority === 'high' ? <AlertCircle size={13} color="#ef4444" /> : insight.priority === 'medium' ? <Lightbulb size={13} color="#f59e0b" /> : <TrendingUp size={13} color="#0891b2" />}
+                    <strong style={{ fontSize: 12.5, fontWeight: 700, color: '#1c1a15', fontFamily: "'DM Sans', sans-serif" }}>{insight.title}</strong>
                   </div>
-                  <div>
-                    <strong className="block text-xs font-semibold text-slate-200 mb-0.5">{insight.title}</strong>
-                    <p className="text-[11px] text-slate-400 leading-relaxed">{insight.description} {insight.recommendation}</p>
-                    <span className="text-[10px] text-slate-500 mt-1 block">{insight.time}</span>
-                  </div>
+                  <p style={{ fontSize: 12, color: '#5a5040', lineHeight: 1.5, fontFamily: "'DM Sans', sans-serif" }}>{insight.description} {insight.recommendation}</p>
+                  <span style={{ fontSize: 10.5, color: '#b0a088', marginTop: 4, display: 'block', fontFamily: "'DM Sans', sans-serif" }}>{insight.time}</span>
                 </div>
               ))}
             </div>
-
-            <div className="p-3 border-t flex gap-2" style={{ borderColor: 'rgba(71,85,105,0.25)', background: 'rgba(15,24,36,0.4)' }}>
-              <input type="text" placeholder="Ask AI about your crops..." className="flex-1 rounded-xl px-3 py-2 text-xs text-slate-200 placeholder:text-slate-600 focus:outline-none focus:border-emerald-500/50 border"
-                style={{ background: 'rgba(15,24,36,0.8)', borderColor: 'rgba(71,85,105,0.3)' }}
+            <div style={{ padding: '12px 14px', borderTop: '1px solid rgba(124,58,237,0.1)', display: 'flex', gap: 8, background: 'rgba(124,58,237,0.04)' }}>
+              <input type="text" placeholder="Ask AI about your crops..." style={{ flex: 1, background: 'rgba(255,255,255,0.8)', border: '1px solid rgba(124,58,237,0.18)', borderRadius: 10, padding: '9px 13px', fontSize: 12.5, fontFamily: "'DM Sans', sans-serif", color: '#1c1a15', outline: 'none' }}
                 onClick={() => setShowChat(true)} readOnly />
-              <button onClick={() => setShowChat(true)} className="w-9 h-9 rounded-xl flex items-center justify-center text-white transition-all hover:scale-105 active:scale-95"
-                style={{ background: 'linear-gradient(135deg, #059669, #0891b2)' }}>
-                <Send className="w-3.5 h-3.5" />
+              <button onClick={() => setShowChat(true)}
+                style={{ width: 36, height: 36, borderRadius: 10, background: '#5b21b6', border: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', flexShrink: 0 }}>
+                <Send size={14} color="#fff" />
               </button>
             </div>
           </div>
         </div>
 
-        {/* ── SECTION 3: SOIL METRICS + TASKS + WEATHER ─────────────────── */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
+        {/* ── SECTION 3: SOIL METRICS + TASKS ─────────────────────────────── */}
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 340px', gap: 16, marginBottom: 22 }}>
 
-          {/* Soil Quality Metrics */}
-          <div className="lg:col-span-2 card rounded-2xl p-5">
-            <div className="flex items-center justify-between mb-5">
+          {/* Soil Quality — earthy terracotta-cream */}
+          <div style={{ ...cardSoil, padding: 24 }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
               <div>
-                <h3 className="section-title font-semibold text-slate-100">Soil Quality</h3>
-                <p className="text-xs text-slate-500 mt-0.5">{plot?.name} · NPK + pH readings</p>
+                <h3 style={{ fontWeight: 700, fontSize: 15, color: '#1c1a15', fontFamily: "'Space Grotesk', sans-serif" }}>Soil Quality</h3>
+                <p style={{ fontSize: 12, color: '#9a8870', marginTop: 2, fontFamily: "'DM Sans', sans-serif" }}>{plot?.name} · NPK + pH readings</p>
               </div>
-              <button onClick={() => setShowSoilModal(true)}
-                className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-semibold text-slate-300 hover:text-emerald-400 transition-all border"
-                style={{ background: 'rgba(15,24,36,0.6)', borderColor: 'rgba(71,85,105,0.3)' }}>
-                <Edit3 className="w-3 h-3" /> Edit
+              <button onClick={() => setShowSoilModal(true)} className="btn-g" style={{ fontSize: 12, padding: '7px 14px' }}>
+                <Edit3 size={12} /> Edit
               </button>
             </div>
-
             {[
               { key: 'ph' as const, icon: FlaskConical, label: 'Soil pH', detail: 'Acidity / alkalinity', value: sensorData.ph.toFixed(1), unit: 'pH', ideal: '6.0–7.0', pct: (sensorData.ph / 14) * 100, accent: '#7c3aed' },
               { key: 'nitrogen' as const, icon: Activity, label: 'Nitrogen (N)', detail: 'Leaf & stem growth', value: `${sensorData.nitrogen}`, unit: 'mg/kg', ideal: '50–150', pct: Math.min(100, (sensorData.nitrogen / 200) * 100), accent: '#16a34a' },
@@ -934,74 +939,58 @@ export default function SmartFarmDashboard() {
               const st = calcStatus(parseFloat(row.value), row.key);
               const stLabel = statusLabel(parseFloat(row.value), row.key);
               return (
-                <div key={row.key} className="flex items-center gap-4 py-3.5 border-b last:border-0" style={{ borderColor: 'rgba(71,85,105,0.2)' }}>
-                  <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0"
-                    style={{ backgroundColor: `${row.accent}15`, border: `1px solid ${row.accent}25` }}>
-                    <row.icon className="w-4 h-4" style={{ color: row.accent }} />
+                <div key={row.key} style={{ display: 'flex', alignItems: 'center', gap: 14, padding: '13px 0', borderBottom: '1px solid rgba(160,130,90,0.1)' }}>
+                  <div style={{ width: 38, height: 38, borderRadius: 11, background: `${row.accent}12`, border: `1px solid ${row.accent}22`, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                    <row.icon size={15} color={row.accent} />
                   </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex justify-between items-center mb-1.5">
+                  <div style={{ flex: 1 }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
                       <div>
-                        <span className="text-sm font-medium text-slate-200">{row.label}</span>
-                        <span className="text-xs text-slate-500 ml-2">{row.detail}</span>
+                        <span style={{ fontSize: 13.5, fontWeight: 500, color: '#1c1a15', fontFamily: "'DM Sans', sans-serif" }}>{row.label}</span>
+                        <span style={{ fontSize: 12, color: '#b0a088', marginLeft: 8, fontFamily: "'DM Sans', sans-serif" }}>{row.detail}</span>
                       </div>
-                      <span className="stat-number text-sm font-bold text-slate-100 flex-shrink-0">
-                        {row.value} <span className="text-[11px] font-normal text-slate-400">{row.unit}</span>
+                      <span style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: 16, color: '#1c1a15', flexShrink: 0 }}>
+                        {row.value} <span style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 11.5, fontWeight: 400, color: '#9a8870' }}>{row.unit}</span>
                       </span>
                     </div>
-                    <div className="w-full h-1.5 rounded-full overflow-hidden" style={{ background: 'rgba(30,41,59,0.8)' }}>
-                      <div className="h-full rounded-full transition-all duration-700"
-                        style={{ width: `${row.pct}%`, backgroundColor: row.accent, boxShadow: `0 0 8px ${row.accent}40` }} />
-                    </div>
+                    <div className="ptrack"><div className="pfill" style={{ width: `${row.pct}%`, background: row.accent, opacity: 0.7 }} /></div>
                   </div>
-                  <div className="flex flex-col items-end gap-1 min-w-[88px]">
-                    <span className={cn("px-2 py-0.5 rounded-full text-[10px] font-bold border",
-                      st === 'optimal' && "bg-emerald-500/10 text-emerald-400 border-emerald-500/20",
-                      st === 'good' && "bg-amber-500/10 text-amber-400 border-amber-500/20",
-                      st === 'warning' && "bg-red-500/10 text-red-400 border-red-500/20")}>{stLabel}</span>
-                    <span className="text-[10px] text-slate-500">Ideal: {row.ideal}</span>
+                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 3, minWidth: 90, flexShrink: 0 }}>
+                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 3, padding: '3px 10px', borderRadius: 100, fontSize: 11, fontWeight: 700, background: statusBg(st), color: statusClr(st), border: `1px solid ${statusBdr(st)}`, fontFamily: "'DM Sans', sans-serif" }}>{stLabel}</span>
+                    <span style={{ fontSize: 10.5, color: '#b0a088', fontFamily: "'DM Sans', sans-serif" }}>Ideal: {row.ideal}</span>
                   </div>
                 </div>
               );
             })}
           </div>
 
-          {/* Tasks Panel */}
-          <div className="card rounded-2xl p-5 flex flex-col">
-            <div className="flex items-center justify-between mb-4">
+          {/* Tasks — soft sage green */}
+          <div style={{ ...cardTasks, padding: 22, display: 'flex', flexDirection: 'column' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
               <div>
-                <h3 className="section-title font-semibold text-slate-100">Farm Tasks</h3>
-                <p className="text-xs text-slate-500 mt-0.5">{tasksDone.length}/{tasks.length} completed today</p>
+                <h3 style={{ fontWeight: 700, fontSize: 15, color: '#1c1a15', fontFamily: "'Space Grotesk', sans-serif" }}>Farm Tasks</h3>
+                <p style={{ fontSize: 12, color: '#9a8870', marginTop: 2, fontFamily: "'DM Sans', sans-serif" }}>{tasksDone.length}/{tasks.length} completed today</p>
               </div>
-              <button className="w-8 h-8 rounded-lg flex items-center justify-center text-emerald-400 border border-emerald-500/25 hover:bg-emerald-500/10 transition-colors"
-                style={{ background: 'rgba(16,185,129,0.08)' }}>
-                <Plus className="w-4 h-4" />
+              <button style={{ width: 32, height: 32, borderRadius: 9, background: '#f0faf2', border: '1px solid rgba(45,106,79,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: '#2d6a4f' }}>
+                <Plus size={14} />
               </button>
             </div>
-
-            {/* Progress */}
-            <div className="mb-4">
-              <div className="h-1.5 rounded-full overflow-hidden" style={{ background: 'rgba(30,41,59,0.8)' }}>
-                <div className="h-full rounded-full bg-emerald-500 transition-all duration-500"
-                  style={{ width: `${(tasksDone.length / tasks.length) * 100}%` }} />
-              </div>
+            <div style={{ marginBottom: 14 }}>
+              <div className="ptrack"><div className="pfill" style={{ width: `${(tasksDone.length / tasks.length) * 100}%`, background: 'linear-gradient(90deg, #2d6a4f, #52b788)' }} /></div>
             </div>
-
-            <div className="space-y-2 flex-1">
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8, flex: 1 }}>
               {tasks.map(task => (
-                <div key={task.id} onClick={() => setTasksDone(prev => prev.includes(task.id) ? prev.filter(x => x !== task.id) : [...prev, task.id])}
-                  className="flex items-start gap-3 p-3 rounded-xl cursor-pointer transition-all hover:scale-[1.01] group"
-                  style={{ background: tasksDone.includes(task.id) ? 'rgba(16,185,129,0.05)' : 'rgba(15,24,36,0.5)', border: `1px solid ${tasksDone.includes(task.id) ? 'rgba(16,185,129,0.15)' : 'rgba(71,85,105,0.2)'}` }}>
-                  <div className={cn("w-5 h-5 rounded-md flex items-center justify-center flex-shrink-0 mt-0.5 transition-all border",
-                    tasksDone.includes(task.id) ? "bg-emerald-500 border-emerald-500" : "border-slate-600 group-hover:border-emerald-500/50")}>
-                    {tasksDone.includes(task.id) && <Check className="w-3 h-3 text-white" />}
+                <div key={task.id}
+                  onClick={() => setTasksDone(prev => prev.includes(task.id) ? prev.filter(x => x !== task.id) : [...prev, task.id])}
+                  style={{ display: 'flex', alignItems: 'flex-start', gap: 10, padding: '11px 13px', borderRadius: 12, cursor: 'pointer', background: tasksDone.includes(task.id) ? 'rgba(45,106,79,0.08)' : 'rgba(255,255,255,0.7)', border: `1px solid ${tasksDone.includes(task.id) ? 'rgba(45,106,79,0.2)' : 'rgba(160,130,90,0.14)'}`, transition: 'all .15s' }}>
+                  <div style={{ width: 20, height: 20, borderRadius: 6, background: tasksDone.includes(task.id) ? '#2d6a4f' : 'transparent', border: `1.5px solid ${tasksDone.includes(task.id) ? '#2d6a4f' : 'rgba(160,130,90,0.35)'}`, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, marginTop: 1, transition: 'all .15s' }}>
+                    {tasksDone.includes(task.id) && <Check size={11} color="#fff" />}
                   </div>
-                  <div className="flex-1 min-w-0">
-                    <p className={cn("text-xs font-medium leading-relaxed", tasksDone.includes(task.id) ? "text-slate-500 line-through" : "text-slate-200")}>{task.title}</p>
-                    <div className="flex items-center gap-2 mt-1">
-                      <span className="text-[10px] text-slate-500 flex items-center gap-1"><Clock className="w-3 h-3" />{task.due}</span>
-                      <span className={cn("text-[10px] font-semibold px-1.5 py-0.5 rounded-full",
-                        task.priority === 'high' ? "bg-red-500/10 text-red-400" : task.priority === 'medium' ? "bg-amber-500/10 text-amber-400" : "bg-slate-500/10 text-slate-400")}>
+                  <div style={{ flex: 1 }}>
+                    <p style={{ fontSize: 12.5, fontWeight: 500, color: tasksDone.includes(task.id) ? '#b0a088' : '#1c1a15', textDecoration: tasksDone.includes(task.id) ? 'line-through' : 'none', lineHeight: 1.4, fontFamily: "'DM Sans', sans-serif" }}>{task.title}</p>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 5 }}>
+                      <span style={{ fontSize: 10.5, color: '#b0a088', display: 'flex', alignItems: 'center', gap: 3, fontFamily: "'DM Sans', sans-serif" }}><Clock size={10} />{task.due}</span>
+                      <span style={{ fontSize: 10.5, fontWeight: 700, padding: '1px 7px', borderRadius: 100, background: task.priority === 'high' ? '#fee2e2' : task.priority === 'medium' ? '#fef3c7' : '#f2ece0', color: task.priority === 'high' ? '#991b1b' : task.priority === 'medium' ? '#92400e' : '#5a5040', fontFamily: "'DM Sans', sans-serif" }}>
                         {task.priority}
                       </span>
                     </div>
@@ -1016,156 +1005,135 @@ export default function SmartFarmDashboard() {
         <WeatherForecast />
 
         {/* ── SECTION 5: ALL PLOTS ────────────────────────────────────────── */}
-        <div>
-          <div className="flex items-center justify-between mb-3">
+        <div style={{ marginBottom: 22 }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
             <div>
-              <h2 className="section-title font-semibold text-slate-100">All Plots</h2>
-              <p className="text-xs text-slate-500 mt-0.5">{plots.length} plots registered</p>
+              <h2 style={{ fontWeight: 700, fontSize: 16, color: '#1c1a15', fontFamily: "'Space Grotesk', sans-serif" }}>All Plots</h2>
+              <p style={{ fontSize: 12, color: '#9a8870', marginTop: 2, fontFamily: "'DM Sans', sans-serif" }}>{plots.length} plots registered</p>
             </div>
-            <button onClick={() => { setEditPlot(null); setShowModal(true); }}
-              className="flex items-center gap-2 px-4 py-2 rounded-xl bg-emerald-600 text-white font-semibold text-sm hover:bg-emerald-500 transition-colors shadow-md shadow-emerald-500/20">
-              <Plus className="w-4 h-4" /> Add Plot
+            <button onClick={() => { setEditPlot(null); setShowModal(true); }} className="btn-p">
+              <Plus size={14} /> Add Plot
             </button>
           </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-            {plots.map(p => {
-              const g = p.plantedDate && p.harvestDate ? growthPct(p.plantedDate, p.harvestDate) : 0;
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: 16 }}>
+            {plots.map((p, idx) => {
+              const g  = p.plantedDate && p.harvestDate ? growthPct(p.plantedDate, p.harvestDate) : 0;
               const dl = p.harvestDate ? daysLeft(p.harvestDate) : null;
               return (
                 <div key={p.id} onClick={() => { setActivePlotId(p.id); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
-                  className={cn("card card-glow-green rounded-2xl p-4 cursor-pointer transition-all hover:-translate-y-1 hover:shadow-xl hover:shadow-black/40",
-                    activePlotId === p.id && "gradient-border")}
-                  style={{ borderColor: activePlotId === p.id ? undefined : 'rgba(71,85,105,0.35)' }}>
-                  <div className="flex items-start justify-between mb-3">
-                    <div className="flex items-center gap-2.5">
-                      <span className="text-2xl">{p.emoji}</span>
+                  style={{ background: plotCardBg(idx), border: `${activePlotId === p.id ? 2 : 1}px solid ${activePlotId === p.id ? '#40916c' : 'rgba(160,130,90,0.2)'}`, borderRadius: 18, boxShadow: '0 2px 12px rgba(100,70,30,0.06)', padding: 20, cursor: 'pointer', transition: 'all 0.2s' }}
+                  onMouseEnter={e => { if (activePlotId !== p.id) { (e.currentTarget as HTMLElement).style.transform = 'translateY(-3px)'; (e.currentTarget as HTMLElement).style.boxShadow = '0 10px 32px rgba(100,70,30,0.1)'; } }}
+                  onMouseLeave={e => { (e.currentTarget as HTMLElement).style.transform = ''; (e.currentTarget as HTMLElement).style.boxShadow = ''; }}>
+                  <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 14 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                      <span style={{ fontSize: 28 }}>{p.emoji}</span>
                       <div>
-                        <div className="font-semibold text-sm text-slate-100">{p.name}</div>
-                        <div className="text-xs text-slate-500">{p.cropType} · {p.variety}</div>
+                        <div style={{ fontWeight: 700, fontSize: 14.5, color: '#1c1a15', fontFamily: "'Space Grotesk', sans-serif" }}>{p.name}</div>
+                        <div style={{ fontSize: 12, color: '#9a8870', marginTop: 1, fontFamily: "'DM Sans', sans-serif" }}>{p.cropType} · {p.variety}</div>
                       </div>
                     </div>
-                    <div className="flex gap-1.5">
-                      <span className={cn("px-2 py-0.5 rounded-full text-[10px] font-bold capitalize",
-                        p.status === 'growing' && "bg-emerald-500/10 text-emerald-400",
-                        p.status === 'dormant' && "bg-amber-500/10 text-amber-400",
-                        p.status === 'harvested' && "bg-slate-500/10 text-slate-400")}>
+                    <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+                      <span style={{ display: 'inline-flex', alignItems: 'center', padding: '3px 10px', borderRadius: 100, fontSize: 11, fontWeight: 700, background: p.status === 'growing' ? '#d8f3dc' : p.status === 'dormant' ? '#fef3c7' : '#f2ece0', color: p.status === 'growing' ? '#2d6a4f' : p.status === 'dormant' ? '#92400e' : '#5a5040', fontFamily: "'DM Sans', sans-serif" }}>
                         {p.status}
                       </span>
-                      <button onClick={e => { e.stopPropagation(); setEditPlot(p); setShowModal(true); }}
-                        className="p-1 hover:bg-slate-700 rounded text-slate-400 hover:text-slate-200 transition-colors">
-                        <Edit3 className="w-3 h-3" />
-                      </button>
+                      <button onClick={e => { e.stopPropagation(); setEditPlot(p); setShowModal(true); }} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#b0a088', padding: 4, borderRadius: 6 }}><Edit3 size={12} /></button>
                     </div>
                   </div>
-
-                  <div className="grid grid-cols-2 gap-1.5 mb-3">
-                    {[
-                      { label: 'Area', value: p.area || '—' },
-                      { label: 'Days left', value: dl !== null ? `${dl}d` : '—' },
-                      { label: 'Planted', value: p.plantedDate || '—' },
-                      { label: 'Harvest', value: p.harvestDate || '—' }
-                    ].map(m => (
-                      <div key={m.label} className="rounded-lg p-2" style={{ background: 'rgba(15,24,36,0.5)' }}>
-                        <div className="text-[10px] text-slate-500 uppercase">{m.label}</div>
-                        <div className="text-xs font-semibold text-slate-200 mt-0.5 stat-number">{m.value}</div>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginBottom: 14 }}>
+                    {[{ l: 'Area', v: p.area || '—' }, { l: 'Days left', v: dl !== null ? `${dl}d` : '—' }, { l: 'Planted', v: p.plantedDate || '—' }, { l: 'Harvest', v: p.harvestDate || '—' }].map(m => (
+                      <div key={m.l} style={{ background: 'rgba(255,255,255,0.55)', borderRadius: 9, padding: '8px 11px', border: '1px solid rgba(160,130,90,0.12)' }}>
+                        <div style={{ fontSize: 10.5, color: '#b0a088', textTransform: 'uppercase', letterSpacing: '0.04em', fontFamily: "'DM Sans', sans-serif", fontWeight: 600 }}>{m.l}</div>
+                        <div style={{ fontSize: 12.5, fontWeight: 600, color: '#1c1a15', marginTop: 2, fontFamily: "'DM Sans', sans-serif" }}>{m.v}</div>
                       </div>
                     ))}
                   </div>
-
                   {p.plantedDate && p.harvestDate && (
                     <>
-                      <div className="flex justify-between text-[11px] mb-1">
-                        <span className="text-slate-500">Growth</span>
-                        <span className="text-emerald-400 font-bold stat-number">{g}%</span>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11.5, color: '#9a8870', marginBottom: 5, fontFamily: "'DM Sans', sans-serif" }}>
+                        <span>Growth</span><span style={{ color: '#2d6a4f', fontWeight: 700, fontFamily: "'Space Grotesk', sans-serif" }}>{g}%</span>
                       </div>
-                      <div className="h-1.5 rounded-full overflow-hidden" style={{ background: 'rgba(30,41,59,0.8)' }}>
-                        <div className="h-full rounded-full transition-all" style={{ width: `${g}%`, background: 'linear-gradient(90deg, #059669, #10b981)' }} />
-                      </div>
+                      <div className="ptrack"><div className="pfill" style={{ width: `${g}%`, background: 'linear-gradient(90deg, #2d6a4f, #52b788)' }} /></div>
                     </>
                   )}
-
-                  <div className="mt-3 flex items-center gap-1 text-[10px] text-slate-600">
-                    <Database className="w-3 h-3" /><span>Firebase synced</span>
+                  <div style={{ display: 'inline-flex', alignItems: 'center', gap: 5, marginTop: 12, padding: '3px 10px', borderRadius: 100, background: '#fff8ed', border: '1px solid #fcd34d', color: '#92400e', fontSize: 11, fontWeight: 600, fontFamily: "'DM Sans', sans-serif" }}>
+                    <Database size={9} /> Firebase synced
                   </div>
                 </div>
               );
             })}
-
             {/* Add new plot card */}
             <div onClick={() => { setEditPlot(null); setShowModal(true); }}
-              className="rounded-2xl border-2 border-dashed min-h-[180px] flex flex-col items-center justify-center gap-3 cursor-pointer transition-all hover:border-emerald-500/50 hover:bg-emerald-500/5 group"
-              style={{ borderColor: 'rgba(71,85,105,0.3)' }}>
-              <div className="w-10 h-10 rounded-xl border-2 border-dashed flex items-center justify-center transition-colors group-hover:border-emerald-500/50"
-                style={{ borderColor: 'rgba(71,85,105,0.4)', background: 'rgba(16,185,129,0.05)' }}>
-                <Plus className="w-5 h-5 text-slate-500 group-hover:text-emerald-500 transition-colors" />
+              style={{ borderRadius: 18, border: '2px dashed rgba(160,130,90,0.28)', minHeight: 180, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 12, cursor: 'pointer', transition: 'all 0.2s', background: 'transparent' }}
+              onMouseEnter={e => { (e.currentTarget as HTMLElement).style.borderColor = '#40916c'; (e.currentTarget as HTMLElement).style.background = '#f0faf2'; }}
+              onMouseLeave={e => { (e.currentTarget as HTMLElement).style.borderColor = ''; (e.currentTarget as HTMLElement).style.background = 'transparent'; }}>
+              <div style={{ width: 44, height: 44, borderRadius: 13, background: '#f0faf2', border: '2px dashed rgba(45,106,79,0.28)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <Plus size={20} color="#40916c" />
               </div>
-              <div className="text-center">
-                <div className="text-sm font-semibold text-slate-400 group-hover:text-slate-200 transition-colors">Add New Plot</div>
-                <div className="text-xs text-slate-600 mt-0.5">Track a new crop or bed</div>
-              </div>
+              <div style={{ fontWeight: 600, fontSize: 14, color: '#5a5040', fontFamily: "'DM Sans', sans-serif" }}>Add New Plot</div>
+              <div style={{ fontSize: 12.5, color: '#b0a088', textAlign: 'center', fontFamily: "'DM Sans', sans-serif" }}>Track a new crop or bed</div>
             </div>
           </div>
         </div>
 
         {/* ── SECTION 6: QUICK STATS ROW ─────────────────────────────────── */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 16, marginBottom: 22 }}>
           {[
-            { icon: Leaf, label: 'Total Plots', value: `${plots.length}`, sub: 'Active monitoring', color: '#10b981', bg: 'rgba(16,185,129,0.08)' },
-            { icon: Zap, label: 'Sensor Nodes', value: '4', sub: 'ESP32 devices', color: '#f59e0b', bg: 'rgba(245,158,11,0.08)' },
-            { icon: Target, label: 'Health Score', value: `${healthScore}%`, sub: 'Overall farm health', color: '#a78bfa', bg: 'rgba(167,139,250,0.08)' },
-            { icon: Calendar, label: 'Next Harvest', value: remaining !== null ? `${remaining}d` : 'N/A', sub: plot?.cropType || 'No active plot', color: '#06b6d4', bg: 'rgba(6,182,212,0.08)' },
-          ].map(stat => (
-            <div key={stat.label} className="card rounded-2xl p-5 flex items-center gap-4 hover:-translate-y-0.5 transition-all">
-              <div className="w-11 h-11 rounded-xl flex items-center justify-center flex-shrink-0"
-                style={{ backgroundColor: stat.bg, border: `1px solid ${stat.color}25` }}>
-                <stat.icon className="w-5 h-5" style={{ color: stat.color }} />
+            { icon: Leaf,     label: 'Total Plots',   value: `${plots.length}`, sub: 'Active monitoring', color: '#2d6a4f', pale: '#f0faf2' },
+            { icon: Zap,      label: 'Sensor Nodes',  value: '4',               sub: 'ESP32 devices',     color: '#d97706', pale: '#fffbeb' },
+            { icon: Target,   label: 'Health Score',  value: `${healthScore}%`, sub: 'Overall farm health', color: '#7c3aed', pale: '#faf5ff' },
+            { icon: Calendar, label: 'Next Harvest',  value: remaining !== null ? `${remaining}d` : 'N/A', sub: plot?.cropType || 'No active plot', color: '#0891b2', pale: '#ecfeff' },
+          ].map((stat, i) => (
+            <div key={stat.label}
+              style={{ ...statsCards[i], padding: '18px 20px', display: 'flex', alignItems: 'center', gap: 14, transition: 'transform .2s' }}
+              onMouseEnter={e => (e.currentTarget as HTMLElement).style.transform = 'translateY(-2px)'}
+              onMouseLeave={e => (e.currentTarget as HTMLElement).style.transform = ''}>
+              <div style={{ width: 42, height: 42, borderRadius: 12, background: stat.pale, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, border: `1px solid ${stat.color}22` }}>
+                <stat.icon size={19} color={stat.color} />
               </div>
               <div>
-                <div className="stat-number text-xl font-bold text-slate-100">{stat.value}</div>
-                <div className="text-xs font-medium text-slate-300">{stat.label}</div>
-                <div className="text-[11px] text-slate-500">{stat.sub}</div>
+                <div style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: 26, color: '#1c1a15', letterSpacing: '-0.02em', lineHeight: 1 }}>{stat.value}</div>
+                <div style={{ fontSize: 13, fontWeight: 500, color: '#5a5040', marginTop: 2, fontFamily: "'DM Sans', sans-serif" }}>{stat.label}</div>
+                <div style={{ fontSize: 11, color: '#b0a088', marginTop: 1, fontFamily: "'DM Sans', sans-serif" }}>{stat.sub}</div>
               </div>
             </div>
           ))}
         </div>
 
-        {/* ── SECTION 7: SYSTEM LOGS ─────────────────────────────────────── */}
-        <div className="card rounded-2xl p-5">
-          <div className="flex items-center justify-between mb-4">
+        {/* ── SECTION 7: SYSTEM LOGS — soft slate-blue tint ──────────────── */}
+        <div style={{ ...cardLogs, padding: 24 }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 18 }}>
             <div>
-              <h3 className="section-title font-semibold text-slate-100">System Activity</h3>
-              <p className="text-xs text-slate-500 mt-0.5">Real-time event log from all sensor nodes</p>
+              <h3 style={{ fontWeight: 700, fontSize: 15, color: '#1c1a15', fontFamily: "'Space Grotesk', sans-serif" }}>System Activity</h3>
+              <p style={{ fontSize: 12, color: '#9a8870', marginTop: 2, fontFamily: "'DM Sans', sans-serif" }}>Real-time event log from all sensor nodes</p>
             </div>
-            <button className="text-xs text-slate-400 hover:text-emerald-400 transition-colors flex items-center gap-1">
-              View all <ChevronRight className="w-3.5 h-3.5" />
+            <button style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 12.5, color: '#9a8870', background: 'none', border: 'none', cursor: 'pointer', fontFamily: "'DM Sans', sans-serif" }}>
+              View all <ChevronRight size={14} />
             </button>
           </div>
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
+          <div style={{ overflowX: 'auto' }}>
+            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
               <thead>
-                <tr className="border-b text-slate-500" style={{ borderColor: 'rgba(71,85,105,0.25)' }}>
+                <tr style={{ borderBottom: '1px solid rgba(160,130,90,0.15)' }}>
                   {['Time', 'Event', 'Sensor / Node', 'Value', 'Status'].map(h => (
-                    <th key={h} className="text-left py-2.5 px-3 text-[11px] font-semibold uppercase tracking-wider">{h}</th>
+                    <th key={h} style={{ textAlign: 'left', padding: '8px 12px', fontSize: 11, fontWeight: 700, color: '#9a8870', textTransform: 'uppercase', letterSpacing: '0.06em', fontFamily: "'DM Sans', sans-serif" }}>{h}</th>
                   ))}
                 </tr>
               </thead>
               <tbody>
                 {logs.map(log => (
-                  <tr key={log.id} className="border-b hover:bg-slate-800/20 transition-colors" style={{ borderColor: 'rgba(71,85,105,0.15)' }}>
-                    <td className="py-3 px-3 text-slate-400 stat-number text-xs">{log.time}</td>
-                    <td className="py-3 px-3 text-slate-200 font-medium text-sm">{log.event}</td>
-                    <td className="py-3 px-3 text-slate-400 text-xs">{log.sensor}</td>
-                    <td className="py-3 px-3 text-slate-300 text-xs">{log.value}</td>
-                    <td className="py-3 px-3">
-                      <span className={cn("inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-semibold",
-                        log.status === 'success' && "bg-emerald-500/10 text-emerald-400",
-                        log.status === 'warning' && "bg-amber-500/10 text-amber-400",
-                        log.status === 'info' && "bg-cyan-500/10 text-cyan-400")}>
-                        {log.status === 'success' && <CheckCircle className="w-2.5 h-2.5" />}
-                        {log.status === 'warning' && <AlertTriangle className="w-2.5 h-2.5" />}
-                        {log.status === 'info' && <Info className="w-2.5 h-2.5" />}
-                        <span className="capitalize hidden sm:inline">{log.status === 'info' ? 'Cached' : log.status}</span>
+                  <tr key={log.id} style={{ borderBottom: '1px solid rgba(160,130,90,0.08)', transition: 'background .15s' }}
+                    onMouseEnter={e => (e.currentTarget as HTMLElement).style.background = 'rgba(59,130,246,0.04)'}
+                    onMouseLeave={e => (e.currentTarget as HTMLElement).style.background = ''}>
+                    <td style={{ padding: '12px', color: '#9a8870', fontSize: 12.5, fontFamily: "'DM Sans', sans-serif" }}>{log.time}</td>
+                    <td style={{ padding: '12px', color: '#1c1a15', fontWeight: 500, fontFamily: "'DM Sans', sans-serif" }}>{log.event}</td>
+                    <td style={{ padding: '12px', color: '#9a8870', fontSize: 12.5, fontFamily: "'DM Sans', sans-serif" }}>{log.sensor}</td>
+                    <td style={{ padding: '12px', color: '#5a5040', fontSize: 12.5, fontFamily: "'DM Sans', sans-serif" }}>{log.value}</td>
+                    <td style={{ padding: '12px' }}>
+                      <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5, padding: '3px 11px', borderRadius: 100, fontSize: 11, fontWeight: 700, background: log.status === 'success' ? '#d8f3dc' : log.status === 'warning' ? '#fef3c7' : '#dbeafe', color: log.status === 'success' ? '#2d6a4f' : log.status === 'warning' ? '#92400e' : '#1d4ed8', border: `1px solid ${log.status === 'success' ? '#b7e4c7' : log.status === 'warning' ? '#fde68a' : '#bfdbfe'}`, fontFamily: "'DM Sans', sans-serif" }}>
+                        {log.status === 'success' && <CheckCircle size={10} />}
+                        {log.status === 'warning' && <AlertTriangle size={10} />}
+                        {log.status === 'info' && <Info size={10} />}
+                        <span className="capitalize">{log.status === 'info' ? 'Cached' : log.status}</span>
                       </span>
                     </td>
                   </tr>
@@ -1179,7 +1147,6 @@ export default function SmartFarmDashboard() {
 
       {/* ── MODALS ─────────────────────────────────────────────────────────── */}
       {showModal && <PlotModal initial={editPlot} saving={saving} onSave={savePlot} onClose={() => setShowModal(false)} />}
-
       {showSoilModal && (
         <SoilMetricsModal
           initial={{ ph: sensorData.ph, nitrogen: sensorData.nitrogen, phosphorus: sensorData.phosphorus, potassium: sensorData.potassium }}
@@ -1189,57 +1156,54 @@ export default function SmartFarmDashboard() {
         />
       )}
 
+      {/* ── AI Chat Modal ──────────────────────────────────────────────────── */}
       {showChat && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm" onClick={() => setShowChat(false)}>
-          <div className="border rounded-2xl w-full max-w-lg max-h-[600px] flex flex-col shadow-2xl overflow-hidden"
-            style={{ background: '#0f1824', borderColor: 'rgba(71,85,105,0.4)' }}
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(28,26,21,0.5)', backdropFilter: 'blur(8px)', zIndex: 200, display: 'flex', alignItems: 'flex-end', justifyContent: 'center' }}
+          onClick={() => setShowChat(false)}>
+          <div style={{ background: '#fff', border: '1px solid rgba(160,130,90,0.2)', borderRadius: '24px 24px 0 0', width: '100%', maxWidth: 560, boxShadow: '0 -12px 50px rgba(100,70,30,0.18)', maxHeight: '85vh', display: 'flex', flexDirection: 'column' }}
             onClick={e => e.stopPropagation()}>
-            <div className="flex items-center justify-between p-4 border-b" style={{ borderColor: 'rgba(71,85,105,0.3)', background: 'rgba(30,41,59,0.6)' }}>
-              <h3 className="flex items-center gap-2 font-semibold text-slate-100">
-                <Bot className="w-5 h-5 text-emerald-400" /> AI Agronomist
-              </h3>
-              <button onClick={() => setShowChat(false)} className="p-1 hover:bg-slate-700 rounded-lg text-slate-400 transition-colors"><X className="w-5 h-5" /></button>
+            <div style={{ padding: '16px 22px', borderBottom: '1px solid rgba(160,130,90,0.12)', display: 'flex', alignItems: 'center', gap: 10 }}>
+              <div style={{ width: 36, height: 36, borderRadius: 11, background: '#2d6a4f', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><Bot size={16} color="#fff" /></div>
+              <div style={{ flex: 1 }}>
+                <div style={{ fontWeight: 700, fontSize: 14, color: '#1c1a15', fontFamily: "'Space Grotesk', sans-serif" }}>AI Agronomist</div>
+                <div style={{ fontSize: 11, color: '#9a8870', fontFamily: "'DM Sans', sans-serif" }}>{plot?.emoji} {plot?.name} · {plot?.cropType}</div>
+              </div>
+              <div style={{ display: 'flex', gap: 8, fontSize: 12, color: '#5a5040', flexWrap: 'wrap' }}>
+                <span style={{ background: '#f9f5ef', padding: '2px 8px', borderRadius: 100, border: '1px solid rgba(160,130,90,0.2)', fontFamily: "'DM Sans', sans-serif" }}>🌡️ {sensorData.temperature.toFixed(1)}°C</span>
+                <span style={{ background: '#f9f5ef', padding: '2px 8px', borderRadius: 100, border: '1px solid rgba(160,130,90,0.2)', fontFamily: "'DM Sans', sans-serif" }}>💧 {sensorData.moisture.toFixed(0)}%</span>
+                <span style={{ background: '#f9f5ef', padding: '2px 8px', borderRadius: 100, border: '1px solid rgba(160,130,90,0.2)', fontFamily: "'DM Sans', sans-serif" }}>pH {sensorData.ph}</span>
+              </div>
+              <button onClick={() => setShowChat(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#b0a088', padding: 6, marginLeft: 4 }}><X size={16} /></button>
             </div>
-            <div className="p-3 flex items-center gap-3 flex-wrap text-xs border-b" style={{ background: 'rgba(16,185,129,0.06)', borderColor: 'rgba(16,185,129,0.15)' }}>
-              <span className="text-lg">{plot?.emoji}</span>
-              <span className="font-semibold text-emerald-400">{plot?.name} · {plot?.cropType}</span>
-              <span className="text-slate-400">🌡️ {sensorData.temperature.toFixed(1)}°C</span>
-              <span className="text-slate-400">💧 {sensorData.moisture.toFixed(0)}%</span>
-              <span className="text-slate-400">pH {sensorData.ph}</span>
-            </div>
-            <div className="flex-1 overflow-y-auto p-4 space-y-4" style={{ maxHeight: 380 }}>
+            <div style={{ flex: 1, overflowY: 'auto', padding: '18px 22px', display: 'flex', flexDirection: 'column', gap: 14, maxHeight: 380 }}>
               {messages.map(msg => (
-                <div key={msg.id} className={cn("flex gap-3", msg.role === 'user' ? "ml-auto flex-row-reverse max-w-[80%]" : "max-w-[90%]")}>
-                  <div className={cn("w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0",
-                    msg.role === 'ai' ? "bg-emerald-600" : "bg-slate-700")}>
-                    {msg.role === 'ai' ? <Bot className="w-4 h-4 text-white" /> : <User className="w-4 h-4 text-slate-300" />}
-                  </div>
-                  <div className={cn("p-3 rounded-2xl text-sm leading-relaxed",
-                    msg.role === 'ai' ? "text-slate-200 rounded-tl-sm" : "text-white rounded-tr-sm")}
-                    style={{ background: msg.role === 'ai' ? 'rgba(30,41,59,0.8)' : 'linear-gradient(135deg, #059669, #0891b2)' }}>
-                    {msg.content}
+                <div key={msg.id} style={{ display: 'flex', flexDirection: 'column', alignItems: msg.role === 'user' ? 'flex-end' : 'flex-start' }}>
+                  <div style={{ display: 'flex', alignItems: 'flex-end', gap: 8, flexDirection: msg.role === 'user' ? 'row-reverse' : 'row' }}>
+                    <div style={{ width: 28, height: 28, borderRadius: '50%', background: msg.role === 'ai' ? '#2d6a4f' : '#f2ece0', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                      {msg.role === 'ai' ? <Bot size={13} color="#fff" /> : <User size={13} color="#5a5040" />}
+                    </div>
+                    <div style={{ padding: '11px 15px', borderRadius: msg.role === 'ai' ? '16px 16px 16px 4px' : '16px 16px 4px 16px', background: msg.role === 'ai' ? '#f9f5ef' : '#2d6a4f', border: msg.role === 'ai' ? '1px solid rgba(160,130,90,0.14)' : 'none', color: msg.role === 'ai' ? '#1c1a15' : '#fff', fontSize: 13.5, lineHeight: 1.6, maxWidth: '82%', fontFamily: "'DM Sans', sans-serif" }}>
+                      {msg.content}
+                    </div>
                   </div>
                 </div>
               ))}
               {isAITyping && (
-                <div className="flex gap-3 max-w-[90%]">
-                  <div className="w-9 h-9 rounded-full flex items-center justify-center bg-emerald-600"><Bot className="w-4 h-4 text-white" /></div>
-                  <div className="p-3 rounded-2xl rounded-tl-sm" style={{ background: 'rgba(30,41,59,0.8)' }}>
-                    <div className="flex gap-1">{[0, 150, 300].map(d => <span key={d} className="w-2 h-2 bg-slate-400 rounded-full animate-bounce" style={{ animationDelay: `${d}ms` }} />)}</div>
+                <div style={{ display: 'flex', alignItems: 'flex-end', gap: 8 }}>
+                  <div style={{ width: 28, height: 28, borderRadius: '50%', background: '#2d6a4f', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><Bot size={13} color="#fff" /></div>
+                  <div style={{ padding: '12px 16px', borderRadius: '16px 16px 16px 4px', background: '#f9f5ef', border: '1px solid rgba(160,130,90,0.14)', display: 'flex', gap: 5 }}>
+                    {[0, 1, 2].map(i => <span key={i} style={{ width: 7, height: 7, borderRadius: '50%', background: '#40916c', display: 'inline-block', animation: `bounce .9s ${i * 0.15}s ease-in-out infinite` }} />)}
                   </div>
                 </div>
               )}
               <div ref={chatEndRef} />
             </div>
-            <div className="p-4 border-t flex gap-2" style={{ borderColor: 'rgba(71,85,105,0.3)', background: 'rgba(30,41,59,0.4)' }}>
-              <input type="text" value={inputMessage} onChange={e => setInputMessage(e.target.value)} onKeyPress={e => e.key === 'Enter' && handleSendMessage()}
-                placeholder="Ask about your crops..." disabled={isAITyping}
-                className="flex-1 rounded-xl px-4 py-2.5 text-sm text-slate-200 placeholder:text-slate-600 focus:outline-none border disabled:opacity-50"
-                style={{ background: 'rgba(15,24,36,0.8)', borderColor: 'rgba(71,85,105,0.3)' }} />
-              <button onClick={handleSendMessage} disabled={isAITyping || !inputMessage.trim()}
-                className="w-10 h-10 rounded-xl flex items-center justify-center text-white transition-all hover:scale-105 active:scale-95 disabled:opacity-50"
-                style={{ background: 'linear-gradient(135deg, #059669, #0891b2)' }}>
-                <Send className="w-4 h-4" />
+            <div style={{ padding: '12px 16px', borderTop: '1px solid rgba(160,130,90,0.1)', display: 'flex', gap: 8 }}>
+              <input value={inputMessage} onChange={e => setInputMessage(e.target.value)} onKeyPress={e => e.key === 'Enter' && handleSendMessage()}
+                placeholder="Ask anything about your farm…" disabled={isAITyping}
+                style={{ flex: 1, background: '#f9f5ef', border: '1px solid rgba(160,130,90,0.2)', borderRadius: 11, padding: '11px 14px', fontSize: 14, fontFamily: "'DM Sans', sans-serif", color: '#1c1a15', outline: 'none' }} />
+              <button onClick={handleSendMessage} disabled={isAITyping || !inputMessage.trim()} className="btn-p" style={{ borderRadius: 11, padding: '11px 16px' }}>
+                <Send size={14} />
               </button>
             </div>
           </div>
